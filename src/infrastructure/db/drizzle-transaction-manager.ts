@@ -1,0 +1,13 @@
+import { db } from '../../db/index.js';
+import type {
+  TransactionManager,
+  DomainTransaction,
+} from '../../domain/transaction-manager.js';
+
+export class DrizzleTransactionManager implements TransactionManager {
+  async run<T>(work: (tx: DomainTransaction) => Promise<T>): Promise<T> {
+    return await db.transaction(async (drizzleTx) => {
+      return await work(drizzleTx as unknown as DomainTransaction);
+    });
+  }
+}

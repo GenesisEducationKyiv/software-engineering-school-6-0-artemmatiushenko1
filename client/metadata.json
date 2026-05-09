@@ -1,0 +1,5 @@
+{
+  "name": "GitHub Release Notifier",
+  "description": "Subscribe to email notifications for new releases of your favorite GitHub repositories.",
+  "requestFramePermissions": []
+}
