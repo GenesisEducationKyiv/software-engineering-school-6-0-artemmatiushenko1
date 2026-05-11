@@ -9,6 +9,7 @@
     "dev": "tsx watch ./src/index.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "lint": "eslint .",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
@@ -32,6 +33,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/ioredis": "^4.28.10",
     "@types/node": "^25.5.2",
     "@types/node-cron": "^3.0.11",
@@ -40,9 +42,12 @@
     "@types/yaml": "^1.9.6",
     "dotenv": "^17.4.1",
     "drizzle-kit": "^0.31.10",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
+    "typescript-eslint": "^8.59.3",
     "vitest": "^4.1.4"
   }
 }
