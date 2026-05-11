@@ -7,10 +7,9 @@ on:
     branches: [main]
 
 jobs:
-  test-app:
-    name: Test
+  backend:
+    name: Backend
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
