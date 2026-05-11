@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  test-api:
+  test-app:
     name: Test
     runs-on: ubuntu-latest
 
