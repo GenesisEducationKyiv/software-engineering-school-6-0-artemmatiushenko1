@@ -20,6 +20,6 @@ export default defineConfig(
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', 'client/'],
+    ignores: ['node_modules/', 'client/'],
   },
 );
