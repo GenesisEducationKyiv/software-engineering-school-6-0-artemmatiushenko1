@@ -16,8 +16,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Artem Matiushenko",
   "dependencies": {
     "@fastify/static": "^9.1.0",
     "@fastify/swagger": "^9.7.0",
