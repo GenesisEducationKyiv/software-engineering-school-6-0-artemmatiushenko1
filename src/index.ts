@@ -28,8 +28,8 @@ import { Redis } from 'ioredis';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-class App {
-  private fastify: FastifyInstance;
+export class App {
+  public fastify: FastifyInstance;
   private scannerService?: ScannerService;
   private scanTask?: ScheduledTask;
   private metrics: PrometheusMetrics;
@@ -37,10 +37,19 @@ class App {
 
   constructor() {
     this.fastify = Fastify({
-      logger: true,
+      logger: process.env.NODE_ENV === 'test' ? false : true,
     });
     this.metrics = new PrometheusMetrics();
     this.setupErrorHandler();
+  }
+
+  public async setup(): Promise<FastifyInstance> {
+    await this.setupSwagger();
+    await this.setupStaticFiles();
+    this.setupMetrics();
+    await this.setupServices();
+    this.setupScanner();
+    return this.fastify;
   }
 
   private async runMigrations() {
@@ -172,7 +181,7 @@ class App {
   }
 
   private setupScanner() {
-    if (!this.scannerService) return;
+    if (!this.scannerService || process.env.NODE_ENV === 'test') return;
 
     this.scanTask = cron.schedule(config.scannerCron, async () => {
       this.fastify.log.info('Starting scheduled scan...');
@@ -188,11 +197,7 @@ class App {
   public async start() {
     try {
       await this.runMigrations();
-      await this.setupSwagger();
-      await this.setupStaticFiles();
-      this.setupMetrics();
-      await this.setupServices();
-      this.setupScanner();
+      await this.setup();
 
       await this.fastify.listen({ port: config.port, host: config.host });
 
@@ -234,5 +239,7 @@ class App {
   }
 }
 
-const app = new App();
-app.start();
+if (process.env.NODE_ENV !== 'test') {
+  const app = new App();
+  app.start();
+}
