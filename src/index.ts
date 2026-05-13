@@ -22,7 +22,7 @@ import { FastifyLogger } from './infrastructure/logger/fastify-logger.js';
 import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
 import { PrometheusMetrics } from './infrastructure/metrics/prometheus-metrics.js';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import { db } from './db/index.js';
+import { db, type Database } from './db/index.js';
 import { Redis } from 'ioredis';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -34,16 +34,19 @@ export class App {
   private scanTask?: ScheduledTask;
   private metrics: PrometheusMetrics;
   private redis?: Redis;
+  private db: Database;
 
-  constructor() {
+  constructor(dbOverride?: Database) {
     this.fastify = Fastify({
       logger: config.mode === 'test' ? false : true,
     });
     this.metrics = new PrometheusMetrics();
+    this.db = dbOverride || db;
     this.setupErrorHandler();
   }
 
   public async setup(): Promise<FastifyInstance> {
+    await this.runMigrations();
     await this.setupSwagger();
     await this.setupStaticFiles();
     this.setupMetrics();
@@ -54,7 +57,7 @@ export class App {
 
   private async runMigrations() {
     this.fastify.log.info('Running database migrations...');
-    await migrate(db, {
+    await migrate(this.db, {
       migrationsFolder: path.join(__dirname, '../drizzle'),
     });
     this.fastify.log.info('Migrations completed successfully.');
@@ -127,7 +130,7 @@ export class App {
 
   private async setupServices() {
     const logger = new FastifyLogger(this.fastify.log);
-    const subscriptionRepo = new DrizzleSubscriptionRepository(db);
+    const subscriptionRepo = new DrizzleSubscriptionRepository(this.db);
 
     this.redis = new Redis(config.redisUrl, {
       maxRetriesPerRequest: null,
@@ -146,7 +149,7 @@ export class App {
 
     const emailService = new NodemailerEmailService(config.email);
     const tokenManager = new DbSubscriptionTokenManager(subscriptionRepo);
-    const transactionManager = new DrizzleTransactionManager();
+    const transactionManager = new DrizzleTransactionManager(this.db);
 
     const notificationService = new NotificationService(
       emailService,
@@ -196,7 +199,6 @@ export class App {
 
   public async start() {
     try {
-      await this.runMigrations();
       await this.setup();
 
       await this.fastify.listen({ port: config.port, host: config.host });

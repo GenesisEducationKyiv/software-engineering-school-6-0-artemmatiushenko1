@@ -1,34 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { App } from '../index.js';
 import { register } from 'prom-client';
+import { PGlite } from '@electric-sql/pglite';
+import { drizzle } from 'drizzle-orm/pglite';
+import * as schema from '../db/schema.js';
+import type { Database } from '../db/index.js';
 
 const githubMocks = {
   repositoryExists: vi.fn().mockResolvedValue(true),
   getLatestRelease: vi
     .fn()
     .mockResolvedValue({ tagName: 'v1.0.0', publishedAt: new Date() }),
-};
-
-const repositoryMocks = {
-  findByEmailAndRepo: vi.fn().mockResolvedValue(null),
-  createSubscription: vi.fn().mockResolvedValue({
-    id: 1,
-    email: 'test@example.com',
-    repo: 'owner/repo',
-    confirmed: false,
-    createdAt: new Date(),
-  }),
-  findSubscriptionsByEmail: vi.fn().mockResolvedValue([]),
-  findConfirmedSubscriptionsByEmail: vi.fn().mockResolvedValue([]),
-  findSubscriptionById: vi.fn().mockResolvedValue(null),
-  confirmSubscription: vi.fn().mockResolvedValue(undefined),
-  updateLastSeenTag: vi.fn().mockResolvedValue(undefined),
-  deleteSubscription: vi.fn().mockResolvedValue(undefined),
-  findToken: vi.fn().mockResolvedValue(null),
-  findTokenByValue: vi.fn().mockResolvedValue(null),
-  findTokenBySubscriptionIdAndScope: vi.fn().mockResolvedValue(null),
-  deleteToken: vi.fn().mockResolvedValue(undefined),
-  createToken: vi.fn().mockResolvedValue('token'),
 };
 
 const emailMocks = {
@@ -42,11 +24,6 @@ const redisMocks = {
   quit: vi.fn().mockResolvedValue('OK'),
 };
 
-const transactionMocks = {
-  run: vi.fn().mockImplementation(async (work) => await work({})),
-};
-
-// Mock dependencies
 vi.mock('../infrastructure/github/octokit.client.js', () => ({
   OctokitGithubClient: class {
     constructor() {
@@ -71,53 +48,51 @@ vi.mock('ioredis', () => ({
   },
 }));
 
-vi.mock('../infrastructure/db/drizzle-transaction-manager.js', () => ({
-  DrizzleTransactionManager: class {
-    constructor() {
-      return transactionMocks;
-    }
-  },
-}));
-
-vi.mock('../repositories/subscription.repository.js', () => ({
-  DrizzleSubscriptionRepository: class {
-    constructor() {
-      return repositoryMocks;
-    }
-  },
-}));
-
-describe('Subscription Routes Integration', () => {
+describe('Subscription Routes Integration with PGlite', () => {
   let app: App;
+  let pgDb: Database;
+
+  beforeAll(async () => {
+    const pgLiteClient = new PGlite();
+    pgDb = drizzle(pgLiteClient, { schema }) as unknown as Database;
+  });
 
   beforeEach(async () => {
     register.clear();
     vi.clearAllMocks();
 
-    // Reset defaults for mocks
     githubMocks.repositoryExists.mockResolvedValue(true);
-    repositoryMocks.findByEmailAndRepo.mockResolvedValue(null);
-    repositoryMocks.findTokenByValue.mockResolvedValue(null);
 
-    app = new App();
+    app = new App(pgDb);
     await app.setup();
+
+    await pgDb.delete(schema.subscriptionTokens);
+    await pgDb.delete(schema.subscriptions);
   });
 
   describe('POST /api/subscribe', () => {
-    it('should return 200 when subscribing with valid data', async () => {
+    it('should return 200 and persist subscription in PGlite', async () => {
+      const email = 'test@example.com';
+      const repo = 'owner/repo';
+
       const response = await app.fastify.inject({
         method: 'POST',
         url: '/api/subscribe',
-        payload: {
-          email: 'test@example.com',
-          repo: 'owner/repo',
-        },
+        payload: { email, repo },
       });
 
       expect(response.statusCode).toBe(200);
       expect(JSON.parse(response.body)).toEqual({
         message: 'Subscription successful. Confirmation email sent.',
       });
+
+      const saved = await pgDb.query.subscriptions.findFirst({
+        where: (subs, { eq, and }) =>
+          and(eq(subs.email, email), eq(subs.repo, repo)),
+      });
+      expect(saved).toBeDefined();
+      expect(saved?.email).toBe(email);
+      expect(saved?.confirmed).toBe(false);
     });
 
     describe('Error Assertions', () => {
@@ -175,22 +150,17 @@ describe('Subscription Routes Integration', () => {
       it('should return 409 and ALREADY_SUBSCRIBED when user is already subscribed', async () => {
         const email = 'test@example.com';
         const repo = 'owner/repo';
-        repositoryMocks.findByEmailAndRepo.mockResolvedValueOnce({
-          id: 1,
+
+        await pgDb.insert(schema.subscriptions).values({
           email,
           repo,
           confirmed: true,
-          createdAt: new Date(),
-          lastSeenTag: null,
         });
 
         const response = await app.fastify.inject({
           method: 'POST',
           url: '/api/subscribe',
-          payload: {
-            email,
-            repo,
-          },
+          payload: { email, repo },
         });
 
         expect(response.statusCode).toBe(409);
