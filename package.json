@@ -5,8 +5,8 @@
   "main": "index.ts",
   "type": "module",
   "scripts": {
-    "start": "tsx ./src/index.ts",
-    "dev": "tsx watch ./src/index.ts",
+    "start": "NODE_ENV=production tsx ./src/index.ts",
+    "dev": "NODE_ENV=development tsx watch ./src/index.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
