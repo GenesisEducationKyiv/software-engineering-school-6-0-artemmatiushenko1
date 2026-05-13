@@ -33,7 +33,6 @@ export class SubscriptionService {
     private metrics?: Metrics,
   ) {}
 
-  // TODO: add test for default email value
   async subscribe(email: string = '', repoPath: string): Promise<Subscription> {
     const repoResult = RepoPathSchema.safeParse(repoPath);
     if (!repoResult.success) {
