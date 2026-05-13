@@ -37,7 +37,7 @@ export class App {
 
   constructor() {
     this.fastify = Fastify({
-      logger: process.env.NODE_ENV === 'test' ? false : true,
+      logger: config.mode === 'test' ? false : true,
     });
     this.metrics = new PrometheusMetrics();
     this.setupErrorHandler();
@@ -61,7 +61,7 @@ export class App {
   }
 
   private setupErrorHandler() {
-    this.fastify.setErrorHandler((error, request, reply) => {
+    this.fastify.setErrorHandler((error, _, reply) => {
       if (error instanceof DomainError) {
         return reply.status(error.status).send({
           error: error.message,
@@ -181,7 +181,7 @@ export class App {
   }
 
   private setupScanner() {
-    if (!this.scannerService || process.env.NODE_ENV === 'test') return;
+    if (!this.scannerService || config.mode === 'test') return;
 
     this.scanTask = cron.schedule(config.scannerCron, async () => {
       this.fastify.log.info('Starting scheduled scan...');
@@ -239,7 +239,7 @@ export class App {
   }
 }
 
-if (process.env.NODE_ENV !== 'test') {
+if (config.mode !== 'test') {
   const app = new App();
   app.start();
 }

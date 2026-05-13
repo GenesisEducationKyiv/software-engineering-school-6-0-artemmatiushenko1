@@ -2,6 +2,7 @@ import { z } from 'zod';
 import 'dotenv/config';
 
 const ConfigSchema = z.object({
+  mode: z.enum(['development', 'production', 'test']),
   databaseUrl: z.url().default('postgres://user:pass@localhost:5432/db'),
   redisUrl: z.string().default('redis://localhost:6379'),
   githubToken: z.string().optional(),
@@ -22,6 +23,7 @@ const ConfigSchema = z.object({
 export type Config = z.infer<typeof ConfigSchema>;
 
 export const config = ConfigSchema.parse({
+  mode: process.env.NODE_ENV,
   databaseUrl: process.env.DATABASE_URL,
   redisUrl: process.env.REDIS_URL,
   githubToken: process.env.GITHUB_TOKEN,
