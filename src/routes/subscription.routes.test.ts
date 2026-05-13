@@ -133,6 +133,7 @@ describe('Subscription Routes Integration', () => {
         expect(response.statusCode).toBe(400);
         const body = JSON.parse(response.body);
         expect(body.code).toBe('INVALID_EMAIL');
+        expect(body.error).toBe('Invalid email format: ');
       });
 
       it('should return 400 and INVALID_REPO_FORMAT when repo is missing', async () => {
@@ -147,9 +148,13 @@ describe('Subscription Routes Integration', () => {
         expect(response.statusCode).toBe(400);
         const body = JSON.parse(response.body);
         expect(body.code).toBe('INVALID_REPO_FORMAT');
+        expect(body.error).toBe(
+          "Invalid repository format: . Expected 'owner/repo'",
+        );
       });
 
       it('should return 404 and REPO_NOT_FOUND when repository does not exist', async () => {
+        const repo = 'nonexistent/repo';
         githubMocks.repositoryExists.mockResolvedValueOnce(false);
 
         const response = await app.fastify.inject({
@@ -157,20 +162,23 @@ describe('Subscription Routes Integration', () => {
           url: '/api/subscribe',
           payload: {
             email: 'test@example.com',
-            repo: 'nonexistent/repo',
+            repo,
           },
         });
 
         expect(response.statusCode).toBe(404);
         const body = JSON.parse(response.body);
         expect(body.code).toBe('REPO_NOT_FOUND');
+        expect(body.error).toBe(`Repository not found: ${repo}`);
       });
 
       it('should return 409 and ALREADY_SUBSCRIBED when user is already subscribed', async () => {
+        const email = 'test@example.com';
+        const repo = 'owner/repo';
         repositoryMocks.findByEmailAndRepo.mockResolvedValueOnce({
           id: 1,
-          email: 'test@example.com',
-          repo: 'owner/repo',
+          email,
+          repo,
           confirmed: true,
           createdAt: new Date(),
           lastSeenTag: null,
@@ -180,14 +188,15 @@ describe('Subscription Routes Integration', () => {
           method: 'POST',
           url: '/api/subscribe',
           payload: {
-            email: 'test@example.com',
-            repo: 'owner/repo',
+            email,
+            repo,
           },
         });
 
         expect(response.statusCode).toBe(409);
         const body = JSON.parse(response.body);
         expect(body.code).toBe('ALREADY_SUBSCRIBED');
+        expect(body.error).toBe(`${email} is already subscribed to ${repo}`);
       });
     });
   });
