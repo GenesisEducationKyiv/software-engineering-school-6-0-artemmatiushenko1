@@ -33,7 +33,7 @@ export class SubscriptionService {
     private metrics?: Metrics,
   ) {}
 
-  async subscribe(email: string = '', repoPath: string): Promise<Subscription> {
+  async subscribe(email: string, repoPath: string): Promise<Subscription> {
     const repoResult = RepoPathSchema.safeParse(repoPath);
     if (!repoResult.success) {
       throw new InvalidRepoFormatError(repoPath);

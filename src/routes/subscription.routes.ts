@@ -11,10 +11,10 @@ export const subscriptionRoutes: FastifyPluginAsync<
 > = async (fastify, opts) => {
   const { subscriptionService } = opts;
 
-  fastify.post<{ Body: { email: string; repo: string } }>(
+  fastify.post<{ Body: { email?: string; repo?: string } }>(
     '/subscribe',
     async (request, reply) => {
-      const { email, repo } = request.body;
+      const { email = '', repo = '' } = request.body;
       await subscriptionService.subscribe(email, repo);
       return reply.status(200).send({
         message: 'Subscription successful. Confirmation email sent.',
