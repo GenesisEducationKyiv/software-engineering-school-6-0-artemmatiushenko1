@@ -127,7 +127,7 @@ export class App {
 
   private async setupServices() {
     const logger = new FastifyLogger(this.fastify.log);
-    const subscriptionRepo = new DrizzleSubscriptionRepository();
+    const subscriptionRepo = new DrizzleSubscriptionRepository(db);
 
     this.redis = new Redis(config.redisUrl, {
       maxRetriesPerRequest: null,

@@ -1,4 +1,3 @@
-import { db } from '../db/index.js';
 import type {
   Database,
   Transaction as DrizzleTransaction,
@@ -18,8 +17,10 @@ import type { SubscriptionRepository } from '../domain/subscription.repository.j
 import type { DomainTransaction } from '../domain/transaction-manager.js';
 
 export class DrizzleSubscriptionRepository implements SubscriptionRepository {
+  constructor(private db: Database) {}
+
   private getDb(tx?: DomainTransaction): Database | DrizzleTransaction {
-    return (tx as unknown as DrizzleTransaction) ?? db;
+    return (tx as unknown as DrizzleTransaction) ?? this.db;
   }
 
   async createSubscription(
