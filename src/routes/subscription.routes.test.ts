@@ -5,6 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../db/schema.js';
 import type { Database } from '../db/index.js';
+import assert from 'assert';
 
 const githubMocks = {
   repositoryExists: vi.fn().mockResolvedValue(true),
@@ -151,11 +152,16 @@ describe('Subscription Routes Integration with PGlite', () => {
         const email = 'test@example.com';
         const repo = 'owner/repo';
 
-        await pgDb.insert(schema.subscriptions).values({
-          email,
-          repo,
-          confirmed: true,
-        });
+        const [existingSubscription] = await pgDb
+          .insert(schema.subscriptions)
+          .values({
+            email,
+            repo,
+            confirmed: true,
+          })
+          .returning();
+
+        assert(existingSubscription);
 
         const response = await app.fastify.inject({
           method: 'POST',
@@ -167,6 +173,34 @@ describe('Subscription Routes Integration with PGlite', () => {
         const body = JSON.parse(response.body);
         expect(body.code).toBe('ALREADY_SUBSCRIBED');
         expect(body.error).toBe(`${email} is already subscribed to ${repo}`);
+
+        const allSubscriptions = await pgDb.select().from(schema.subscriptions);
+        expect(allSubscriptions).toEqual([existingSubscription]);
+      });
+
+      it('no duplicate subscription is created when user is already subscribed', async () => {
+        const email = 'test@example.com';
+        const repo = 'owner/repo';
+
+        const [existingSubscription] = await pgDb
+          .insert(schema.subscriptions)
+          .values({
+            email,
+            repo,
+            confirmed: true,
+          })
+          .returning();
+
+        assert(existingSubscription);
+
+        await app.fastify.inject({
+          method: 'POST',
+          url: '/api/subscribe',
+          payload: { email, repo },
+        });
+
+        const allSubscriptions = await pgDb.select().from(schema.subscriptions);
+        expect(allSubscriptions).toEqual([existingSubscription]);
       });
     });
   });
