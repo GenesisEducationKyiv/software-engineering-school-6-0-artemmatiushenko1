@@ -25,7 +25,9 @@ export default defineConfig(
     },
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['*.js', '*.mjs', '*.cjs'],
+        },
       },
     },
   },
@@ -41,6 +43,6 @@ export default defineConfig(
     },
   },
   {
-    ignores: ['node_modules/', 'client/', 'eslint.config.js'],
+    ignores: ['node_modules/', 'client/'],
   },
 );
