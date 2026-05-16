@@ -2,10 +2,6 @@ import type { FastifyPluginCallback } from 'fastify';
 import { SubscriptionService } from '../services/subscription.service.js';
 import { SubscriptionsResponseDtoSchema } from '../dtos/subscription.dto.js';
 import { CommonSuccessResponseDtoSchema } from '../dtos/response.dto.js';
-import {
-  TokenNotFoundError,
-  InvalidTokenError,
-} from '../domain/errors.js';
 
 interface SubscriptionRoutesOptions {
   subscriptionService: SubscriptionService;
@@ -45,25 +41,12 @@ export const subscriptionRoutes: FastifyPluginCallback<
     '/confirm/:token',
     async (request, reply) => {
       const { token } = request.params;
-      try {
-        await subscriptionService.confirmSubscription(token);
-        return reply.status(200).send(
-          CommonSuccessResponseDtoSchema.parse({
-            message: 'Subscription confirmed successfully',
-          }),
-        );
-      } catch (error) {
-        if (
-          error instanceof TokenNotFoundError ||
-          error instanceof InvalidTokenError
-        ) {
-          return reply.status(400).send({
-            code: 'INVALID_TOKEN',
-            error: 'Invalid or expired confirmation link.',
-          });
-        }
-        throw error;
-      }
+      await subscriptionService.confirmSubscription(token);
+      return reply.status(200).send(
+        CommonSuccessResponseDtoSchema.parse({
+          message: 'Subscription confirmed successfully',
+        }),
+      );
     },
   );
 
@@ -71,25 +54,12 @@ export const subscriptionRoutes: FastifyPluginCallback<
     '/unsubscribe/:token',
     async (request, reply) => {
       const { token } = request.params;
-      try {
-        await subscriptionService.unsubscribe(token);
-        return reply.status(200).send(
-          CommonSuccessResponseDtoSchema.parse({
-            message: 'Unsubscribed successfully',
-          }),
-        );
-      } catch (error) {
-        if (
-          error instanceof TokenNotFoundError ||
-          error instanceof InvalidTokenError
-        ) {
-          return reply.status(400).send({
-            code: 'INVALID_TOKEN',
-            error: 'Invalid or expired unsubscribe link.',
-          });
-        }
-        throw error;
-      }
+      await subscriptionService.unsubscribe(token);
+      return reply.status(200).send(
+        CommonSuccessResponseDtoSchema.parse({
+          message: 'Unsubscribed successfully',
+        }),
+      );
     },
   );
 };
