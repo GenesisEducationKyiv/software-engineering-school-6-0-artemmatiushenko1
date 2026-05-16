@@ -7,22 +7,31 @@ import {
   beforeAll,
   afterAll,
 } from 'vitest';
-import { App } from '../index.js';
+import { App } from '../app.js';
 import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../db/schema.js';
 import type { Database } from '../db/index.js';
 import assert from 'assert';
+import type { SubscriptionResponseDto } from '../dtos/subscription.dto.js';
+
+// TODO: move these interfaces
+interface ErrorResponse {
+  code: string;
+  error: string;
+}
+
+interface SuccessResponse {
+  message: string;
+}
 
 const githubMocks = {
   repositoryExists: vi.fn().mockResolvedValue(true),
-  getLatestRelease: vi
-    .fn()
-    .mockResolvedValue({
-      tagName: 'v1.0.0',
-      publishedAt: new Date('2026-01-01T12:00:00Z'),
-    }),
+  getLatestRelease: vi.fn().mockResolvedValue({
+    tag: 'v1.0.0',
+    publishedAt: new Date('2026-01-01T12:00:00Z'),
+  }),
 };
 
 const emailMocks = {
@@ -64,7 +73,7 @@ describe('Subscription Routes Integration with PGlite', () => {
   let app: App;
   let pgDb: Database;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-01-01T12:00:00Z'));
     const pgLiteClient = new PGlite();
@@ -100,7 +109,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(200);
-      expect(JSON.parse(response.body)).toEqual({
+      expect(JSON.parse(response.body) as SuccessResponse).toEqual({
         message: 'Subscription successful. Confirmation email sent.',
       });
 
@@ -124,7 +133,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         });
 
         expect(response.statusCode).toBe(400);
-        const body = JSON.parse(response.body);
+        const body = JSON.parse(response.body) as ErrorResponse;
         expect(body.code).toBe('INVALID_EMAIL');
         expect(body.error).toBe('Invalid email format: ');
       });
@@ -139,7 +148,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         });
 
         expect(response.statusCode).toBe(400);
-        const body = JSON.parse(response.body);
+        const body = JSON.parse(response.body) as ErrorResponse;
         expect(body.code).toBe('INVALID_REPO_FORMAT');
         expect(body.error).toBe(
           "Invalid repository format: . Expected 'owner/repo'",
@@ -160,7 +169,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         });
 
         expect(response.statusCode).toBe(404);
-        const body = JSON.parse(response.body);
+        const body = JSON.parse(response.body) as ErrorResponse;
         expect(body.code).toBe('REPO_NOT_FOUND');
         expect(body.error).toBe(`Repository not found: ${repo}`);
       });
@@ -187,7 +196,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         });
 
         expect(response.statusCode).toBe(409);
-        const body = JSON.parse(response.body);
+        const body = JSON.parse(response.body) as ErrorResponse;
         expect(body.code).toBe('ALREADY_SUBSCRIBED');
         expect(body.error).toBe(`${email} is already subscribed to ${repo}`);
 
@@ -245,7 +254,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(200);
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body) as SubscriptionResponseDto[];
 
       expect(body).toHaveLength(1);
       expect(body[0]).toMatchObject({
@@ -278,7 +287,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(200);
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body) as SubscriptionResponseDto[];
 
       expect(body).toHaveLength(1);
       expect(body[0]).toMatchObject({
@@ -317,7 +326,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         });
 
         expect(response.statusCode).toBe(400);
-        const body = JSON.parse(response.body);
+        const body = JSON.parse(response.body) as ErrorResponse;
         expect(body.code).toBe('INVALID_EMAIL');
       },
     );
@@ -329,7 +338,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(400);
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body) as ErrorResponse;
       expect(body.code).toBe('INVALID_EMAIL');
     });
   });
@@ -347,21 +356,31 @@ describe('Subscription Routes Integration with PGlite', () => {
 
       assert(subscription);
 
-      const tokenValue = 'valid-confirm-token';
+      const subscribeTokenValue = 'valid-confirm-token';
       await pgDb.insert(schema.subscriptionTokens).values({
-        token: tokenValue,
+        token: subscribeTokenValue,
         subscriptionId: subscription.id,
         scope: 'subscribe',
         expiresAt: new Date('2026-01-01T13:00:00Z'),
       });
 
-      const response = await app.fastify.inject({
-        method: 'GET',
-        url: `/api/confirm/${tokenValue}`,
+      const unsubscribeTokenValue = 'valid-unsubscribe-token';
+      await pgDb.insert(schema.subscriptionTokens).values({
+        token: unsubscribeTokenValue,
+        subscriptionId: subscription.id,
+        scope: 'unsubscribe',
+        expiresAt: new Date('2026-01-01T13:00:00Z'),
       });
 
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: `/api/confirm/${subscribeTokenValue}`,
+      });
+
+      console.log(response);
+
       expect(response.statusCode).toBe(200);
-      expect(JSON.parse(response.body)).toEqual({
+      expect(JSON.parse(response.body) as SuccessResponse).toEqual({
         message: 'Subscription confirmed successfully',
       });
 
@@ -370,10 +389,11 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
       expect(updatedSubscription?.confirmed).toBe(true);
 
-      const tokenExists = await pgDb.query.subscriptionTokens.findFirst({
-        where: (tokens, { eq }) => eq(tokens.token, tokenValue),
-      });
-      expect(tokenExists).toBeUndefined();
+      const subscribeTokenExists =
+        await pgDb.query.subscriptionTokens.findFirst({
+          where: (tokens, { eq }) => eq(tokens.token, subscribeTokenValue),
+        });
+      expect(subscribeTokenExists).toBeUndefined();
     });
 
     it('should return 404 and TOKEN_NOT_FOUND when reusing an already consumed token', async () => {
@@ -396,6 +416,14 @@ describe('Subscription Routes Integration with PGlite', () => {
         expiresAt: new Date('2026-01-01T13:00:00Z'),
       });
 
+      const unsubscribeTokenValue = 'valid-unsubscribe-token';
+      await pgDb.insert(schema.subscriptionTokens).values({
+        token: unsubscribeTokenValue,
+        subscriptionId: subscription.id,
+        scope: 'unsubscribe',
+        expiresAt: new Date('2026-01-01T13:00:00Z'),
+      });
+
       const firstResponse = await app.fastify.inject({
         method: 'GET',
         url: `/api/confirm/${tokenValue}`,
@@ -412,7 +440,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(secondResponse.statusCode).toBe(404);
-      const body = JSON.parse(secondResponse.body);
+      const body = JSON.parse(secondResponse.body) as ErrorResponse;
       expect(body.code).toBe('TOKEN_NOT_FOUND');
     });
 
@@ -423,7 +451,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(404);
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body) as ErrorResponse;
       expect(body.code).toBe('TOKEN_NOT_FOUND');
     });
 
@@ -453,7 +481,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(400);
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body) as ErrorResponse;
       expect(body.code).toBe('INVALID_TOKEN');
 
       const updatedSubscription = await pgDb.query.subscriptions.findFirst({
@@ -488,7 +516,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(400);
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body) as ErrorResponse;
       expect(body.code).toBe('INVALID_TOKEN');
     });
   });
@@ -568,7 +596,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(secondResponse.statusCode).toBe(404);
-      const body = JSON.parse(secondResponse.body);
+      const body = JSON.parse(secondResponse.body) as ErrorResponse;
       expect(body.code).toBe('TOKEN_NOT_FOUND');
     });
 
@@ -579,7 +607,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(404);
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body) as ErrorResponse;
       expect(body.code).toBe('TOKEN_NOT_FOUND');
     });
 
@@ -609,7 +637,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(400);
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body) as ErrorResponse;
       expect(body.code).toBe('INVALID_TOKEN');
 
       // The subscription should still exist since the token was invalid
@@ -645,7 +673,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(400);
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body) as ErrorResponse;
       expect(body.code).toBe('INVALID_TOKEN');
     });
   });

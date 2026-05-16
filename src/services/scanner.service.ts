@@ -58,6 +58,8 @@ export class ScannerService {
         repo,
       );
 
+      console.log({ latestRelease });
+
       if (!latestRelease) {
         this.logger.info(`No releases found for ${sub.repo}`);
         return;
