@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  beforeAll,
+  afterAll,
+} from 'vitest';
 import { App } from '../index.js';
 import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
@@ -11,7 +19,10 @@ const githubMocks = {
   repositoryExists: vi.fn().mockResolvedValue(true),
   getLatestRelease: vi
     .fn()
-    .mockResolvedValue({ tagName: 'v1.0.0', publishedAt: new Date('2026-01-01T12:00:00Z') }),
+    .mockResolvedValue({
+      tagName: 'v1.0.0',
+      publishedAt: new Date('2026-01-01T12:00:00Z'),
+    }),
 };
 
 const emailMocks = {
@@ -474,6 +485,163 @@ describe('Subscription Routes Integration with PGlite', () => {
       const response = await app.fastify.inject({
         method: 'GET',
         url: `/api/confirm/${tokenValue}`,
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body);
+      expect(body.code).toBe('INVALID_TOKEN');
+    });
+  });
+
+  describe('GET /api/unsubscribe/:token', () => {
+    it('should return 200 and delete the subscription for a valid token', async () => {
+      const [subscription] = await pgDb
+        .insert(schema.subscriptions)
+        .values({
+          email: 'test@example.com',
+          repo: 'owner/repo',
+          confirmed: true,
+        })
+        .returning();
+
+      assert(subscription);
+
+      const tokenValue = 'valid-unsubscribe-token';
+      await pgDb.insert(schema.subscriptionTokens).values({
+        token: tokenValue,
+        subscriptionId: subscription.id,
+        scope: 'unsubscribe',
+        expiresAt: new Date('2026-01-01T13:00:00Z'),
+      });
+
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: `/api/unsubscribe/${tokenValue}`,
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(JSON.parse(response.body)).toEqual({
+        message: 'Unsubscribed successfully',
+      });
+
+      const deletedSubscription = await pgDb.query.subscriptions.findFirst({
+        where: (subs, { eq }) => eq(subs.id, subscription.id),
+      });
+      expect(deletedSubscription).toBeUndefined();
+
+      const tokenExists = await pgDb.query.subscriptionTokens.findFirst({
+        where: (tokens, { eq }) => eq(tokens.token, tokenValue),
+      });
+      expect(tokenExists).toBeUndefined();
+    });
+
+    it('should return 404 and TOKEN_NOT_FOUND when reusing an already consumed token', async () => {
+      const [subscription] = await pgDb
+        .insert(schema.subscriptions)
+        .values({
+          email: 'test@example.com',
+          repo: 'owner/repo',
+          confirmed: true,
+        })
+        .returning();
+
+      assert(subscription);
+
+      const tokenValue = 'reused-unsubscribe-token';
+      await pgDb.insert(schema.subscriptionTokens).values({
+        token: tokenValue,
+        subscriptionId: subscription.id,
+        scope: 'unsubscribe',
+        expiresAt: new Date('2026-01-01T13:00:00Z'),
+      });
+
+      const firstResponse = await app.fastify.inject({
+        method: 'GET',
+        url: `/api/unsubscribe/${tokenValue}`,
+      });
+
+      expect(firstResponse.statusCode).toBe(200);
+
+      const secondResponse = await app.fastify.inject({
+        method: 'GET',
+        url: `/api/unsubscribe/${tokenValue}`,
+      });
+
+      expect(secondResponse.statusCode).toBe(404);
+      const body = JSON.parse(secondResponse.body);
+      expect(body.code).toBe('TOKEN_NOT_FOUND');
+    });
+
+    it('should return 404 and TOKEN_NOT_FOUND when token does not exist', async () => {
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: '/api/unsubscribe/nonexistent-token',
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = JSON.parse(response.body);
+      expect(body.code).toBe('TOKEN_NOT_FOUND');
+    });
+
+    it('should return 400 and INVALID_TOKEN when token is expired', async () => {
+      const [subscription] = await pgDb
+        .insert(schema.subscriptions)
+        .values({
+          email: 'test@example.com',
+          repo: 'owner/repo',
+          confirmed: true,
+        })
+        .returning();
+
+      assert(subscription);
+
+      const tokenValue = 'expired-unsubscribe-token';
+      await pgDb.insert(schema.subscriptionTokens).values({
+        token: tokenValue,
+        subscriptionId: subscription.id,
+        scope: 'unsubscribe',
+        expiresAt: new Date('2026-01-01T11:00:00Z'),
+      });
+
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: `/api/unsubscribe/${tokenValue}`,
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body);
+      expect(body.code).toBe('INVALID_TOKEN');
+
+      // The subscription should still exist since the token was invalid
+      const existingSubscription = await pgDb.query.subscriptions.findFirst({
+        where: (subs, { eq }) => eq(subs.id, subscription.id),
+      });
+      expect(existingSubscription).toBeDefined();
+    });
+
+    it('should return 400 and INVALID_TOKEN when token has wrong scope', async () => {
+      const [subscription] = await pgDb
+        .insert(schema.subscriptions)
+        .values({
+          email: 'test@example.com',
+          repo: 'owner/repo',
+          confirmed: true,
+        })
+        .returning();
+
+      assert(subscription);
+
+      const tokenValue = 'wrong-scope-unsubscribe-token';
+      await pgDb.insert(schema.subscriptionTokens).values({
+        token: tokenValue,
+        subscriptionId: subscription.id,
+        scope: 'subscribe',
+        expiresAt: new Date('2026-01-01T13:00:00Z'),
+      });
+
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: `/api/unsubscribe/${tokenValue}`,
       });
 
       expect(response.statusCode).toBe(400);
