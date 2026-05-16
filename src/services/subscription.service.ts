@@ -136,14 +136,7 @@ export class SubscriptionService {
       this.metrics?.incrementSubscriptionConfirmations(sub.repo);
 
       if (this.scannerService) {
-        this.scannerService
-          .scanSubscription(sub.id)
-          .catch((err) =>
-            this.logger.error(
-              `Error during initial scan after confirmation for sub ${sub.id}:`,
-              err,
-            ),
-          );
+        await this.scannerService.scanSubscription(sub.id);
       }
     }
 

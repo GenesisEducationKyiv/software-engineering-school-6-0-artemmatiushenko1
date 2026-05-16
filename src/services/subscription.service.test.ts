@@ -56,16 +56,16 @@ describe('SubscriptionService', () => {
       findTokenByValue: vi.fn(),
       findTokenBySubscriptionIdAndScope: vi.fn(),
       deleteToken: vi.fn(),
-    } as unknown as Mocked<SubscriptionRepository>;
+    };
 
     githubClientMock = {
       repositoryExists: vi.fn(),
       getLatestRelease: vi.fn(),
-    } as Mocked<GithubClient>;
+    };
 
     emailServiceMock = {
       sendEmail: vi.fn(),
-    } as Mocked<EmailService>;
+    };
 
     tokenManagerMock = {
       createToken: vi.fn(),
@@ -73,7 +73,7 @@ describe('SubscriptionService', () => {
       getTokenBySubscriptionIdAndScope: vi.fn(),
       validateToken: vi.fn(),
       invalidateToken: vi.fn(),
-    } as unknown as Mocked<SubscriptionTokenManager>;
+    };
 
     scannerServiceMock = {
       scanSubscription: vi.fn().mockResolvedValue(undefined),
@@ -84,7 +84,7 @@ describe('SubscriptionService', () => {
       error: vi.fn(),
       warn: vi.fn(),
       debug: vi.fn(),
-    } as Mocked<Logger>;
+    };
 
     transactionManager = new MockTransactionManager();
 

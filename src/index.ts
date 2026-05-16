@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import type { OpenAPIV2 } from 'openapi-types';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import fastifyStatic from '@fastify/static';
@@ -68,7 +69,7 @@ class App {
   private async setupSwagger() {
     const swaggerPath = path.join(__dirname, '../swagger.yaml');
     const swaggerFile = fs.readFileSync(swaggerPath, 'utf8');
-    const swaggerConfig = YAML.parse(swaggerFile);
+    const swaggerConfig = YAML.parse(swaggerFile) as OpenAPIV2.Document;
 
     const appUrl = new URL(config.appUrl);
     swaggerConfig.host = appUrl.host;
@@ -124,7 +125,7 @@ class App {
       maxRetriesPerRequest: null,
     });
     this.redis.on('error', (err) => {
-      logger.error(err.toString(), 'Redis error');
+      logger.error('Redis error: ', err);
     });
 
     const octokitClient = new OctokitGithubClient(config.githubToken);
@@ -214,12 +215,13 @@ class App {
         `Received ${signal}. Starting graceful shutdown...`,
       );
 
-      this.scanTask?.stop();
-      this.fastify.log.info('Scanner tasks stopped.');
-
       try {
+        await this.scanTask?.stop();
+        this.fastify.log.info('Scanner tasks stopped.');
+
         await this.redis?.quit();
         this.fastify.log.info('Redis connection closed.');
+
         await this.fastify.close();
         this.fastify.log.info('Fastify server closed.');
         process.exit(0);
@@ -235,4 +237,4 @@ class App {
 }
 
 const app = new App();
-app.start();
+await app.start();
