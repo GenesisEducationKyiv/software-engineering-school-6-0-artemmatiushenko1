@@ -1,6 +1,7 @@
 import type { FastifyPluginCallback } from 'fastify';
 import { SubscriptionService } from '../services/subscription.service.js';
-import { toSubscriptionResponseDto } from '../dtos/subscription.dto.js';
+import { SubscriptionsResponseDtoSchema } from '../dtos/subscription.dto.js';
+import { CommonSuccessResponseDtoSchema } from '../dtos/response.dto.js';
 
 interface SubscriptionRoutesOptions {
   subscriptionService: SubscriptionService;
@@ -16,9 +17,11 @@ export const subscriptionRoutes: FastifyPluginCallback<
     async (request, reply) => {
       const { email = '', repo = '' } = request.body;
       await subscriptionService.subscribe(email, repo);
-      return reply.status(200).send({
-        message: 'Subscription successful. Confirmation email sent.',
-      });
+      return reply.status(200).send(
+        CommonSuccessResponseDtoSchema.parse({
+          message: 'Subscription successful. Confirmation email sent.',
+        }),
+      );
     },
   );
 
@@ -30,7 +33,7 @@ export const subscriptionRoutes: FastifyPluginCallback<
         await subscriptionService.getSubscriptionsByEmail(email);
       return reply
         .status(200)
-        .send(subscriptions.map(toSubscriptionResponseDto));
+        .send(SubscriptionsResponseDtoSchema.parse(subscriptions));
     },
   );
 
@@ -39,9 +42,11 @@ export const subscriptionRoutes: FastifyPluginCallback<
     async (request, reply) => {
       const { token } = request.params;
       await subscriptionService.confirmSubscription(token);
-      return reply
-        .status(200)
-        .send({ message: 'Subscription confirmed successfully' });
+      return reply.status(200).send(
+        CommonSuccessResponseDtoSchema.parse({
+          message: 'Subscription confirmed successfully',
+        }),
+      );
     },
   );
 
@@ -50,7 +55,11 @@ export const subscriptionRoutes: FastifyPluginCallback<
     async (request, reply) => {
       const { token } = request.params;
       await subscriptionService.unsubscribe(token);
-      return reply.status(200).send({ message: 'Unsubscribed successfully' });
+      return reply.status(200).send(
+        CommonSuccessResponseDtoSchema.parse({
+          message: 'Unsubscribed successfully',
+        }),
+      );
     },
   );
 };

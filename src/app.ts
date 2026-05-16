@@ -25,6 +25,7 @@ import { PrometheusMetrics } from './infrastructure/metrics/prometheus-metrics.j
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { db, type Database } from './db/index.js';
 import { Redis } from 'ioredis';
+import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,14 +68,21 @@ export class App {
   private setupErrorHandler() {
     this.fastify.setErrorHandler((error, _, reply) => {
       if (error instanceof DomainError) {
-        return reply.status(error.status).send({
-          error: error.message,
-          code: error.code,
-        });
+        return reply.status(error.status).send(
+          CommonErrorResponseDtoSchema.parse({
+            error: error.message,
+            code: error.code,
+          }),
+        );
       }
 
       this.fastify.log.error(error);
-      reply.status(500).send({ error: 'Internal Server Error' });
+      reply.status(500).send(
+        CommonErrorResponseDtoSchema.parse({
+          code: 'INTERNAL_SERVER_ERROR',
+          error: error,
+        }),
+      );
     });
   }
 

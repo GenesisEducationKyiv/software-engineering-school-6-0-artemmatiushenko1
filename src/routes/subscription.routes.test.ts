@@ -14,14 +14,12 @@ import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../db/schema.js';
 import type { Database } from '../db/index.js';
 import assert from 'assert';
-import type { SubscriptionResponseDto } from '../dtos/subscription.dto.js';
-import { SubscriptionResponseDtoSchema } from '../dtos/subscription.dto.js';
 import {
   CommonSuccessResponseDtoSchema,
   CommonErrorResponseDtoSchema,
 } from '../dtos/response.dto.js';
 import { parseResponse } from '../utils/test.utils.js';
-import z from 'zod';
+import { SubscriptionsResponseDtoSchema } from '../dtos/subscription.dto.js';
 
 const githubMocks = {
   repositoryExists: vi.fn().mockResolvedValue(true),
@@ -253,10 +251,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(200);
-      const body = parseResponse(
-        response.body,
-        z.array(SubscriptionResponseDtoSchema),
-      );
+      const body = parseResponse(response.body, SubscriptionsResponseDtoSchema);
 
       expect(body).toHaveLength(1);
       expect(body[0]).toMatchObject({
@@ -289,7 +284,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(200);
-      const body = JSON.parse(response.body) as SubscriptionResponseDto[];
+      const body = parseResponse(response.body, SubscriptionsResponseDtoSchema);
 
       expect(body).toHaveLength(1);
       expect(body[0]).toMatchObject({
@@ -378,8 +373,6 @@ describe('Subscription Routes Integration with PGlite', () => {
         method: 'GET',
         url: `/api/confirm/${subscribeTokenValue}`,
       });
-
-      console.log(response);
 
       expect(response.statusCode).toBe(200);
       expect(
