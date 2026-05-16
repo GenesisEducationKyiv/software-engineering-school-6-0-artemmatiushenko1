@@ -18,7 +18,7 @@ describe('NotificationService', () => {
   beforeEach(() => {
     emailServiceMock = {
       sendEmail: vi.fn(),
-    } as Mocked<EmailService>;
+    };
 
     tokenManagerMock = {
       getTokenBySubscriptionIdAndScope: vi.fn(),
@@ -29,7 +29,7 @@ describe('NotificationService', () => {
       error: vi.fn(),
       warn: vi.fn(),
       debug: vi.fn(),
-    } as Mocked<Logger>;
+    };
 
     notificationService = new NotificationService(
       emailServiceMock,

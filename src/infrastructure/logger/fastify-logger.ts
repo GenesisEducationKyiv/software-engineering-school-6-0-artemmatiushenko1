@@ -14,7 +14,7 @@ export class FastifyLogger implements Logger {
 
   error(
     message: string,
-    error?: Error | unknown,
+    error?: Error,
     context?: Record<string, unknown>,
   ): void {
     const payload = {

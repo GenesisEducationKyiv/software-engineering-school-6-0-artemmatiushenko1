@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginCallback } from 'fastify';
 import { SubscriptionService } from '../services/subscription.service.js';
 import { toSubscriptionResponseDto } from '../dtos/subscription.dto.js';
 
@@ -6,9 +6,9 @@ interface SubscriptionRoutesOptions {
   subscriptionService: SubscriptionService;
 }
 
-export const subscriptionRoutes: FastifyPluginAsync<
+export const subscriptionRoutes: FastifyPluginCallback<
   SubscriptionRoutesOptions
-> = async (fastify, opts) => {
+> = (fastify, opts) => {
   const { subscriptionService } = opts;
 
   fastify.post<{ Body: { email?: string; repo?: string } }>(

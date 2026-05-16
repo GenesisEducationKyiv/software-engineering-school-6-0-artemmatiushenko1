@@ -86,7 +86,10 @@ export class ScannerService {
         );
         throw error;
       }
-      this.logger.error(`Error scanning ${sub.repo}:`, error);
+      this.logger.error(
+        `Error scanning ${sub.repo}:`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
     }
   }

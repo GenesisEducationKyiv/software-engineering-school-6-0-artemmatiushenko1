@@ -36,7 +36,7 @@ describe('ScannerService', () => {
       error: vi.fn(),
       warn: vi.fn(),
       debug: vi.fn(),
-    } as Mocked<Logger>;
+    };
 
     scannerService = new ScannerService(
       repoMock,
