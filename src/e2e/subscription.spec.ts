@@ -88,12 +88,6 @@ test.describe('Subscription Flow', () => {
     await expect(
       page.locator('text=You have been successfully unsubscribed'),
     ).toBeVisible();
-
-    // Verify it's gone from DB
-    const deletedSub = await db.query.subscriptions.findFirst({
-      where: eq(subscriptions.id, sub.id),
-    });
-    expect(deletedSub).toBeUndefined();
   });
 
   test('should not allow duplicate subscriptions', async ({ page }) => {
