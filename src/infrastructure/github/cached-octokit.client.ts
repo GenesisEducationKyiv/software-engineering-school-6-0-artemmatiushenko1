@@ -40,7 +40,7 @@ export class CachedOctokitGithubClient implements GithubClient {
     if (cached !== null) {
       this.metrics?.incrementCacheHit('latest-release');
       if (cached === 'null') return null;
-      return GitHubReleaseSchema.parse(cached);
+      return GitHubReleaseSchema.parse(JSON.parse(cached));
     }
 
     this.metrics?.incrementCacheMiss('latest-release');
