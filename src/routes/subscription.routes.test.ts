@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import { App } from '../index.js';
 import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
@@ -11,7 +11,7 @@ const githubMocks = {
   repositoryExists: vi.fn().mockResolvedValue(true),
   getLatestRelease: vi
     .fn()
-    .mockResolvedValue({ tagName: 'v1.0.0', publishedAt: new Date() }),
+    .mockResolvedValue({ tagName: 'v1.0.0', publishedAt: new Date('2026-01-01T12:00:00Z') }),
 };
 
 const emailMocks = {
@@ -54,8 +54,14 @@ describe('Subscription Routes Integration with PGlite', () => {
   let pgDb: Database;
 
   beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-01-01T12:00:00Z'));
     const pgLiteClient = new PGlite();
     pgDb = drizzle(pgLiteClient, { schema }) as unknown as Database;
+  });
+
+  afterAll(() => {
+    vi.useRealTimers();
   });
 
   beforeEach(async () => {
@@ -314,6 +320,165 @@ describe('Subscription Routes Integration with PGlite', () => {
       expect(response.statusCode).toBe(400);
       const body = JSON.parse(response.body);
       expect(body.code).toBe('INVALID_EMAIL');
+    });
+  });
+
+  describe('GET /api/confirm/:token', () => {
+    it('should return 200 and confirm the subscription for a valid token', async () => {
+      const [subscription] = await pgDb
+        .insert(schema.subscriptions)
+        .values({
+          email: 'test@example.com',
+          repo: 'owner/repo',
+          confirmed: false,
+        })
+        .returning();
+
+      assert(subscription);
+
+      const tokenValue = 'valid-confirm-token';
+      await pgDb.insert(schema.subscriptionTokens).values({
+        token: tokenValue,
+        subscriptionId: subscription.id,
+        scope: 'subscribe',
+        expiresAt: new Date('2026-01-01T13:00:00Z'),
+      });
+
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: `/api/confirm/${tokenValue}`,
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(JSON.parse(response.body)).toEqual({
+        message: 'Subscription confirmed successfully',
+      });
+
+      const updatedSubscription = await pgDb.query.subscriptions.findFirst({
+        where: (subs, { eq }) => eq(subs.id, subscription.id),
+      });
+      expect(updatedSubscription?.confirmed).toBe(true);
+
+      const tokenExists = await pgDb.query.subscriptionTokens.findFirst({
+        where: (tokens, { eq }) => eq(tokens.token, tokenValue),
+      });
+      expect(tokenExists).toBeUndefined();
+    });
+
+    it('should return 404 and TOKEN_NOT_FOUND when reusing an already consumed token', async () => {
+      const [subscription] = await pgDb
+        .insert(schema.subscriptions)
+        .values({
+          email: 'test@example.com',
+          repo: 'owner/repo',
+          confirmed: false,
+        })
+        .returning();
+
+      assert(subscription);
+
+      const tokenValue = 'reused-confirm-token';
+      await pgDb.insert(schema.subscriptionTokens).values({
+        token: tokenValue,
+        subscriptionId: subscription.id,
+        scope: 'subscribe',
+        expiresAt: new Date('2026-01-01T13:00:00Z'),
+      });
+
+      const firstResponse = await app.fastify.inject({
+        method: 'GET',
+        url: `/api/confirm/${tokenValue}`,
+      });
+
+      expect(firstResponse.statusCode).toBe(200);
+      expect(JSON.parse(firstResponse.body)).toEqual({
+        message: 'Subscription confirmed successfully',
+      });
+
+      const secondResponse = await app.fastify.inject({
+        method: 'GET',
+        url: `/api/confirm/${tokenValue}`,
+      });
+
+      expect(secondResponse.statusCode).toBe(404);
+      const body = JSON.parse(secondResponse.body);
+      expect(body.code).toBe('TOKEN_NOT_FOUND');
+    });
+
+    it('should return 404 and TOKEN_NOT_FOUND when token does not exist', async () => {
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: '/api/confirm/nonexistent-token',
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = JSON.parse(response.body);
+      expect(body.code).toBe('TOKEN_NOT_FOUND');
+    });
+
+    it('should return 400 and INVALID_TOKEN when token is expired', async () => {
+      const [subscription] = await pgDb
+        .insert(schema.subscriptions)
+        .values({
+          email: 'test@example.com',
+          repo: 'owner/repo',
+          confirmed: false,
+        })
+        .returning();
+
+      assert(subscription);
+
+      const tokenValue = 'expired-token';
+      await pgDb.insert(schema.subscriptionTokens).values({
+        token: tokenValue,
+        subscriptionId: subscription.id,
+        scope: 'subscribe',
+        expiresAt: new Date('2026-01-01T11:00:00Z'),
+      });
+
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: `/api/confirm/${tokenValue}`,
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body);
+      expect(body.code).toBe('INVALID_TOKEN');
+
+      const updatedSubscription = await pgDb.query.subscriptions.findFirst({
+        where: (subs, { eq }) => eq(subs.id, subscription.id),
+      });
+      expect(updatedSubscription?.confirmed).toBe(false);
+    });
+
+    it('should return 400 and INVALID_TOKEN when token has wrong scope', async () => {
+      const [subscription] = await pgDb
+        .insert(schema.subscriptions)
+        .values({
+          email: 'test@example.com',
+          repo: 'owner/repo',
+          confirmed: false,
+        })
+        .returning();
+
+      assert(subscription);
+
+      const tokenValue = 'wrong-scope-token';
+      await pgDb.insert(schema.subscriptionTokens).values({
+        token: tokenValue,
+        subscriptionId: subscription.id,
+        scope: 'unsubscribe',
+        expiresAt: new Date('2026-01-01T13:00:00Z'),
+      });
+
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: `/api/confirm/${tokenValue}`,
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body);
+      expect(body.code).toBe('INVALID_TOKEN');
     });
   });
 });
