@@ -204,4 +204,116 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
     });
   });
+
+  describe('GET /api/subscriptions', () => {
+    it('should return 200 and a list of confirmed subscriptions for a valid email', async () => {
+      const email = 'test@example.com';
+
+      await pgDb.insert(schema.subscriptions).values({
+        email,
+        repo: 'owner/repo1',
+        confirmed: true,
+      });
+
+      await pgDb.insert(schema.subscriptions).values({
+        email,
+        repo: 'owner/repo2',
+        confirmed: false,
+      });
+
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: '/api/subscriptions',
+        query: { email },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+
+      expect(body).toHaveLength(1);
+      expect(body[0]).toMatchObject({
+        email,
+        repo: 'owner/repo1',
+        confirmed: true,
+      });
+    });
+
+    it('should not return subscriptions of other users', async () => {
+      const targetEmail = 'target@example.com';
+      const otherEmail = 'other@example.com';
+
+      await pgDb.insert(schema.subscriptions).values({
+        email: targetEmail,
+        repo: 'owner/repo-target',
+        confirmed: true,
+      });
+
+      await pgDb.insert(schema.subscriptions).values({
+        email: otherEmail,
+        repo: 'owner/repo-other',
+        confirmed: true,
+      });
+
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: '/api/subscriptions',
+        query: { email: targetEmail },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+
+      expect(body).toHaveLength(1);
+      expect(body[0]).toMatchObject({
+        email: targetEmail,
+        repo: 'owner/repo-target',
+        confirmed: true,
+      });
+    });
+
+    it('should return 200 and an empty array when there are no confirmed subscriptions', async () => {
+      const email = 'test@example.com';
+
+      await pgDb.insert(schema.subscriptions).values({
+        email,
+        repo: 'owner/repo',
+        confirmed: false,
+      });
+
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: '/api/subscriptions',
+        query: { email },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(JSON.parse(response.body)).toEqual([]);
+    });
+
+    it.each(['invalid-email', ''])(
+      'should return 400 and INVALID_EMAIL when email is invalid',
+      async (email) => {
+        const response = await app.fastify.inject({
+          method: 'GET',
+          url: '/api/subscriptions',
+          query: { email },
+        });
+
+        expect(response.statusCode).toBe(400);
+        const body = JSON.parse(response.body);
+        expect(body.code).toBe('INVALID_EMAIL');
+      },
+    );
+
+    it('should return 400 and INVALID_EMAIL when email is missing', async () => {
+      const response = await app.fastify.inject({
+        method: 'GET',
+        url: '/api/subscriptions',
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body);
+      expect(body.code).toBe('INVALID_EMAIL');
+    });
+  });
 });
