@@ -116,11 +116,25 @@ Once the containers are running, the application will be accessible at:
 
 ## Testing
 
-Run the test suite using Vitest:
+The project includes a comprehensive test suite covering unit, integration, and end-to-end (E2E) scenarios.
 
+### Unit & Integration Tests
+These tests cover individual components and their interactions. They use **PGlite** (a WASM-based in-memory PostgreSQL) to provide a real database environment with high performance and no external dependencies.
 ```bash
 npm test
 ```
+
+### End-to-End (E2E) Tests
+E2E tests verify the complete user flow from the frontend to the backend. These tests run against a real database and Redis instance.
+
+1. **Start required services**: Ensure the database and Redis are running (without the API service):
+   ```bash
+   docker-compose up -d db redis
+   ```
+2. **Run E2E tests**:
+   ```bash
+   npm run test:e2e
+   ```
 
 ## Project Structure
 
