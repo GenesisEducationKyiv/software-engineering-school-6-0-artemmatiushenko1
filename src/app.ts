@@ -7,6 +7,7 @@ import { DrizzleSubscriptionRepository } from './repositories/subscription.repos
 import { OctokitGithubClient } from './infrastructure/github/octokit.client.js';
 import { CachedOctokitGithubClient } from './infrastructure/github/cached-octokit.client.js';
 import { NodemailerEmailService } from './infrastructure/email/nodemailer.service.js';
+import { ConsoleEmailService } from './infrastructure/email/console.service.js';
 import { DbSubscriptionTokenManager } from './services/db-subscription-token-manager.js';
 import { SubscriptionService } from './services/subscription.service.js';
 import { ScannerService } from './services/scanner.service.js';
@@ -80,7 +81,7 @@ export class App {
       reply.status(500).send(
         CommonErrorResponseDtoSchema.parse({
           code: 'INTERNAL_SERVER_ERROR',
-          error: error,
+          error: error instanceof Error ? error.message : String(error),
         }),
       );
     });
@@ -156,7 +157,11 @@ export class App {
       this.metrics,
     );
 
-    const emailService = new NodemailerEmailService(config.email);
+    const emailService =
+      config.mode === 'e2e'
+        ? new ConsoleEmailService()
+        : new NodemailerEmailService(config.email);
+
     const tokenManager = new DbSubscriptionTokenManager(subscriptionRepo);
     const transactionManager = new DrizzleTransactionManager(this.db);
 

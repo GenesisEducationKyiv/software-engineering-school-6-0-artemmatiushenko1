@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from 'lucide-react';
@@ -9,8 +9,12 @@ export default function ConfirmPage() {
     'loading',
   );
   const [message, setMessage] = useState('');
+  const initialized = useRef(false);
 
   useEffect(() => {
+    if (!token || initialized.current) return;
+    initialized.current = true;
+
     const confirmSubscription = async () => {
       try {
         const response = await fetch(`/api/confirm/${token}`);
@@ -27,9 +31,7 @@ export default function ConfirmPage() {
       }
     };
 
-    if (token) {
-      confirmSubscription();
-    }
+    confirmSubscription();
   }, [token]);
 
   return (

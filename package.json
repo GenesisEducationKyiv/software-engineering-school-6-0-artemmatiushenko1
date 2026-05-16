@@ -5,12 +5,13 @@
   "main": "index.ts",
   "type": "module",
   "scripts": {
-    "start": "NODE_ENV=production tsx ./src/index.ts",
+    "start": "tsx ./src/index.ts",
     "dev": "NODE_ENV=development tsx watch ./src/index.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:e2e": "NODE_ENV=e2e playwright test --headed",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
@@ -35,6 +36,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.4.5",
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.60.0",
     "@types/ioredis": "^4.28.10",
     "@types/node": "^25.5.2",
     "@types/node-cron": "^3.0.11",
