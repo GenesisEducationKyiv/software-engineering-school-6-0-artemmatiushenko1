@@ -51,11 +51,9 @@ export function createDependencies(
       maxRetriesPerRequest: null,
     });
 
-  if (!overrides.redis) {
-    redis.on('error', (err) => {
-      logger.error('Redis error: ', err);
-    });
-  }
+  redis.on('error', (err) => {
+    logger.error('Redis error: ', err);
+  });
 
   const githubClient =
     overrides.githubClient ??
