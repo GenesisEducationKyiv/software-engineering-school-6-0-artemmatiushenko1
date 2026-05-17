@@ -130,14 +130,18 @@ npm test
 
 E2E tests verify the complete user flow from the frontend to the backend. These tests run against a real database and Redis instance.
 
-1. **Start required services**: Ensure the database and Redis are running (without the API service):
-   ```bash
-   docker-compose up -d db redis
-   ```
-2. **Run E2E tests**:
-   ```bash
-   npm run test:e2e
-   ```
+1.  **Build the client**:
+    ```bash
+    npm run build --prefix client
+    ```
+2.  **Start required services**: Ensure the database and Redis are running (without the API service):
+    ```bash
+    docker-compose up -d db redis
+    ```
+3.  **Run E2E tests**:
+    ```bash
+    npm run test:e2e
+    ```
 
 ## Project Structure
 
