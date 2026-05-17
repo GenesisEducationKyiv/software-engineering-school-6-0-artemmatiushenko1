@@ -20,7 +20,7 @@ describe('Metrics Routes', () => {
     const redisMock = mock<Redis>();
 
     const fastify = Fastify({ logger: false });
-    const deps = await createDependencies(fastify.log, {
+    const deps = createDependencies(fastify.log, {
       db: pgDb,
       redis: redisMock,
     });

@@ -38,7 +38,7 @@ export interface DependencyOverrides {
 export function createDependencies(
   fastifyBaseLogger: FastifyBaseLogger,
   overrides: DependencyOverrides = {},
-): Promise<AppDependencies> {
+): AppDependencies {
   const logger = new FastifyLogger(fastifyBaseLogger);
   const metrics = new PrometheusMetrics();
   const database = overrides.db ?? db;

@@ -6,6 +6,6 @@ const fastify = Fastify({
   logger: true,
 });
 
-const deps = await createDependencies(fastify.log);
+const deps = createDependencies(fastify.log);
 const app = new App(deps, fastify);
 await app.start();

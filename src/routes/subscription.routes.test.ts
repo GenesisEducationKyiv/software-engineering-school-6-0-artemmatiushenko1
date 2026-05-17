@@ -53,7 +53,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     githubMock.repositoryExists.mockResolvedValue(true);
 
     const fastify = Fastify({ logger: false });
-    const deps = await createDependencies(fastify.log, {
+    const deps = createDependencies(fastify.log, {
       db: db,
       githubClient: githubMock,
       emailService: emailMock,
