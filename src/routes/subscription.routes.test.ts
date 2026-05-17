@@ -7,6 +7,7 @@ import {
   beforeAll,
   afterAll,
 } from 'vitest';
+import Fastify from 'fastify';
 import { App } from '../app.js';
 import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
@@ -20,53 +21,19 @@ import {
 } from '../dtos/response.dto.js';
 import { parseResponse } from '../utils/test.utils.js';
 import { SubscriptionsResponseDtoSchema } from '../dtos/subscription.dto.js';
-
-const githubMocks = {
-  repositoryExists: vi.fn().mockResolvedValue(true),
-  getLatestRelease: vi.fn().mockResolvedValue({
-    tag: 'v1.0.0',
-    publishedAt: new Date('2026-01-01T12:00:00Z'),
-  }),
-};
-
-const emailMocks = {
-  sendEmail: vi.fn().mockResolvedValue(undefined),
-};
-
-const redisMocks = {
-  on: vi.fn(),
-  get: vi.fn().mockResolvedValue(null),
-  set: vi.fn().mockResolvedValue('OK'),
-  quit: vi.fn().mockResolvedValue('OK'),
-};
-
-vi.mock('../infrastructure/github/octokit.client.js', () => ({
-  OctokitGithubClient: class {
-    constructor() {
-      return githubMocks;
-    }
-  },
-}));
-
-vi.mock('../infrastructure/email/nodemailer.service.js', () => ({
-  NodemailerEmailService: class {
-    constructor() {
-      return emailMocks;
-    }
-  },
-}));
-
-vi.mock('ioredis', () => ({
-  Redis: class {
-    constructor() {
-      return redisMocks;
-    }
-  },
-}));
+import { createDependencies } from '../dependencies.js';
+import type { GithubClient } from '../domain/github.js';
+import type { EmailService } from '../domain/email.js';
+import { Redis } from 'ioredis';
+import { mock } from 'vitest-mock-extended';
 
 describe('Subscription Routes Integration with PGlite', () => {
   let app: App;
   let pgDb: Database;
+
+  const githubMock = mock<GithubClient>();
+  const emailMock = mock<EmailService>();
+  const redisMock = mock<Redis>();
 
   beforeAll(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -83,9 +50,16 @@ describe('Subscription Routes Integration with PGlite', () => {
     register.clear();
     vi.clearAllMocks();
 
-    githubMocks.repositoryExists.mockResolvedValue(true);
+    githubMock.repositoryExists.mockResolvedValue(true);
 
-    app = new App(pgDb);
+    const fastify = Fastify({ logger: false });
+    const deps = await createDependencies(fastify.log, {
+      db: pgDb,
+      githubClient: githubMock,
+      emailService: emailMock,
+      redis: redisMock,
+    });
+    app = new App(deps, fastify);
     await app.setup();
 
     await pgDb.delete(schema.subscriptionTokens);
@@ -154,7 +128,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
       it('should return 404 and REPO_NOT_FOUND when repository does not exist', async () => {
         const repo = 'nonexistent/repo';
-        githubMocks.repositoryExists.mockResolvedValueOnce(false);
+        githubMock.repositoryExists.mockResolvedValueOnce(false);
 
         const response = await app.fastify.inject({
           method: 'POST',

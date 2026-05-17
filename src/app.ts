@@ -1,17 +1,8 @@
-import Fastify, { type FastifyInstance } from 'fastify';
+import { type FastifyInstance } from 'fastify';
 import type { OpenAPIV2 } from 'openapi-types';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import fastifyStatic from '@fastify/static';
-import { DrizzleSubscriptionRepository } from './repositories/subscription.repository.js';
-import { OctokitGithubClient } from './infrastructure/github/octokit.client.js';
-import { CachedOctokitGithubClient } from './infrastructure/github/cached-octokit.client.js';
-import { NodemailerEmailService } from './infrastructure/email/nodemailer.service.js';
-import { ConsoleEmailService } from './infrastructure/email/console.service.js';
-import { DbSubscriptionTokenManager } from './services/db-subscription-token-manager.js';
-import { SubscriptionService } from './services/subscription.service.js';
-import { ScannerService } from './services/scanner.service.js';
-import { NotificationService } from './services/notification.service.js';
 import { DomainError } from './domain/errors.js';
 import fs from 'fs';
 import path from 'path';
@@ -20,50 +11,40 @@ import { fileURLToPath } from 'url';
 import { config } from './config.js';
 import { subscriptionRoutes } from './routes/subscription.routes.js';
 import cron, { type ScheduledTask } from 'node-cron';
-import { FastifyLogger } from './infrastructure/logger/fastify-logger.js';
-import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
-import { PrometheusMetrics } from './infrastructure/metrics/prometheus-metrics.js';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import { db, type Database } from './db/index.js';
-import { Redis } from 'ioredis';
 import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
+import { type AppDependencies } from './dependencies.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class App {
-  public fastify: FastifyInstance;
-  private scannerService?: ScannerService;
+  public readonly fastify: FastifyInstance;
+  private readonly deps: AppDependencies;
   private scanTask?: ScheduledTask;
-  private metrics: PrometheusMetrics;
-  private redis?: Redis;
-  private db: Database;
 
-  constructor(dbOverride?: Database) {
-    this.fastify = Fastify({
-      logger: config.mode === 'test' ? false : true,
-    });
-    this.metrics = new PrometheusMetrics();
-    this.db = dbOverride || db;
-    this.setupErrorHandler();
+  constructor(deps: AppDependencies, fastify: FastifyInstance) {
+    this.deps = deps;
+    this.fastify = fastify;
   }
 
   public async setup(): Promise<FastifyInstance> {
     await this.runMigrations();
     await this.setupSwagger();
     await this.setupStaticFiles();
+    this.setupErrorHandler();
     this.setupMetrics();
-    await this.setupServices();
+    await this.setupRoutes();
     this.setupScanner();
     return this.fastify;
   }
 
   private async runMigrations() {
-    this.fastify.log.info('Running database migrations...');
-    await migrate(this.db, {
+    this.deps.logger.info('Running database migrations...');
+    await migrate(this.deps.db, {
       migrationsFolder: path.join(__dirname, '../drizzle'),
     });
-    this.fastify.log.info('Migrations completed successfully.');
+    this.deps.logger.info('Migrations completed successfully.');
   }
 
   private setupErrorHandler() {
@@ -77,7 +58,8 @@ export class App {
         );
       }
 
-      this.fastify.log.error(error);
+      this.deps.logger.error('Request error:', error as Error);
+
       reply.status(500).send(
         CommonErrorResponseDtoSchema.parse({
           code: 'INTERNAL_SERVER_ERROR',
@@ -133,80 +115,32 @@ export class App {
 
   private setupMetrics() {
     this.fastify.get('/metrics', async (request, reply) => {
-      reply.header('Content-Type', this.metrics.getContentType());
-      return this.metrics.getMetrics();
+      reply.header('Content-Type', this.deps.metrics.getContentType());
+      return this.deps.metrics.getMetrics();
     });
   }
 
-  private async setupServices() {
-    const logger = new FastifyLogger(this.fastify.log);
-    const subscriptionRepo = new DrizzleSubscriptionRepository(this.db);
-
-    this.redis = new Redis(config.redisUrl, {
-      maxRetriesPerRequest: null,
-    });
-    this.redis.on('error', (err) => {
-      logger.error('Redis error: ', err);
-    });
-
-    const octokitClient = new OctokitGithubClient(config.githubToken);
-    const githubClient = new CachedOctokitGithubClient(
-      octokitClient,
-      this.redis,
-      config.githubCacheTtl,
-      this.metrics,
-    );
-
-    const emailService =
-      config.mode === 'e2e'
-        ? new ConsoleEmailService()
-        : new NodemailerEmailService(config.email);
-
-    const tokenManager = new DbSubscriptionTokenManager(subscriptionRepo);
-    const transactionManager = new DrizzleTransactionManager(this.db);
-
-    const notificationService = new NotificationService(
-      emailService,
-      tokenManager,
-      logger,
-      config.appUrl,
-      this.metrics,
-    );
-    this.scannerService = new ScannerService(
-      subscriptionRepo,
-      githubClient,
-      notificationService,
-      logger,
-      this.metrics,
-    );
-    const subscriptionService = new SubscriptionService(
-      subscriptionRepo,
-      githubClient,
-      emailService,
-      tokenManager,
-      transactionManager,
-      logger,
-      config.appUrl,
-      this.scannerService,
-      this.metrics,
-    );
-
+  private async setupRoutes() {
     await this.fastify.register(subscriptionRoutes, {
-      subscriptionService,
+      subscriptionService: this.deps.subscriptionService,
       prefix: config.apiPrefix,
     });
   }
 
   private setupScanner() {
-    if (!this.scannerService || config.mode === 'test') return;
+    if (config.mode === 'test') return;
 
     this.scanTask = cron.schedule(config.scannerCron, async () => {
-      this.fastify.log.info('Starting scheduled scan...');
+      this.deps.logger.info('Starting scheduled scan...');
       try {
-        await this.scannerService?.scan();
-        this.fastify.log.info('Scheduled scan completed.');
+        await this.deps.scannerService.scan();
+        this.deps.logger.info('Scheduled scan completed.');
       } catch (error) {
-        this.fastify.log.error(error, 'Scheduled scan failed.');
+        if (error instanceof Error) {
+          this.deps.logger.error('Scheduled scan failed.', error);
+        } else {
+          throw error;
+        }
       }
     });
   }
@@ -217,36 +151,48 @@ export class App {
 
       await this.fastify.listen({ port: config.port, host: config.host });
 
-      this.fastify.log.info('Performing initial scan...');
-      await this.scannerService
-        ?.scan()
-        .catch((err) => this.fastify.log.error(err, 'Initial scan failed.'));
+      this.deps.logger.info('Performing initial scan...');
+      await this.deps.scannerService.scan().catch((err) => {
+        if (err instanceof Error) {
+          this.deps.logger.error(err.message, err);
+        } else {
+          throw err;
+        }
+      });
 
       this.setupGracefulShutdown();
     } catch (err) {
-      this.fastify.log.error(err);
+      if (err instanceof Error) {
+        this.deps.logger.error(err.message, err);
+      } else {
+        throw err;
+      }
       process.exit(1);
     }
   }
 
   private setupGracefulShutdown() {
     const shutdown = async (signal: string) => {
-      this.fastify.log.info(
+      this.deps.logger.info(
         `Received ${signal}. Starting graceful shutdown...`,
       );
 
       try {
         await this.scanTask?.stop();
-        this.fastify.log.info('Scanner tasks stopped.');
+        this.deps.logger.info('Scanner tasks stopped.');
 
-        await this.redis?.quit();
-        this.fastify.log.info('Redis connection closed.');
+        await this.deps.redis.quit();
+        this.deps.logger.info('Redis connection closed.');
 
         await this.fastify.close();
-        this.fastify.log.info('Fastify server closed.');
+        this.deps.logger.info('Fastify server closed.');
         process.exit(0);
       } catch (err) {
-        this.fastify.log.error(err, 'Error during shutdown');
+        if (err instanceof Error) {
+          this.deps.logger.error(err.message, err);
+        } else {
+          throw err;
+        }
         process.exit(1);
       }
     };
