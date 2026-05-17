@@ -10,6 +10,42 @@ jobs:
   backend:
     name: Backend
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: github_release_notifier
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://user:password@localhost:5432/github_release_notifier
+      REDIS_URL: redis://localhost:6379
+      NODE_ENV: e2e
+      APP_URL: http://localhost:3000
+      GMAIL_USER_EMAIL: test@example.com
+      GMAIL_CLIENT_ID: mock_id
+      GMAIL_CLIENT_SECRET: mock_secret
+      GMAIL_REFRESH_TOKEN: mock_token
+
     steps:
       - uses: actions/checkout@v4
 
@@ -31,5 +67,19 @@ jobs:
       - name: Type check
         run: npm run type-check
 
-      - name: Run tests
+      - name: Run unit & integration tests
         run: npm test
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
