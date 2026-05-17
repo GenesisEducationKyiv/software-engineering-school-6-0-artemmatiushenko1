@@ -1,5 +1,10 @@
 import type { EmailOptions, EmailService } from '../../domain/email.js';
 
+/**
+ * An implementation of EmailService that logs email content to the console.
+ * Primarily used for development and testing environments where a real
+ * email provider is not needed.
+ */
 export class ConsoleEmailService implements EmailService {
   async sendEmail(options: EmailOptions): Promise<void> {
     console.log('--- Email Sent ---');
