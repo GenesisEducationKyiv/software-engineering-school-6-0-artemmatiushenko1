@@ -1,10 +1,9 @@
 import Fastify from 'fastify';
 import { App } from './app.js';
 import { createDependencies } from './dependencies.js';
-import { config } from './config.js';
 
 const fastify = Fastify({
-  logger: config.mode === 'test' ? false : true,
+  logger: true,
 });
 
 const deps = await createDependencies(fastify.log);

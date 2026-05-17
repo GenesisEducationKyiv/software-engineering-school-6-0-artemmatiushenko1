@@ -124,7 +124,7 @@ export class App {
   }
 
   private setupScanner() {
-    if (config.mode === 'test') return;
+    if (config.mode === 'test' || config.mode === 'e2e') return;
 
     this.scanTask = cron.schedule(config.scannerCron, async () => {
       this.deps.logger.info('Starting scheduled scan...');
