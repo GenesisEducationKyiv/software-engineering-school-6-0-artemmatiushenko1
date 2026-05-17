@@ -29,7 +29,7 @@ import { mock } from 'vitest-mock-extended';
 
 describe('Subscription Routes Integration with PGlite', () => {
   let app: App;
-  let pgDb: Database;
+  let db: Database;
 
   const githubMock = mock<GithubClient>();
   const emailMock = mock<EmailService>();
@@ -39,7 +39,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-01-01T12:00:00Z'));
     const pgLiteClient = new PGlite();
-    pgDb = drizzle(pgLiteClient, { schema }) as unknown as Database;
+    db = drizzle(pgLiteClient, { schema }) as unknown as Database;
   });
 
   afterAll(() => {
@@ -54,7 +54,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
     const fastify = Fastify({ logger: false });
     const deps = await createDependencies(fastify.log, {
-      db: pgDb,
+      db: db,
       githubClient: githubMock,
       emailService: emailMock,
       redis: redisMock,
@@ -62,12 +62,12 @@ describe('Subscription Routes Integration with PGlite', () => {
     app = new App(deps, fastify);
     await app.setup();
 
-    await pgDb.delete(schema.subscriptionTokens);
-    await pgDb.delete(schema.subscriptions);
+    await db.delete(schema.subscriptionTokens);
+    await db.delete(schema.subscriptions);
   });
 
   describe('POST /api/subscribe', () => {
-    it('should return 200 and persist subscription in PGlite', async () => {
+    it('should return 200 and persist subscription in database', async () => {
       const email = 'test@example.com';
       const repo = 'owner/repo';
 
@@ -84,13 +84,14 @@ describe('Subscription Routes Integration with PGlite', () => {
         message: 'Subscription successful. Confirmation email sent.',
       });
 
-      const saved = await pgDb.query.subscriptions.findFirst({
+      const saved = await db.query.subscriptions.findFirst({
         where: (subs, { eq, and }) =>
           and(eq(subs.email, email), eq(subs.repo, repo)),
       });
-      expect(saved).toBeDefined();
-      expect(saved?.email).toBe(email);
-      expect(saved?.confirmed).toBe(false);
+      assert(saved);
+
+      expect(saved.email).toBe(email);
+      expect(saved.confirmed).toBe(false);
     });
 
     describe('Error Assertions', () => {
@@ -149,7 +150,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         const email = 'test@example.com';
         const repo = 'owner/repo';
 
-        const [existingSubscription] = await pgDb
+        const [existingSubscription] = await db
           .insert(schema.subscriptions)
           .values({
             email,
@@ -171,7 +172,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         expect(body.code).toBe('ALREADY_SUBSCRIBED');
         expect(body.error).toBe(`${email} is already subscribed to ${repo}`);
 
-        const allSubscriptions = await pgDb.select().from(schema.subscriptions);
+        const allSubscriptions = await db.select().from(schema.subscriptions);
         expect(allSubscriptions).toEqual([existingSubscription]);
       });
 
@@ -179,7 +180,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         const email = 'test@example.com';
         const repo = 'owner/repo';
 
-        const [existingSubscription] = await pgDb
+        const [existingSubscription] = await db
           .insert(schema.subscriptions)
           .values({
             email,
@@ -196,7 +197,7 @@ describe('Subscription Routes Integration with PGlite', () => {
           payload: { email, repo },
         });
 
-        const allSubscriptions = await pgDb.select().from(schema.subscriptions);
+        const allSubscriptions = await db.select().from(schema.subscriptions);
         expect(allSubscriptions).toEqual([existingSubscription]);
       });
     });
@@ -206,13 +207,13 @@ describe('Subscription Routes Integration with PGlite', () => {
     it('should return 200 and a list of confirmed subscriptions for a valid email', async () => {
       const email = 'test@example.com';
 
-      await pgDb.insert(schema.subscriptions).values({
+      await db.insert(schema.subscriptions).values({
         email,
         repo: 'owner/repo1',
         confirmed: true,
       });
 
-      await pgDb.insert(schema.subscriptions).values({
+      await db.insert(schema.subscriptions).values({
         email,
         repo: 'owner/repo2',
         confirmed: false,
@@ -239,13 +240,13 @@ describe('Subscription Routes Integration with PGlite', () => {
       const targetEmail = 'target@example.com';
       const otherEmail = 'other@example.com';
 
-      await pgDb.insert(schema.subscriptions).values({
+      await db.insert(schema.subscriptions).values({
         email: targetEmail,
         repo: 'owner/repo-target',
         confirmed: true,
       });
 
-      await pgDb.insert(schema.subscriptions).values({
+      await db.insert(schema.subscriptions).values({
         email: otherEmail,
         repo: 'owner/repo-other',
         confirmed: true,
@@ -271,7 +272,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     it('should return 200 and an empty array when there are no confirmed subscriptions', async () => {
       const email = 'test@example.com';
 
-      await pgDb.insert(schema.subscriptions).values({
+      await db.insert(schema.subscriptions).values({
         email,
         repo: 'owner/repo',
         confirmed: false,
@@ -316,7 +317,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
   describe('GET /api/confirm/:token', () => {
     it('should return 200 and confirm the subscription for a valid token', async () => {
-      const [subscription] = await pgDb
+      const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
           email: 'test@example.com',
@@ -328,7 +329,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       assert(subscription);
 
       const subscribeTokenValue = 'valid-confirm-token';
-      await pgDb.insert(schema.subscriptionTokens).values({
+      await db.insert(schema.subscriptionTokens).values({
         token: subscribeTokenValue,
         subscriptionId: subscription.id,
         scope: 'subscribe',
@@ -336,7 +337,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       const unsubscribeTokenValue = 'valid-unsubscribe-token';
-      await pgDb.insert(schema.subscriptionTokens).values({
+      await db.insert(schema.subscriptionTokens).values({
         token: unsubscribeTokenValue,
         subscriptionId: subscription.id,
         scope: 'unsubscribe',
@@ -355,20 +356,20 @@ describe('Subscription Routes Integration with PGlite', () => {
         message: 'Subscription confirmed successfully',
       });
 
-      const updatedSubscription = await pgDb.query.subscriptions.findFirst({
+      const updatedSubscription = await db.query.subscriptions.findFirst({
         where: (subs, { eq }) => eq(subs.id, subscription.id),
       });
-      expect(updatedSubscription?.confirmed).toBe(true);
+      assert(updatedSubscription);
+      expect(updatedSubscription.confirmed).toBe(true);
 
-      const subscribeTokenExists =
-        await pgDb.query.subscriptionTokens.findFirst({
-          where: (tokens, { eq }) => eq(tokens.token, subscribeTokenValue),
-        });
+      const subscribeTokenExists = await db.query.subscriptionTokens.findFirst({
+        where: (tokens, { eq }) => eq(tokens.token, subscribeTokenValue),
+      });
       expect(subscribeTokenExists).toBeUndefined();
     });
 
     it('should return 404 and TOKEN_NOT_FOUND when reusing an already consumed token', async () => {
-      const [subscription] = await pgDb
+      const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
           email: 'test@example.com',
@@ -380,7 +381,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       assert(subscription);
 
       const tokenValue = 'reused-confirm-token';
-      await pgDb.insert(schema.subscriptionTokens).values({
+      await db.insert(schema.subscriptionTokens).values({
         token: tokenValue,
         subscriptionId: subscription.id,
         scope: 'subscribe',
@@ -388,7 +389,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       const unsubscribeTokenValue = 'valid-unsubscribe-token';
-      await pgDb.insert(schema.subscriptionTokens).values({
+      await db.insert(schema.subscriptionTokens).values({
         token: unsubscribeTokenValue,
         subscriptionId: subscription.id,
         scope: 'unsubscribe',
@@ -401,7 +402,9 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(firstResponse.statusCode).toBe(200);
-      expect(JSON.parse(firstResponse.body)).toEqual({
+      expect(
+        parseResponse(firstResponse.body, CommonSuccessResponseDtoSchema),
+      ).toEqual({
         message: 'Subscription confirmed successfully',
       });
 
@@ -430,7 +433,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     });
 
     it('should return 400 and INVALID_TOKEN when token is expired', async () => {
-      const [subscription] = await pgDb
+      const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
           email: 'test@example.com',
@@ -442,7 +445,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       assert(subscription);
 
       const tokenValue = 'expired-token';
-      await pgDb.insert(schema.subscriptionTokens).values({
+      await db.insert(schema.subscriptionTokens).values({
         token: tokenValue,
         subscriptionId: subscription.id,
         scope: 'subscribe',
@@ -458,14 +461,14 @@ describe('Subscription Routes Integration with PGlite', () => {
       const body = parseResponse(response.body, CommonErrorResponseDtoSchema);
       expect(body.code).toBe('INVALID_TOKEN');
 
-      const updatedSubscription = await pgDb.query.subscriptions.findFirst({
+      const updatedSubscription = await db.query.subscriptions.findFirst({
         where: (subs, { eq }) => eq(subs.id, subscription.id),
       });
       expect(updatedSubscription?.confirmed).toBe(false);
     });
 
     it('should return 400 and INVALID_TOKEN when token has wrong scope', async () => {
-      const [subscription] = await pgDb
+      const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
           email: 'test@example.com',
@@ -477,7 +480,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       assert(subscription);
 
       const tokenValue = 'wrong-scope-token';
-      await pgDb.insert(schema.subscriptionTokens).values({
+      await db.insert(schema.subscriptionTokens).values({
         token: tokenValue,
         subscriptionId: subscription.id,
         scope: 'unsubscribe',
@@ -497,7 +500,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
   describe('GET /api/unsubscribe/:token', () => {
     it('should return 200 and delete the subscription for a valid token', async () => {
-      const [subscription] = await pgDb
+      const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
           email: 'test@example.com',
@@ -509,7 +512,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       assert(subscription);
 
       const tokenValue = 'valid-unsubscribe-token';
-      await pgDb.insert(schema.subscriptionTokens).values({
+      await db.insert(schema.subscriptionTokens).values({
         token: tokenValue,
         subscriptionId: subscription.id,
         scope: 'unsubscribe',
@@ -526,19 +529,19 @@ describe('Subscription Routes Integration with PGlite', () => {
         message: 'Unsubscribed successfully',
       });
 
-      const deletedSubscription = await pgDb.query.subscriptions.findFirst({
+      const deletedSubscription = await db.query.subscriptions.findFirst({
         where: (subs, { eq }) => eq(subs.id, subscription.id),
       });
       expect(deletedSubscription).toBeUndefined();
 
-      const tokenExists = await pgDb.query.subscriptionTokens.findFirst({
+      const tokenExists = await db.query.subscriptionTokens.findFirst({
         where: (tokens, { eq }) => eq(tokens.token, tokenValue),
       });
       expect(tokenExists).toBeUndefined();
     });
 
     it('should return 404 and TOKEN_NOT_FOUND when reusing an already consumed token', async () => {
-      const [subscription] = await pgDb
+      const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
           email: 'test@example.com',
@@ -550,7 +553,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       assert(subscription);
 
       const tokenValue = 'reused-unsubscribe-token';
-      await pgDb.insert(schema.subscriptionTokens).values({
+      await db.insert(schema.subscriptionTokens).values({
         token: tokenValue,
         subscriptionId: subscription.id,
         scope: 'unsubscribe',
@@ -589,7 +592,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     });
 
     it('should return 400 and INVALID_TOKEN when token is expired', async () => {
-      const [subscription] = await pgDb
+      const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
           email: 'test@example.com',
@@ -601,7 +604,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       assert(subscription);
 
       const tokenValue = 'expired-unsubscribe-token';
-      await pgDb.insert(schema.subscriptionTokens).values({
+      await db.insert(schema.subscriptionTokens).values({
         token: tokenValue,
         subscriptionId: subscription.id,
         scope: 'unsubscribe',
@@ -618,14 +621,14 @@ describe('Subscription Routes Integration with PGlite', () => {
       expect(body.code).toBe('INVALID_TOKEN');
 
       // The subscription should still exist since the token was invalid
-      const existingSubscription = await pgDb.query.subscriptions.findFirst({
+      const existingSubscription = await db.query.subscriptions.findFirst({
         where: (subs, { eq }) => eq(subs.id, subscription.id),
       });
       expect(existingSubscription).toBeDefined();
     });
 
     it('should return 400 and INVALID_TOKEN when token has wrong scope', async () => {
-      const [subscription] = await pgDb
+      const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
           email: 'test@example.com',
@@ -637,7 +640,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       assert(subscription);
 
       const tokenValue = 'wrong-scope-unsubscribe-token';
-      await pgDb.insert(schema.subscriptionTokens).values({
+      await db.insert(schema.subscriptionTokens).values({
         token: tokenValue,
         subscriptionId: subscription.id,
         scope: 'subscribe',
