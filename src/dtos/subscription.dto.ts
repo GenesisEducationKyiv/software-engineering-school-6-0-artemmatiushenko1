@@ -5,7 +5,7 @@ export const SubscriptionsResponseDtoSchema = z.array(
     email: z.email(),
     repo: z.string(),
     confirmed: z.boolean(),
-    last_seen_tag: z.string().nullish(),
+    lastSeenTag: z.string().nullable(),
   }),
 );
 
