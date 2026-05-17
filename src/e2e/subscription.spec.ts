@@ -121,17 +121,15 @@ test.describe('Subscription Flow', () => {
   test('should allow a user to re-subscribe after unsubscribing', async ({
     page,
   }) => {
-    const uniqueEmail = `test-${Date.now()}@example.com`;
-
     await page.goto('/');
     await page.fill('#repo', TEST_REPO);
-    await page.fill('#email', uniqueEmail);
+    await page.fill('#email', TEST_EMAIL);
     await page.click('button:has-text("Subscribe to Notifications")');
     await expect(page).toHaveURL(/\/sent/);
 
     const sub1 = await db.query.subscriptions.findFirst({
       where: and(
-        eq(subscriptions.email, uniqueEmail),
+        eq(subscriptions.email, TEST_EMAIL),
         eq(subscriptions.repo, TEST_REPO),
       ),
     });
@@ -152,7 +150,7 @@ test.describe('Subscription Flow', () => {
 
     await page.goto('/');
     await page.fill('#repo', TEST_REPO);
-    await page.fill('#email', uniqueEmail);
+    await page.fill('#email', TEST_EMAIL);
     await page.click('button:has-text("Subscribe to Notifications")');
     await expect(page).toHaveURL(/\/sent/);
   });
