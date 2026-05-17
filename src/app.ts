@@ -10,6 +10,7 @@ import YAML from 'yaml';
 import { fileURLToPath } from 'url';
 import { config } from './config.js';
 import { subscriptionRoutes } from './routes/subscription.routes.js';
+import { metricsRoutes } from './routes/metrics.routes.js';
 import cron, { type ScheduledTask } from 'node-cron';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
@@ -33,7 +34,6 @@ export class App {
     await this.setupSwagger();
     await this.setupStaticFiles();
     this.setupErrorHandler();
-    this.setupMetrics();
     await this.setupRoutes();
     this.setupScanner();
     return this.fastify;
@@ -113,14 +113,10 @@ export class App {
     }
   }
 
-  private setupMetrics() {
-    this.fastify.get('/metrics', async (request, reply) => {
-      reply.header('Content-Type', this.deps.metrics.getContentType());
-      return this.deps.metrics.getMetrics();
-    });
-  }
-
   private async setupRoutes() {
+    await this.fastify.register(metricsRoutes, {
+      metrics: this.deps.metrics,
+    });
     await this.fastify.register(subscriptionRoutes, {
       subscriptionService: this.deps.subscriptionService,
       prefix: config.apiPrefix,
