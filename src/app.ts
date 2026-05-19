@@ -147,15 +147,6 @@ export class App {
 
       await this.fastify.listen({ port: config.port, host: config.host });
 
-      this.deps.logger.info('Performing initial scan...');
-      await this.deps.scannerService.scan().catch((err) => {
-        if (err instanceof Error) {
-          this.deps.logger.error(err.message, err);
-        } else {
-          throw err;
-        }
-      });
-
       this.setupGracefulShutdown();
     } catch (err) {
       if (err instanceof Error) {
