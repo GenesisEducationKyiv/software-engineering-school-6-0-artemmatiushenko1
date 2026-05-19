@@ -20,10 +20,21 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'npm run start',
-    url: 'http://localhost:3000',
-    timeout: 120 * 1000,
-    stdout: 'pipe',
-  },
+  webServer: [
+    {
+      command: 'npm run start',
+      url: 'http://localhost:3000',
+      timeout: 120 * 1000,
+      stdout: 'pipe',
+      env: {
+        GITHUB_API_URL: 'http://localhost:9090',
+      },
+    },
+    {
+      command: 'npx tsx src/e2e/mocks/github/github-server.mock.ts',
+      url: 'http://localhost:9090/health',
+      timeout: 120 * 1000,
+      stdout: 'pipe',
+    },
+  ],
 });

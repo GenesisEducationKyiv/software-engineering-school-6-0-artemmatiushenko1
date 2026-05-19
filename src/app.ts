@@ -188,5 +188,3 @@ export class App {
     process.on('SIGINT', () => shutdown('SIGINT'));
   }
 }
-
-console.info('Tets');
