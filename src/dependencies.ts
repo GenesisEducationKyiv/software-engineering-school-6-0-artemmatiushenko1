@@ -58,7 +58,7 @@ export function createDependencies(
   const githubClient =
     overrides.githubClient ??
     new CachedOctokitGithubClient(
-      new OctokitGithubClient(config.githubToken),
+      new OctokitGithubClient(config.githubApiBaseUrl, config.githubToken),
       redis,
       config.githubCacheTtl,
       metrics,

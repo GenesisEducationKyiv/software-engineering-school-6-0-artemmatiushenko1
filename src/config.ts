@@ -18,6 +18,7 @@ const ConfigSchema = z.object({
   host: z.string().default('0.0.0.0'),
   scannerCron: z.string().default('*/10 * * * *'), // Default to every 10 minutes
   githubCacheTtl: z.coerce.number().default(600), // Default to 10 minutes in seconds
+  githubApiBaseUrl: z.string(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -39,4 +40,5 @@ export const config = ConfigSchema.parse({
   host: process.env.HOST,
   scannerCron: process.env.SCANNER_CRON,
   githubCacheTtl: process.env.GITHUB_CACHE_TTL,
+  githubApiBaseUrl: process.env.GITHUB_API_URL,
 });

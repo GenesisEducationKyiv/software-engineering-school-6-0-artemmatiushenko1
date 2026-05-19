@@ -136,7 +136,7 @@ E2E tests verify the complete user flow from the frontend to the backend. These 
     ```
 2.  **Start required services**: Ensure the database and Redis are running (without the API service):
     ```bash
-    docker-compose up -d db redis
+    docker compose up -d db redis
     ```
 3.  **Run E2E tests**:
     ```bash
