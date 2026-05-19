@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Mocked } from 'vitest';
 import { ScannerService } from './scanner.service.js';
 import type { SubscriptionRepository } from '../domain/subscription.repository.js';
 import type { GithubClient } from '../domain/github.js';
@@ -7,43 +6,26 @@ import type { Subscription } from '../domain/subscription.js';
 import { NotificationService } from './notification.service.js';
 import type { Logger } from '../domain/logger.js';
 import { GithubRateLimitError } from '../domain/errors.js';
+import { mock } from 'vitest-mock-extended';
+import type { Metrics } from '../domain/metrics.js';
 
 describe('ScannerService', () => {
   let scannerService: ScannerService;
-  let repoMock: Mocked<SubscriptionRepository>;
-  let githubClientMock: Mocked<GithubClient>;
-  let notificationServiceMock: Mocked<NotificationService>;
-  let loggerMock: Mocked<Logger>;
+  const repoMock = mock<SubscriptionRepository>();
+  const githubClientMock = mock<GithubClient>();
+  const notificationServiceMock = mock<NotificationService>();
+  const loggerMock = mock<Logger>();
+  const metricsMock = mock<Metrics>();
 
   beforeEach(() => {
-    repoMock = {
-      findAllConfirmedSubscriptions: vi.fn(),
-      findSubscriptionById: vi.fn(),
-      updateLastSeenTag: vi.fn(),
-      findTokenBySubscriptionIdAndScope: vi.fn(),
-    } as unknown as Mocked<SubscriptionRepository>;
-
-    githubClientMock = {
-      getLatestRelease: vi.fn(),
-    } as unknown as Mocked<GithubClient>;
-
-    notificationServiceMock = {
-      notifyNewRelease: vi.fn(),
-    } as unknown as Mocked<NotificationService>;
-
-    loggerMock = {
-      info: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-      debug: vi.fn(),
-    };
+    vi.clearAllMocks();
 
     scannerService = new ScannerService(
       repoMock,
       githubClientMock,
       notificationServiceMock,
       loggerMock,
-      undefined,
+      metricsMock,
     );
   });
 
