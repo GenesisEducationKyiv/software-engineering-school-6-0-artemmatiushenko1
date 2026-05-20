@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import { config } from './config.js';
 import { subscriptionRoutes } from './routes/subscription.routes.js';
 import { metricsRoutes } from './routes/metrics.routes.js';
+import { healthRoutes } from './routes/health.routes.js';
 import cron, { type ScheduledTask } from 'node-cron';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
@@ -114,6 +115,7 @@ export class App {
   }
 
   private async setupRoutes() {
+    await this.fastify.register(healthRoutes);
     await this.fastify.register(metricsRoutes, {
       metrics: this.deps.metrics,
     });

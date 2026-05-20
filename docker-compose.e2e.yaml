@@ -32,8 +32,8 @@ services:
     healthcheck:
       test:
         [
-          'CMD',
-          'wget --quiet --tries=1 --spider http://localhost:9090/health || exit 1',
+          'CMD-SHELL',
+          'wget --quiet --tries=1 --spider http://127.0.0.1:9090/health || exit 1',
         ]
       interval: 5s
       timeout: 5s
@@ -58,13 +58,22 @@ services:
       GMAIL_CLIENT_ID: mock-client-id
       GMAIL_CLIENT_SECRET: mock-secret
       GMAIL_REFRESH_TOKEN: mock-refresh-token
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget --quiet --tries=1 --spider http://127.0.0.1:3000/health || exit 1',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     depends_on:
       db-e2e:
         condition: service_healthy
       redis-e2e:
         condition: service_healthy
       github-mock:
-        condition: service_started
+        condition: service_healthy
 
   e2e:
     build:
@@ -95,4 +104,4 @@ services:
       redis-e2e:
         condition: service_healthy
       api-e2e:
-        condition: service_started
+        condition: service_healthy
