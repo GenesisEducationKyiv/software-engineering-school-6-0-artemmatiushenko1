@@ -24,9 +24,9 @@ services:
   github-mock:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.e2e
     container_name: github-mock
-    command: npx tsx src/e2e/mocks/github/github-server.mock.ts
+    command: npx tsx tests/e2e/mocks/github/github-server.mock.ts
     ports:
       - '9090:9090'
     healthcheck:

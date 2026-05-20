@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { db } from '../db/index.js';
-import { subscriptions, subscriptionTokens } from '../db/schema.js';
+import { db } from '../../src/db/index.js';
+import { subscriptions, subscriptionTokens } from '../../src/db/schema.js';
 import { eq, and } from 'drizzle-orm';
-import * as schema from '../db/schema.js';
+import * as schema from '../../src/db/schema.js';
 
 const TEST_EMAIL = 'test-e2e@example.com';
 const TEST_REPO = 'facebook/react';

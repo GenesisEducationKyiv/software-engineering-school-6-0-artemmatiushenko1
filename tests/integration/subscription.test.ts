@@ -8,22 +8,22 @@ import {
   afterAll,
 } from 'vitest';
 import Fastify from 'fastify';
-import { App } from '../app.js';
+import { App } from '../../src/app.js';
 import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import * as schema from '../db/schema.js';
-import type { Database } from '../db/index.js';
+import * as schema from '../../src/db/schema.js';
+import type { Database } from '../../src/db/index.js';
 import assert from 'assert';
 import {
   CommonSuccessResponseDtoSchema,
   CommonErrorResponseDtoSchema,
-} from '../dtos/response.dto.js';
-import { parseResponse } from '../utils/test.utils.js';
-import { SubscriptionsResponseDtoSchema } from '../dtos/subscription.dto.js';
-import { createDependencies } from '../dependencies.js';
-import type { GithubClient } from '../domain/github.js';
-import type { EmailService } from '../domain/email.js';
+} from '../../src/dtos/response.dto.js';
+import { parseResponse } from '../../src/utils/test.utils.js';
+import { SubscriptionsResponseDtoSchema } from '../../src/dtos/subscription.dto.js';
+import { createDependencies } from '../../src/dependencies.js';
+import type { GithubClient } from '../../src/domain/github.js';
+import type { EmailService } from '../../src/domain/email.js';
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
 

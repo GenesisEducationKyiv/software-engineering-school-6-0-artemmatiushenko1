@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import Fastify from 'fastify';
-import { App } from '../app.js';
-import { createDependencies } from '../dependencies.js';
+import { App } from '../../src/app.js';
+import { createDependencies } from '../../src/dependencies.js';
 import { mock } from 'vitest-mock-extended';
 import { Redis } from 'ioredis';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import * as schema from '../db/schema.js';
-import type { Database } from '../db/index.js';
+import * as schema from '../../src/db/schema.js';
+import type { Database } from '../../src/db/index.js';
 import { register } from 'prom-client';
 
 describe('Metrics Routes', () => {
