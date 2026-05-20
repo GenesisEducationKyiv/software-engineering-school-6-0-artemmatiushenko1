@@ -1,5 +1,9 @@
 import type { Redis } from 'ioredis';
-import type { GithubClient, GithubRelease } from '../../domain/github.js';
+import {
+  GitHubReleaseSchema,
+  type GithubClient,
+  type GithubRelease,
+} from '../../domain/github.js';
 import type { Metrics } from '../../domain/metrics.js';
 
 export class CachedOctokitGithubClient implements GithubClient {
@@ -36,7 +40,7 @@ export class CachedOctokitGithubClient implements GithubClient {
     if (cached !== null) {
       this.metrics?.incrementCacheHit('latest-release');
       if (cached === 'null') return null;
-      return JSON.parse(cached);
+      return GitHubReleaseSchema.parse(JSON.parse(cached));
     }
 
     this.metrics?.incrementCacheMiss('latest-release');

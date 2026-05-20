@@ -16,7 +16,7 @@ describe('CachedOctokitGithubClient', () => {
     githubClientMock = {
       repositoryExists: vi.fn(),
       getLatestRelease: vi.fn(),
-    } as Mocked<GithubClient>;
+    };
 
     redisMock = {
       get: vi.fn(),
