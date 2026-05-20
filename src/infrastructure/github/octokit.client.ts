@@ -6,8 +6,11 @@ import { GithubRateLimitError } from '../../domain/errors.js';
 export class OctokitGithubClient implements GithubClient {
   private octokit: Octokit;
 
-  constructor(token?: string) {
-    this.octokit = new Octokit({ auth: token });
+  constructor(token?: string, baseUrl?: string) {
+    this.octokit = new Octokit({
+      auth: token,
+      ...(baseUrl !== undefined ? { baseUrl } : {}),
+    });
   }
 
   async repositoryExists(owner: string, repo: string): Promise<boolean> {

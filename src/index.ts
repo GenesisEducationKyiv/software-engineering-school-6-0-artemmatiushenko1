@@ -11,6 +11,8 @@ import { SubscriptionService } from './services/subscription.service.js';
 import { ScannerService } from './services/scanner.service.js';
 import { NotificationService } from './services/notification.service.js';
 import { DomainError } from './domain/errors.js';
+import type { EmailService } from './domain/email.js';
+import type { GithubClient } from './domain/github.js';
 import fs from 'fs';
 import path from 'path';
 import YAML from 'yaml';
@@ -28,203 +30,188 @@ import { Redis } from 'ioredis';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-class App {
-  private fastify: FastifyInstance;
-  private scannerService?: ScannerService;
-  private scanTask?: ScheduledTask;
-  private metrics: PrometheusMetrics;
-  private redis?: Redis;
+export interface AppOverrides {
+  emailService?: EmailService;
+  githubClient?: GithubClient;
+  disableCron?: boolean;
+}
 
-  constructor() {
-    this.fastify = Fastify({
-      logger: true,
-    });
-    this.metrics = new PrometheusMetrics();
-    this.setupErrorHandler();
-  }
+export interface AppInstance {
+  fastify: FastifyInstance;
+  redis: Redis;
+  scannerService: ScannerService;
+  scanTask?: ScheduledTask;
+}
 
-  private async runMigrations() {
-    this.fastify.log.info('Running database migrations...');
-    await migrate(db, {
-      migrationsFolder: path.join(__dirname, '../drizzle'),
-    });
-    this.fastify.log.info('Migrations completed successfully.');
-  }
+export async function buildApp(overrides: AppOverrides = {}): Promise<AppInstance> {
+  const fastify = Fastify({ logger: true });
+  const metrics = new PrometheusMetrics();
 
-  private setupErrorHandler() {
-    this.fastify.setErrorHandler((error, request, reply) => {
-      if (error instanceof DomainError) {
-        return reply.status(error.status).send({
-          error: error.message,
-          code: error.code,
-        });
-      }
-
-      this.fastify.log.error(error);
-      reply.status(500).send({ error: 'Internal Server Error' });
-    });
-  }
-
-  private async setupSwagger() {
-    const swaggerPath = path.join(__dirname, '../swagger.yaml');
-    const swaggerFile = fs.readFileSync(swaggerPath, 'utf8');
-    const swaggerConfig = YAML.parse(swaggerFile);
-
-    const appUrl = new URL(config.appUrl);
-    swaggerConfig.host = appUrl.host;
-    swaggerConfig.schemes = [appUrl.protocol.replace(':', '')];
-
-    await this.fastify.register(fastifySwagger, {
-      mode: 'static',
-      specification: {
-        document: swaggerConfig,
-      },
-    });
-
-    await this.fastify.register(fastifySwaggerUi, {
-      routePrefix: '/api/docs',
-      uiConfig: {
-        docExpansion: 'full',
-        deepLinking: false,
-      },
-    });
-  }
-
-  private async setupStaticFiles() {
-    const clientPath = path.join(__dirname, '../client/dist');
-
-    if (fs.existsSync(clientPath)) {
-      await this.fastify.register(fastifyStatic, {
-        root: clientPath,
-        prefix: '/',
-        wildcard: false,
-      });
-
-      this.fastify.setNotFoundHandler(async (request, reply) => {
-        if (request.url.startsWith(config.apiPrefix)) {
-          return reply.status(404).send({ error: 'Not Found' });
-        }
-        return reply.sendFile('index.html');
+  fastify.setErrorHandler((error, _request, reply) => {
+    if (error instanceof DomainError) {
+      return reply.status(error.status).send({
+        error: error.message,
+        code: error.code,
       });
     }
-  }
 
-  private setupMetrics() {
-    this.fastify.get('/metrics', async (request, reply) => {
-      reply.header('Content-Type', this.metrics.getContentType());
-      return this.metrics.getMetrics();
+    fastify.log.error(error);
+    reply.status(500).send({ error: 'Internal Server Error' });
+  });
+
+  const swaggerPath = path.join(__dirname, '../swagger.yaml');
+  const swaggerFile = fs.readFileSync(swaggerPath, 'utf8');
+  const swaggerConfig = YAML.parse(swaggerFile);
+
+  const appUrl = new URL(config.appUrl);
+  swaggerConfig.host = appUrl.host;
+  swaggerConfig.schemes = [appUrl.protocol.replace(':', '')];
+
+  await fastify.register(fastifySwagger, {
+    mode: 'static',
+    specification: { document: swaggerConfig },
+  });
+
+  await fastify.register(fastifySwaggerUi, {
+    routePrefix: '/api/docs',
+    uiConfig: { docExpansion: 'full', deepLinking: false },
+  });
+
+  const clientPath = path.join(__dirname, '../client/dist');
+  if (fs.existsSync(clientPath)) {
+    await fastify.register(fastifyStatic, {
+      root: clientPath,
+      prefix: '/',
+      wildcard: false,
+    });
+
+    fastify.setNotFoundHandler(async (request, reply) => {
+      if (request.url.startsWith(config.apiPrefix)) {
+        return reply.status(404).send({ error: 'Not Found' });
+      }
+      return reply.sendFile('index.html');
     });
   }
 
-  private async setupServices() {
-    const logger = new FastifyLogger(this.fastify.log);
-    const subscriptionRepo = new DrizzleSubscriptionRepository();
+  fastify.get('/metrics', async (_request, reply) => {
+    reply.header('Content-Type', metrics.getContentType());
+    return metrics.getMetrics();
+  });
 
-    this.redis = new Redis(config.redisUrl, {
-      maxRetriesPerRequest: null,
-    });
-    this.redis.on('error', (err) => {
-      logger.error(err.toString(), 'Redis error');
-    });
+  const redis = new Redis(config.redisUrl, { maxRetriesPerRequest: null });
+  redis.on('error', (err) => fastify.log.error(err.toString(), 'Redis error'));
 
-    const octokitClient = new OctokitGithubClient(config.githubToken);
-    const githubClient = new CachedOctokitGithubClient(
-      octokitClient,
-      this.redis,
-      config.githubCacheTtl,
-      this.metrics,
-    );
+  const logger = new FastifyLogger(fastify.log);
+  const subscriptionRepo = new DrizzleSubscriptionRepository();
 
-    const emailService = new NodemailerEmailService(config.email);
-    const tokenManager = new DbSubscriptionTokenManager(subscriptionRepo);
-    const transactionManager = new DrizzleTransactionManager();
+  const octokitClient = new OctokitGithubClient(config.githubToken);
+  const cachedGithubClient = new CachedOctokitGithubClient(
+    octokitClient,
+    redis,
+    config.githubCacheTtl,
+    metrics,
+  );
+  const githubClient = overrides.githubClient ?? cachedGithubClient;
 
-    const notificationService = new NotificationService(
-      emailService,
-      tokenManager,
-      logger,
-      config.appUrl,
-      this.metrics,
-    );
-    this.scannerService = new ScannerService(
-      subscriptionRepo,
-      githubClient,
-      notificationService,
-      logger,
-      this.metrics,
-    );
-    const subscriptionService = new SubscriptionService(
-      subscriptionRepo,
-      githubClient,
-      emailService,
-      tokenManager,
-      transactionManager,
-      logger,
-      config.appUrl,
-      this.scannerService,
-      this.metrics,
-    );
+  const emailService = overrides.emailService ?? new NodemailerEmailService(config.email);
 
-    await this.fastify.register(subscriptionRoutes, {
-      subscriptionService,
-      prefix: config.apiPrefix,
-    });
-  }
+  const tokenManager = new DbSubscriptionTokenManager(subscriptionRepo);
+  const transactionManager = new DrizzleTransactionManager();
 
-  private setupScanner() {
-    if (!this.scannerService) return;
+  const notificationService = new NotificationService(
+    emailService,
+    tokenManager,
+    logger,
+    config.appUrl,
+    metrics,
+  );
+  const scannerService = new ScannerService(
+    subscriptionRepo,
+    githubClient,
+    notificationService,
+    logger,
+    metrics,
+  );
+  const subscriptionService = new SubscriptionService(
+    subscriptionRepo,
+    githubClient,
+    emailService,
+    tokenManager,
+    transactionManager,
+    logger,
+    config.appUrl,
+    scannerService,
+    metrics,
+  );
 
-    this.scanTask = cron.schedule(config.scannerCron, async () => {
-      this.fastify.log.info('Starting scheduled scan...');
+  await fastify.register(subscriptionRoutes, {
+    subscriptionService,
+    prefix: config.apiPrefix,
+  });
+
+  let scanTask: ScheduledTask | undefined;
+  if (!overrides.disableCron) {
+    scanTask = cron.schedule(config.scannerCron, async () => {
+      fastify.log.info('Starting scheduled scan...');
       try {
-        await this.scannerService?.scan();
-        this.fastify.log.info('Scheduled scan completed.');
+        await scannerService.scan();
+        fastify.log.info('Scheduled scan completed.');
       } catch (error) {
-        this.fastify.log.error(error, 'Scheduled scan failed.');
+        fastify.log.error(error, 'Scheduled scan failed.');
       }
     });
+  }
+
+  return { fastify, redis, scannerService, scanTask };
+}
+
+class App {
+  private async runMigrations(fastify: FastifyInstance) {
+    fastify.log.info('Running database migrations...');
+    await migrate(db, { migrationsFolder: path.join(__dirname, '../drizzle') });
+    fastify.log.info('Migrations completed successfully.');
   }
 
   public async start() {
+    let instance: AppInstance | undefined;
     try {
-      await this.runMigrations();
-      await this.setupSwagger();
-      await this.setupStaticFiles();
-      this.setupMetrics();
-      await this.setupServices();
-      this.setupScanner();
+      instance = await buildApp();
+      const { fastify, redis, scannerService, scanTask } = instance;
 
-      await this.fastify.listen({ port: config.port, host: config.host });
+      await this.runMigrations(fastify);
+      await fastify.listen({ port: config.port, host: config.host });
 
-      this.fastify.log.info('Performing initial scan...');
-      await this.scannerService
-        ?.scan()
-        .catch((err) => this.fastify.log.error(err, 'Initial scan failed.'));
+      fastify.log.info('Performing initial scan...');
+      await scannerService
+        .scan()
+        .catch((err) => fastify.log.error(err, 'Initial scan failed.'));
 
-      this.setupGracefulShutdown();
+      this.setupGracefulShutdown(fastify, redis, scanTask);
     } catch (err) {
-      this.fastify.log.error(err);
+      console.error(err);
       process.exit(1);
     }
   }
 
-  private setupGracefulShutdown() {
+  private setupGracefulShutdown(
+    fastify: FastifyInstance,
+    redis: Redis,
+    scanTask?: ScheduledTask,
+  ) {
     const shutdown = async (signal: string) => {
-      this.fastify.log.info(
-        `Received ${signal}. Starting graceful shutdown...`,
-      );
+      fastify.log.info(`Received ${signal}. Starting graceful shutdown...`);
 
-      this.scanTask?.stop();
-      this.fastify.log.info('Scanner tasks stopped.');
+      scanTask?.stop();
+      fastify.log.info('Scanner tasks stopped.');
 
       try {
-        await this.redis?.quit();
-        this.fastify.log.info('Redis connection closed.');
-        await this.fastify.close();
-        this.fastify.log.info('Fastify server closed.');
+        await redis.quit();
+        fastify.log.info('Redis connection closed.');
+        await fastify.close();
+        fastify.log.info('Fastify server closed.');
         process.exit(0);
       } catch (err) {
-        this.fastify.log.error(err, 'Error during shutdown');
+        fastify.log.error(err, 'Error during shutdown');
         process.exit(1);
       }
     };
@@ -234,5 +221,11 @@ class App {
   }
 }
 
-const app = new App();
-app.start();
+const isEntryPoint =
+  process.argv[1] !== undefined &&
+  import.meta.url === new URL(process.argv[1], 'file:').href;
+
+if (isEntryPoint) {
+  const app = new App();
+  app.start();
+}
