@@ -4,7 +4,6 @@ import { config } from './config.js';
 import { OctokitGithubClient } from './infrastructure/github/octokit.client.js';
 import { CachedOctokitGithubClient } from './infrastructure/github/cached-octokit.client.js';
 import { NodemailerEmailService } from './infrastructure/email/nodemailer.service.js';
-import { ConsoleEmailService } from './infrastructure/email/console.service.js';
 import { DrizzleSubscriptionRepository } from './repositories/subscription.repository.js';
 import { DbSubscriptionTokenManager } from './services/db-subscription-token-manager.js';
 import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
@@ -65,10 +64,7 @@ export function createDependencies(
     );
 
   const emailService =
-    overrides.emailService ??
-    (config.mode === 'e2e'
-      ? new ConsoleEmailService()
-      : new NodemailerEmailService(config.email));
+    overrides.emailService ?? new NodemailerEmailService(config.email);
 
   const tokenManager = new DbSubscriptionTokenManager(subscriptionRepo);
   const transactionManager = new DrizzleTransactionManager(database);

@@ -39,6 +39,26 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
+    ports:
+      - '1025:1025' # SMTP port
+      - '8025:8025' # Web UI port
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--quiet',
+          '--tries=1',
+          '--spider',
+          'http://localhost:8025/',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   api-e2e:
     build:
       context: .
@@ -54,10 +74,10 @@ services:
       APP_URL: http://localhost:3000
       API_PREFIX: /api
       SCANNER_CRON: '*/10 * * * *'
-      GMAIL_USER_EMAIL: mock-email@test.com
-      GMAIL_CLIENT_ID: mock-client-id
-      GMAIL_CLIENT_SECRET: mock-secret
-      GMAIL_REFRESH_TOKEN: mock-refresh-token
+      EMAIL_TYPE: smtp
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_FROM: noreply@test.com
     healthcheck:
       test:
         [
@@ -73,6 +93,8 @@ services:
       redis-e2e:
         condition: service_healthy
       github-mock:
+        condition: service_healthy
+      mailpit:
         condition: service_healthy
 
   e2e:
@@ -91,17 +113,15 @@ services:
       APP_URL: http://api-e2e:3000
       API_PREFIX: /api
       SCANNER_CRON: '*/10 * * * *'
-      GMAIL_USER_EMAIL: mock-email@test.com
-      GMAIL_CLIENT_ID: mock-client-id
-      GMAIL_CLIENT_SECRET: mock-secret
-      GMAIL_REFRESH_TOKEN: mock-refresh-token
+      EMAIL_TYPE: smtp
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_FROM: noreply@test.com
     volumes:
       - ./playwright-report:/app/playwright-report
       - ./test-results:/app/test-results
     depends_on:
       db-e2e:
-        condition: service_healthy
-      redis-e2e:
         condition: service_healthy
       api-e2e:
         condition: service_healthy
