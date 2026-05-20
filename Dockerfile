@@ -7,9 +7,6 @@ WORKDIR /app
 # Copy root package files
 COPY package*.json ./
 
-# Install root dependencies
-RUN npm ci
-
 # Copy client package files
 COPY client/package*.json ./client/
 
@@ -44,9 +41,6 @@ COPY drizzle ./drizzle
 
 # Expose the port
 EXPOSE 3000
-
-# Set environment
-ENV NODE_ENV=production
 
 # Run the application
 CMD ["npm", "start"]

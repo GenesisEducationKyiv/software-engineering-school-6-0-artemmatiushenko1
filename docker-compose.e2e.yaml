@@ -1,0 +1,98 @@
+services:
+  db-e2e:
+    image: postgres:16-alpine
+    container_name: github-release-notifier-db-e2e
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: github_release_notifier_e2e
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U user -d github_release_notifier_e2e']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis-e2e:
+    image: redis:7-alpine
+    container_name: github-release-notifier-redis-e2e
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  github-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: github-mock
+    command: npx tsx src/e2e/mocks/github/github-server.mock.ts
+    ports:
+      - '9090:9090'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget --quiet --tries=1 --spider http://localhost:9090/health || exit 1',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api-e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-e2e
+    environment:
+      NODE_ENV: e2e
+      DATABASE_URL: postgres://user:password@db-e2e:5432/github_release_notifier_e2e
+      REDIS_URL: redis://redis-e2e:6379
+      GITHUB_API_URL: http://github-mock:9090
+      PORT: 3000
+      HOST: 0.0.0.0
+      APP_URL: http://localhost:3000
+      API_PREFIX: /api
+      SCANNER_CRON: '*/10 * * * *'
+      GMAIL_USER_EMAIL: mock-email@test.com
+      GMAIL_CLIENT_ID: mock-client-id
+      GMAIL_CLIENT_SECRET: mock-secret
+      GMAIL_REFRESH_TOKEN: mock-refresh-token
+    depends_on:
+      db-e2e:
+        condition: service_healthy
+      redis-e2e:
+        condition: service_healthy
+      github-mock:
+        condition: service_started
+
+  e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+    command: npm run test:e2e
+    container_name: e2e
+    environment:
+      NODE_ENV: e2e
+      DATABASE_URL: postgres://user:password@db-e2e:5432/github_release_notifier_e2e
+      REDIS_URL: redis://redis-e2e:6379
+      GITHUB_API_URL: http://github-mock:9090
+      PORT: 3000
+      HOST: 0.0.0.0
+      APP_URL: http://api-e2e:3000
+      API_PREFIX: /api
+      SCANNER_CRON: '*/10 * * * *'
+      GMAIL_USER_EMAIL: mock-email@test.com
+      GMAIL_CLIENT_ID: mock-client-id
+      GMAIL_CLIENT_SECRET: mock-secret
+      GMAIL_REFRESH_TOKEN: mock-refresh-token
+    volumes:
+      - ./playwright-report:/app/playwright-report
+      - ./test-results:/app/test-results
+    depends_on:
+      db-e2e:
+        condition: service_healthy
+      redis-e2e:
+        condition: service_healthy
+      api-e2e:
+        condition: service_started
