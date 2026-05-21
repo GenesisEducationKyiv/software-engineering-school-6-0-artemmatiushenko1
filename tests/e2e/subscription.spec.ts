@@ -11,11 +11,11 @@ const TEST_EMAIL = 'test-e2e@example.com';
 const TEST_REPO = 'facebook/react';
 const MAILPIT_URL = 'http://mailpit:8025';
 
-async function clearEmails(request: APIRequestContext) {
+const clearEmails = async (request: APIRequestContext) => {
   await request.delete(`${MAILPIT_URL}/api/v1/messages`);
-}
+};
 
-async function getLinkFromEmail(page: Page, linkText: string) {
+const getLinkFromEmail = async (page: Page, linkText: string) => {
   const latestEmailUrl = `${MAILPIT_URL}/view/latest.html`;
 
   let href = null;
@@ -36,7 +36,7 @@ async function getLinkFromEmail(page: Page, linkText: string) {
   }
 
   return href;
-}
+};
 
 test.beforeEach(async ({ request }) => {
   await db.delete(schema.subscriptionTokens);
