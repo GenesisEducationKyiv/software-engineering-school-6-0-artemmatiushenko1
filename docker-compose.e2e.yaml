@@ -65,7 +65,7 @@ services:
       dockerfile: Dockerfile
     container_name: api-e2e
     environment:
-      NODE_ENV: e2e
+      NODE_ENV: test
       DATABASE_URL: postgres://user:password@db-e2e:5432/github_release_notifier_e2e
       REDIS_URL: redis://redis-e2e:6379
       GITHUB_API_URL: http://github-mock:9090
@@ -104,7 +104,7 @@ services:
     command: npm run test:e2e
     container_name: e2e
     environment:
-      NODE_ENV: e2e
+      NODE_ENV: test
       DATABASE_URL: postgres://user:password@db-e2e:5432/github_release_notifier_e2e
       REDIS_URL: redis://redis-e2e:6379
       GITHUB_API_URL: http://github-mock:9090
