@@ -9,7 +9,7 @@ import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/db/schema.js';
 import type { Database } from '../../src/db/types.js';
 import { register } from 'prom-client';
-import { TEST_APP_CONFIG } from './app-config.mock.js';
+import { TEST_APP_CONFIG } from './constants.js';
 
 describe('Metrics Routes', () => {
   let app: App;

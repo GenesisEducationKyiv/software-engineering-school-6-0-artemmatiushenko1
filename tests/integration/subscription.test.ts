@@ -26,7 +26,7 @@ import type { GithubClient } from '../../src/domain/github.js';
 import type { EmailService } from '../../src/domain/email.js';
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
-import { TEST_APP_CONFIG } from './app-config.mock.js';
+import { TEST_APP_CONFIG } from './constants.js';
 
 describe('Subscription Routes Integration with PGlite', () => {
   let app: App;
@@ -52,9 +52,6 @@ describe('Subscription Routes Integration with PGlite', () => {
 
     githubMock.repositoryExists.mockResolvedValue(true);
 
-    await db.delete(schema.subscriptionTokens);
-    await db.delete(schema.subscriptions);
-
     const fastify = Fastify({ logger: true });
 
     const container = new AppContainer(TEST_APP_CONFIG, fastify.log, db);
@@ -64,6 +61,9 @@ describe('Subscription Routes Integration with PGlite', () => {
 
     const deps = container.build();
     app = await App.create(TEST_APP_CONFIG, deps, fastify);
+
+    await db.delete(schema.subscriptionTokens);
+    await db.delete(schema.subscriptions);
   });
 
   describe('POST /api/subscribe', () => {
