@@ -1,5 +1,5 @@
 import { Redis } from 'ioredis';
-import { db, type Database } from './db/index.js';
+import { type Database } from './db/types.js';
 import { type AppConfig } from './config.js';
 import { OctokitGithubClient } from './infrastructure/github/octokit.client.js';
 import { CachedOctokitGithubClient } from './infrastructure/github/cached-octokit.client.js';
@@ -37,11 +37,11 @@ export interface DependencyOverrides {
 export function createDependencies(
   config: AppConfig,
   fastifyBaseLogger: FastifyBaseLogger,
+  database: Database,
   overrides: DependencyOverrides = {},
 ): AppDependencies {
   const logger = new FastifyLogger(fastifyBaseLogger);
   const metrics = new PrometheusMetrics();
-  const database = overrides.db ?? db;
 
   const subscriptionRepo = new DrizzleSubscriptionRepository(database);
 

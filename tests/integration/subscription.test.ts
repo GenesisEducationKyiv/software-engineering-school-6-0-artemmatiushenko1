@@ -13,7 +13,7 @@ import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/db/schema.js';
-import type { Database } from '../../src/db/index.js';
+import type { Database } from '../../src/db/types.js';
 import assert from 'assert';
 import {
   CommonSuccessResponseDtoSchema,
@@ -55,8 +55,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
     const fastify = Fastify({ logger: true });
 
-    const deps = createDependencies(TEST_APP_CONFIG, fastify.log, {
-      db: db,
+    const deps = createDependencies(TEST_APP_CONFIG, fastify.log, db, {
       githubClient: githubMock,
       emailService: emailMock,
       redis: redisMock,

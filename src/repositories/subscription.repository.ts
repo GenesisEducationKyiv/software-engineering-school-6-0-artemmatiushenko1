@@ -1,7 +1,7 @@
 import type {
   Database,
   Transaction as DrizzleTransaction,
-} from '../db/index.js';
+} from '../db/types.js';
 import { subscriptions, subscriptionTokens } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import {

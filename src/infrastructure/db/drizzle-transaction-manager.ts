@@ -1,4 +1,4 @@
-import type { Database } from '../../db/index.js';
+import type { Database } from '../../db/types.js';
 import type {
   TransactionManager,
   DomainTransaction,
