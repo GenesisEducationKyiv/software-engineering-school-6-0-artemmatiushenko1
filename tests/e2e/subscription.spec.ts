@@ -1,4 +1,9 @@
-import { test, expect, type Page, type APIRequestContext } from '@playwright/test';
+import {
+  test,
+  expect,
+  type Page,
+  type APIRequestContext,
+} from '@playwright/test';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 
@@ -11,10 +16,8 @@ async function clearEmails(request: APIRequestContext) {
 }
 
 async function getLinkFromEmail(page: Page, linkText: string) {
-  // Navigate to the latest email view directly for stability
   const latestEmailUrl = `${MAILPIT_URL}/view/latest.html`;
-  
-  // Retry mechanism to wait for the email to arrive
+
   let href = null;
   for (let i = 0; i < 15; i++) {
     await page.goto(latestEmailUrl);
@@ -27,11 +30,12 @@ async function getLinkFromEmail(page: Page, linkText: string) {
   }
 
   if (!href) {
-    throw new Error(`Link "${linkText}" not found in latest email after retries`);
+    throw new Error(
+      `Link "${linkText}" not found in latest email after retries`,
+    );
   }
 
-  // Handle absolute URL with wrong host (localhost:3000 -> api-e2e:3000)
-  return href.replace('http://localhost:3000', '');
+  return href;
 }
 
 test.beforeEach(async ({ request }) => {
@@ -73,16 +77,13 @@ test.describe('Subscription Flow', () => {
     await page.click('button:has-text("Subscribe to Notifications")');
     await expect(page).toHaveURL(/\/sent/);
 
-    // 1. Confirm subscription first
     const confirmLink = await getLinkFromEmail(page, 'Confirm Subscription');
-    
-    // Clear emails so we can find the next one (notification) easily
+
     await clearEmails(request);
-    
+
     await page.goto(confirmLink);
     await expect(page.locator('text=Subscription Confirmed!')).toBeVisible();
 
-    // 2. Unsubscribe using the link from the notification email (triggered by confirmation)
     const unsubscribeLink = await getLinkFromEmail(page, 'Unsubscribe');
     await page.goto(unsubscribeLink);
 
@@ -132,20 +133,17 @@ test.describe('Subscription Flow', () => {
     await page.click('button:has-text("Subscribe to Notifications")');
     await expect(page).toHaveURL(/\/sent/);
 
-    // 1. Confirm first to get the notification email with Unsubscribe link
     const confirmLink = await getLinkFromEmail(page, 'Confirm Subscription');
     await clearEmails(request);
     await page.goto(confirmLink);
     await expect(page.locator('text=Subscription Confirmed!')).toBeVisible();
 
-    // 2. Unsubscribe
     const unsubLink = await getLinkFromEmail(page, 'Unsubscribe');
     await page.goto(unsubLink);
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
       'Unsubscribed Successfully',
     );
 
-    // 3. Re-subscribe
     await page.goto('/');
     await page.fill('#repo', TEST_REPO);
     await page.fill('#email', TEST_EMAIL);

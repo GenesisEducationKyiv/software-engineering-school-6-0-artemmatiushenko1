@@ -71,7 +71,7 @@ services:
       GITHUB_API_URL: http://github-mock:9090
       PORT: 3000
       HOST: 0.0.0.0
-      APP_URL: http://localhost:3000
+      APP_URL: http://api-e2e:3000
       API_PREFIX: /api
       SCANNER_CRON: '*/10 * * * *'
       EMAIL_TYPE: smtp
