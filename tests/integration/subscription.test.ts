@@ -39,8 +39,7 @@ describe('Subscription Routes Integration with PGlite', () => {
   beforeAll(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-01-01T12:00:00Z'));
-    const pgLiteClient = new PGlite();
-    db = drizzle(pgLiteClient, { schema }) as unknown as Database;
+    db = drizzle(new PGlite(), { schema }) as unknown as Database;
   });
 
   afterAll(() => {

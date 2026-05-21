@@ -17,14 +17,11 @@ describe('Metrics Routes', () => {
   beforeEach(async () => {
     register.clear();
 
-    const pgLiteClient = new PGlite();
-    const db = drizzle(pgLiteClient, { schema }) as unknown as Database;
-    const redisMock = mock<Redis>();
-
+    const db = drizzle(new PGlite(), { schema }) as unknown as Database;
     const fastify = Fastify({ logger: true });
 
     const container = new AppContainer(TEST_APP_CONFIG, fastify.log, db);
-    container.redis = redisMock;
+    container.redis = mock<Redis>();
 
     const deps = container.build();
     app = new App(TEST_APP_CONFIG, deps, fastify);
