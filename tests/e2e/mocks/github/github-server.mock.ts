@@ -1,25 +1,32 @@
 import fastify from 'fastify';
+import { EXISTING_REPO, NON_EXISTING_REPO } from './constants.js';
 
-const server = fastify();
+const server = fastify({ logger: true });
 
-server.get('/repos/facebook/react', () => {
-  return {
-    id: 10270250,
-    name: 'react',
-    full_name: 'facebook/react',
-    owner: {
-      login: 'facebook',
-    },
-  };
-});
+server.get(
+  `/repos/${EXISTING_REPO.owner}/${EXISTING_REPO.name}`,
+  (_, reply) => {
+    return reply.status(200).send();
+  },
+);
 
-server.get('/repos/facebook/react/releases/latest', () => {
-  return {
-    tag_name: 'v18.2.0',
-    name: 'v18.2.0',
-    published_at: '2022-06-14T17:15:21Z',
-  };
-});
+server.get(
+  `/repos/${NON_EXISTING_REPO.owner}/${NON_EXISTING_REPO.name}`,
+  (_, reply) => {
+    return reply.status(404).send();
+  },
+);
+
+server.get(
+  `/repos/${EXISTING_REPO.owner}/${EXISTING_REPO.name}/releases/latest`,
+  (_, reply) => {
+    return reply.status(200).send({
+      tag_name: 'v18.2.0',
+      name: 'v18.2.0',
+      published_at: '2022-06-14T17:15:21Z',
+    });
+  },
+);
 
 server.get('/health', () => {
   return { status: 'ok' };

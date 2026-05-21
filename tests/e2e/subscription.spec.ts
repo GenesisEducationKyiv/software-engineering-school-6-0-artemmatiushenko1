@@ -1,10 +1,12 @@
+import { EXISTING_REPO, NON_EXISTING_REPO } from './mocks/github/constants.js';
 import { test, expect } from '@playwright/test';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
 import { clearEmails, getLinkFromEmail } from './utils/email.js';
 
 const TEST_EMAIL = 'test-e2e@example.com';
-const TEST_REPO = 'facebook/react';
+
+const EXISTING_REPO_FULL_NAME = `${EXISTING_REPO.owner}/${EXISTING_REPO.name}`;
 
 test.beforeEach(async ({ request }) => {
   await db.delete(schema.subscriptionTokens);
@@ -18,7 +20,7 @@ test.describe('Subscription Flow', () => {
   }) => {
     await page.goto('/');
 
-    await page.fill('#repo', TEST_REPO);
+    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
     await page.fill('#email', TEST_EMAIL);
 
     await page.click('button:has-text("Subscribe to Notifications")');
@@ -40,7 +42,7 @@ test.describe('Subscription Flow', () => {
 
   test('should allow a user to unsubscribe', async ({ page, request }) => {
     await page.goto('/');
-    await page.fill('#repo', TEST_REPO);
+    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
     await page.fill('#email', TEST_EMAIL);
     await page.click('button:has-text("Subscribe to Notifications")');
     await expect(page).toHaveURL(/\/sent/);
@@ -65,13 +67,13 @@ test.describe('Subscription Flow', () => {
 
   test('should not allow duplicate subscriptions', async ({ page }) => {
     await page.goto('/');
-    await page.fill('#repo', TEST_REPO);
+    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
     await page.fill('#email', TEST_EMAIL);
     await page.click('button:has-text("Subscribe to Notifications")');
     await expect(page).toHaveURL(/\/sent/);
 
     await page.goto('/');
-    await page.fill('#repo', TEST_REPO);
+    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
     await page.fill('#email', TEST_EMAIL);
     await page.click('button:has-text("Subscribe to Notifications")');
 
@@ -81,7 +83,7 @@ test.describe('Subscription Flow', () => {
   test('should show an error for a non-existent repository', async ({
     page,
   }) => {
-    const invalidRepo = 'non-existent-user/non-existent-repo-12345';
+    const invalidRepo = `${NON_EXISTING_REPO.owner}/${NON_EXISTING_REPO.name}`;
 
     await page.goto('/');
     await page.fill('#repo', invalidRepo);
@@ -96,7 +98,7 @@ test.describe('Subscription Flow', () => {
     request,
   }) => {
     await page.goto('/');
-    await page.fill('#repo', TEST_REPO);
+    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
     await page.fill('#email', TEST_EMAIL);
     await page.click('button:has-text("Subscribe to Notifications")');
     await expect(page).toHaveURL(/\/sent/);
@@ -113,7 +115,7 @@ test.describe('Subscription Flow', () => {
     );
 
     await page.goto('/');
-    await page.fill('#repo', TEST_REPO);
+    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
     await page.fill('#email', TEST_EMAIL);
     await page.click('button:has-text("Subscribe to Notifications")');
     await expect(page).toHaveURL(/\/sent/);
@@ -121,7 +123,7 @@ test.describe('Subscription Flow', () => {
 
   test('should show an error for invalid email format', async ({ page }) => {
     await page.goto('/');
-    await page.fill('#repo', TEST_REPO);
+    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
     await page.fill('#email', 'not-an-email');
     await page.click('button:has-text("Subscribe to Notifications")');
 
