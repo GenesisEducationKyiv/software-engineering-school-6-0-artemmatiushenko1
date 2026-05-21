@@ -26,84 +26,167 @@ export interface AppDependencies {
   logger: Logger;
 }
 
-export interface DependencyOverrides {
-  db?: Database;
-  redis?: Redis;
-  githubClient?: GithubClient;
-  emailService?: EmailService;
-  logger?: Logger;
-}
+export class AppContainer {
+  private loggerInstance?: Logger;
+  private metricsInstance?: PrometheusMetrics;
+  private redisInstance?: Redis;
+  private githubClientInstance?: GithubClient;
+  private emailServiceInstance?: EmailService;
+  private subscriptionRepoInstance?: DrizzleSubscriptionRepository;
+  private tokenManagerInstance?: DbSubscriptionTokenManager;
+  private transactionManagerInstance?: DrizzleTransactionManager;
+  private notificationServiceInstance?: NotificationService;
+  private scannerServiceInstance?: ScannerService;
+  private subscriptionServiceInstance?: SubscriptionService;
 
-export function createDependencies(
-  config: AppConfig,
-  fastifyBaseLogger: FastifyBaseLogger,
-  database: Database,
-  overrides: DependencyOverrides = {},
-): AppDependencies {
-  const logger = new FastifyLogger(fastifyBaseLogger);
-  const metrics = new PrometheusMetrics();
+  constructor(
+    private readonly config: AppConfig,
+    private readonly fastifyBaseLogger: FastifyBaseLogger,
+    public readonly db: Database,
+  ) {}
 
-  const subscriptionRepo = new DrizzleSubscriptionRepository(database);
+  get logger(): Logger {
+    return (this.loggerInstance ??= new FastifyLogger(this.fastifyBaseLogger));
+  }
 
-  const redis =
-    overrides.redis ??
-    new Redis(config.redisUrl, {
-      maxRetriesPerRequest: null,
-    });
+  set logger(value: Logger) {
+    this.loggerInstance = value;
+  }
 
-  redis.on('error', (err) => {
-    logger.error('Redis error: ', err);
-  });
+  get metrics(): PrometheusMetrics {
+    return (this.metricsInstance ??= new PrometheusMetrics());
+  }
 
-  const githubClient =
-    overrides.githubClient ??
-    new CachedOctokitGithubClient(
-      new OctokitGithubClient(config.githubApiBaseUrl, config.githubToken),
-      redis,
-      config.githubCacheTtl,
-      metrics,
-    );
+  set metrics(value: PrometheusMetrics) {
+    this.metricsInstance = value;
+  }
 
-  const emailService =
-    overrides.emailService ?? new NodemailerEmailService(config.email);
+  get redis(): Redis {
+    if (!this.redisInstance) {
+      this.redisInstance = new Redis(this.config.redisUrl, {
+        maxRetriesPerRequest: null,
+      });
+      this.redisInstance.on('error', (err) => {
+        this.logger.error('Redis error: ', err);
+      });
+    }
+    return this.redisInstance;
+  }
 
-  const tokenManager = new DbSubscriptionTokenManager(subscriptionRepo);
-  const transactionManager = new DrizzleTransactionManager(database);
+  set redis(value: Redis) {
+    this.redisInstance = value;
+  }
 
-  const notificationService = new NotificationService(
-    emailService,
-    tokenManager,
-    logger,
-    config.appUrl,
-    metrics,
-  );
+  get githubClient(): GithubClient {
+    return (this.githubClientInstance ??= new CachedOctokitGithubClient(
+      new OctokitGithubClient(
+        this.config.githubApiBaseUrl,
+        this.config.githubToken,
+      ),
+      this.redis,
+      this.config.githubCacheTtl,
+      this.metrics,
+    ));
+  }
 
-  const scannerService = new ScannerService(
-    subscriptionRepo,
-    githubClient,
-    notificationService,
-    logger,
-    metrics,
-  );
+  set githubClient(value: GithubClient) {
+    this.githubClientInstance = value;
+  }
 
-  const subscriptionService = new SubscriptionService(
-    subscriptionRepo,
-    githubClient,
-    emailService,
-    tokenManager,
-    transactionManager,
-    logger,
-    config.appUrl,
-    scannerService,
-    metrics,
-  );
+  get emailService(): EmailService {
+    return (this.emailServiceInstance ??= new NodemailerEmailService(
+      this.config.email,
+    ));
+  }
 
-  return {
-    db: database,
-    redis,
-    metrics,
-    subscriptionService,
-    scannerService,
-    logger,
-  };
+  set emailService(value: EmailService) {
+    this.emailServiceInstance = value;
+  }
+
+  get subscriptionRepo(): DrizzleSubscriptionRepository {
+    return (this.subscriptionRepoInstance ??= new DrizzleSubscriptionRepository(
+      this.db,
+    ));
+  }
+
+  set subscriptionRepo(value: DrizzleSubscriptionRepository) {
+    this.subscriptionRepoInstance = value;
+  }
+
+  get tokenManager(): DbSubscriptionTokenManager {
+    return (this.tokenManagerInstance ??= new DbSubscriptionTokenManager(
+      this.subscriptionRepo,
+    ));
+  }
+
+  set tokenManager(value: DbSubscriptionTokenManager) {
+    this.tokenManagerInstance = value;
+  }
+
+  get transactionManager(): DrizzleTransactionManager {
+    return (this.transactionManagerInstance ??= new DrizzleTransactionManager(
+      this.db,
+    ));
+  }
+
+  set transactionManager(value: DrizzleTransactionManager) {
+    this.transactionManagerInstance = value;
+  }
+
+  get notificationService(): NotificationService {
+    return (this.notificationServiceInstance ??= new NotificationService(
+      this.emailService,
+      this.tokenManager,
+      this.logger,
+      this.config.appUrl,
+      this.metrics,
+    ));
+  }
+
+  set notificationService(value: NotificationService) {
+    this.notificationServiceInstance = value;
+  }
+
+  get scannerService(): ScannerService {
+    return (this.scannerServiceInstance ??= new ScannerService(
+      this.subscriptionRepo,
+      this.githubClient,
+      this.notificationService,
+      this.logger,
+      this.metrics,
+    ));
+  }
+
+  set scannerService(value: ScannerService) {
+    this.scannerServiceInstance = value;
+  }
+
+  get subscriptionService(): SubscriptionService {
+    return (this.subscriptionServiceInstance ??= new SubscriptionService(
+      this.subscriptionRepo,
+      this.githubClient,
+      this.emailService,
+      this.tokenManager,
+      this.transactionManager,
+      this.logger,
+      this.config.appUrl,
+      this.scannerService,
+      this.metrics,
+    ));
+  }
+
+  set subscriptionService(value: SubscriptionService) {
+    this.subscriptionServiceInstance = value;
+  }
+
+  build(): AppDependencies {
+    return {
+      db: this.db,
+      redis: this.redis,
+      metrics: this.metrics,
+      subscriptionService: this.subscriptionService,
+      scannerService: this.scannerService,
+      logger: this.logger,
+    };
+  }
 }

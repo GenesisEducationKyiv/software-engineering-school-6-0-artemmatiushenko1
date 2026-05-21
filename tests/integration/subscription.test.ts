@@ -21,7 +21,7 @@ import {
 } from '../../src/dtos/response.dto.js';
 import { parseResponse } from '../../src/utils/test.utils.js';
 import { SubscriptionsResponseDtoSchema } from '../../src/dtos/subscription.dto.js';
-import { createDependencies } from '../../src/dependencies.js';
+import { AppContainer } from '../../src/dependencies.js';
 import type { GithubClient } from '../../src/domain/github.js';
 import type { EmailService } from '../../src/domain/email.js';
 import { Redis } from 'ioredis';
@@ -55,11 +55,12 @@ describe('Subscription Routes Integration with PGlite', () => {
 
     const fastify = Fastify({ logger: true });
 
-    const deps = createDependencies(TEST_APP_CONFIG, fastify.log, db, {
-      githubClient: githubMock,
-      emailService: emailMock,
-      redis: redisMock,
-    });
+    const container = new AppContainer(TEST_APP_CONFIG, fastify.log, db);
+    container.githubClient = githubMock;
+    container.emailService = emailMock;
+    container.redis = redisMock;
+
+    const deps = container.build();
     app = new App(TEST_APP_CONFIG, deps, fastify);
     await app.setup();
 

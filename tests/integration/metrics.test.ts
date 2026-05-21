@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import Fastify from 'fastify';
 import { App } from '../../src/app.js';
-import { createDependencies } from '../../src/dependencies.js';
+import { AppContainer } from '../../src/dependencies.js';
 import { mock } from 'vitest-mock-extended';
 import { Redis } from 'ioredis';
 import { PGlite } from '@electric-sql/pglite';
@@ -16,15 +16,17 @@ describe('Metrics Routes', () => {
 
   beforeEach(async () => {
     register.clear();
+
     const pgLiteClient = new PGlite();
     const db = drizzle(pgLiteClient, { schema }) as unknown as Database;
     const redisMock = mock<Redis>();
 
     const fastify = Fastify({ logger: true });
 
-    const deps = createDependencies(TEST_APP_CONFIG, fastify.log, db, {
-      redis: redisMock,
-    });
+    const container = new AppContainer(TEST_APP_CONFIG, fastify.log, db);
+    container.redis = redisMock;
+
+    const deps = container.build();
     app = new App(TEST_APP_CONFIG, deps, fastify);
     await app.setup();
   });
