@@ -1,42 +1,10 @@
-import {
-  test,
-  expect,
-  type Page,
-  type APIRequestContext,
-} from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { db } from '../../src/db/index.js';
 import * as schema from '../../src/db/schema.js';
+import { clearEmails, getLinkFromEmail } from './utils/email.js';
 
 const TEST_EMAIL = 'test-e2e@example.com';
 const TEST_REPO = 'facebook/react';
-const MAILPIT_URL = 'http://mailpit:8025';
-
-const clearEmails = async (request: APIRequestContext) => {
-  await request.delete(`${MAILPIT_URL}/api/v1/messages`);
-};
-
-const getLinkFromEmail = async (page: Page, linkText: string) => {
-  const latestEmailUrl = `${MAILPIT_URL}/view/latest.html`;
-
-  let href = null;
-  for (let i = 0; i < 15; i++) {
-    await page.goto(latestEmailUrl);
-    const link = page.getByRole('link', { name: linkText });
-    if (await link.isVisible()) {
-      href = await link.getAttribute('href');
-      break;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-
-  if (!href) {
-    throw new Error(
-      `Link "${linkText}" not found in latest email after retries`,
-    );
-  }
-
-  return href;
-};
 
 test.beforeEach(async ({ request }) => {
   await db.delete(schema.subscriptionTokens);
