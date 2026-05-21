@@ -1,6 +1,6 @@
 import { Redis } from 'ioredis';
 import { db, type Database } from './db/index.js';
-import { config } from './config.js';
+import { type AppConfig } from './config.js';
 import { OctokitGithubClient } from './infrastructure/github/octokit.client.js';
 import { CachedOctokitGithubClient } from './infrastructure/github/cached-octokit.client.js';
 import { NodemailerEmailService } from './infrastructure/email/nodemailer.service.js';
@@ -35,6 +35,7 @@ export interface DependencyOverrides {
 }
 
 export function createDependencies(
+  config: AppConfig,
   fastifyBaseLogger: FastifyBaseLogger,
   overrides: DependencyOverrides = {},
 ): AppDependencies {

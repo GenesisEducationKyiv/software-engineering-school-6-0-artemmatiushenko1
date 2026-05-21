@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
-import { config } from './src/config.js';
+import { createConfig } from './src/config.js';
+
+const appConfig = createConfig();
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -10,7 +12,7 @@ export default defineConfig({
   workers: 1,
   reporter: 'html',
   use: {
-    baseURL: config.appUrl,
+    baseURL: appConfig.appUrl,
     trace: 'on-first-retry',
   },
   projects: [

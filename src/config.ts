@@ -20,8 +20,8 @@ const EmailConfigSchema = z.discriminatedUnion('type', [
   }),
 ]);
 
-const ConfigSchema = z.object({
-  mode: z.enum(['development', 'production', 'test', 'e2e']),
+const AppConfigSchema = z.object({
+  mode: z.enum(['development', 'production', 'test']),
   databaseUrl: z.url().default('postgres://user:pass@localhost:5432/db'),
   redisUrl: z.string().default('redis://localhost:6379'),
   githubToken: z.string().optional(),
@@ -35,7 +35,7 @@ const ConfigSchema = z.object({
   githubApiBaseUrl: z.string(),
 });
 
-export type Config = z.infer<typeof ConfigSchema>;
+export type AppConfig = z.infer<typeof AppConfigSchema>;
 export type EmailConfig = z.infer<typeof EmailConfigSchema>;
 
 const getEmailConfig = () => {
@@ -65,17 +65,18 @@ const getEmailConfig = () => {
   }
 };
 
-export const config = ConfigSchema.parse({
-  mode: process.env.NODE_ENV,
-  databaseUrl: process.env.DATABASE_URL,
-  redisUrl: process.env.REDIS_URL,
-  githubToken: process.env.GITHUB_TOKEN,
-  email: getEmailConfig(),
-  appUrl: process.env.APP_URL,
-  apiPrefix: process.env.API_PREFIX,
-  port: process.env.PORT,
-  host: process.env.HOST,
-  scannerCron: process.env.SCANNER_CRON,
-  githubCacheTtl: process.env.GITHUB_CACHE_TTL,
-  githubApiBaseUrl: process.env.GITHUB_API_URL,
-});
+export const createConfig = () =>
+  AppConfigSchema.parse({
+    mode: process.env.NODE_ENV,
+    databaseUrl: process.env.DATABASE_URL,
+    redisUrl: process.env.REDIS_URL,
+    githubToken: process.env.GITHUB_TOKEN,
+    email: getEmailConfig(),
+    appUrl: process.env.APP_URL,
+    apiPrefix: process.env.API_PREFIX,
+    port: process.env.PORT,
+    host: process.env.HOST,
+    scannerCron: process.env.SCANNER_CRON,
+    githubCacheTtl: process.env.GITHUB_CACHE_TTL,
+    githubApiBaseUrl: process.env.GITHUB_API_URL,
+  });

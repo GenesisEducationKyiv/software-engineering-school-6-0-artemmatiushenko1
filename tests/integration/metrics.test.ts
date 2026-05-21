@@ -9,6 +9,7 @@ import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/db/schema.js';
 import type { Database } from '../../src/db/index.js';
 import { register } from 'prom-client';
+import { TEST_APP_CONFIG } from './app-config.mock.js';
 
 describe('Metrics Routes', () => {
   let app: App;
@@ -19,12 +20,13 @@ describe('Metrics Routes', () => {
     const pgDb = drizzle(pgLiteClient, { schema }) as unknown as Database;
     const redisMock = mock<Redis>();
 
-    const fastify = Fastify({ logger: false });
-    const deps = createDependencies(fastify.log, {
+    const fastify = Fastify({ logger: true });
+
+    const deps = createDependencies(TEST_APP_CONFIG, fastify.log, {
       db: pgDb,
       redis: redisMock,
     });
-    app = new App(deps, fastify);
+    app = new App(TEST_APP_CONFIG, deps, fastify);
     await app.setup();
   });
 

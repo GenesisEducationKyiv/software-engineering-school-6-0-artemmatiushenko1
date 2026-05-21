@@ -1,14 +1,10 @@
 import { type FastifyInstance } from 'fastify';
-import type { OpenAPIV2 } from 'openapi-types';
-import fastifySwagger from '@fastify/swagger';
-import fastifySwaggerUi from '@fastify/swagger-ui';
 import fastifyStatic from '@fastify/static';
 import { DomainError } from './domain/errors.js';
 import fs from 'fs';
 import path from 'path';
-import YAML from 'yaml';
 import { fileURLToPath } from 'url';
-import { config } from './config.js';
+import { type AppConfig } from './config.js';
 import { subscriptionRoutes } from './routes/subscription.routes.js';
 import { metricsRoutes } from './routes/metrics.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
@@ -23,17 +19,22 @@ const __dirname = path.dirname(__filename);
 export class App {
   public readonly fastify: FastifyInstance;
   private readonly deps: AppDependencies;
+  private readonly config: AppConfig;
   private scanTask?: ScheduledTask;
 
-  constructor(deps: AppDependencies, fastify: FastifyInstance) {
+  constructor(
+    config: AppConfig,
+    deps: AppDependencies,
+    fastify: FastifyInstance,
+  ) {
     this.deps = deps;
     this.fastify = fastify;
+    this.config = config;
   }
 
   public async setup(): Promise<FastifyInstance> {
     await this.runMigrations();
-    await this.setupSwagger();
-    await this.setupStaticFiles();
+    await this.serveStaticFiles();
     this.setupErrorHandler();
     await this.setupRoutes();
     return this.fastify;
@@ -69,32 +70,7 @@ export class App {
     });
   }
 
-  private async setupSwagger() {
-    const swaggerPath = path.join(__dirname, '../swagger.yaml');
-    const swaggerFile = fs.readFileSync(swaggerPath, 'utf8');
-    const swaggerConfig = YAML.parse(swaggerFile) as OpenAPIV2.Document;
-
-    const appUrl = new URL(config.appUrl);
-    swaggerConfig.host = appUrl.host;
-    swaggerConfig.schemes = [appUrl.protocol.replace(':', '')];
-
-    await this.fastify.register(fastifySwagger, {
-      mode: 'static',
-      specification: {
-        document: swaggerConfig,
-      },
-    });
-
-    await this.fastify.register(fastifySwaggerUi, {
-      routePrefix: '/api/docs',
-      uiConfig: {
-        docExpansion: 'full',
-        deepLinking: false,
-      },
-    });
-  }
-
-  private async setupStaticFiles() {
+  private async serveStaticFiles() {
     const clientPath = path.join(__dirname, '../client/dist');
 
     if (fs.existsSync(clientPath)) {
@@ -105,7 +81,7 @@ export class App {
       });
 
       this.fastify.setNotFoundHandler(async (request, reply) => {
-        if (request.url.startsWith(config.apiPrefix)) {
+        if (request.url.startsWith(this.config.apiPrefix)) {
           return reply.status(404).send({ error: 'Not Found' });
         }
         return reply.sendFile('index.html');
@@ -120,12 +96,12 @@ export class App {
     });
     await this.fastify.register(subscriptionRoutes, {
       subscriptionService: this.deps.subscriptionService,
-      prefix: config.apiPrefix,
+      prefix: this.config.apiPrefix,
     });
   }
 
   startScannerCron() {
-    this.scanTask = cron.schedule(config.scannerCron, async () => {
+    this.scanTask = cron.schedule(this.config.scannerCron, async () => {
       this.deps.logger.info('Starting scheduled scan...');
       try {
         await this.deps.scannerService.scan();
@@ -142,9 +118,11 @@ export class App {
 
   public async start() {
     try {
+      const { port, host } = this.config;
+
       await this.setup();
 
-      await this.fastify.listen({ port: config.port, host: config.host });
+      await this.fastify.listen({ port, host });
 
       this.setupGracefulShutdown();
     } catch (err) {
