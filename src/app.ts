@@ -26,7 +26,7 @@ export class App {
   private readonly config: AppConfig;
   private scanTask?: ScheduledTask;
 
-  constructor(
+  private constructor(
     config: AppConfig,
     deps: AppDependencies,
     fastify: FastifyInstance,
@@ -36,13 +36,22 @@ export class App {
     this.config = config;
   }
 
-  public async setup(): Promise<FastifyInstance> {
+  public static async create(
+    config: AppConfig,
+    deps: AppDependencies,
+    fastify: FastifyInstance,
+  ): Promise<App> {
+    const app = new App(config, deps, fastify);
+    await app.initialize();
+    return app;
+  }
+
+  private async initialize(): Promise<void> {
     await this.runMigrations();
     await this.serveStaticFiles();
     await this.setupSwagger();
     this.setupErrorHandler();
     await this.setupRoutes();
-    return this.fastify;
   }
 
   private async runMigrations() {
@@ -149,8 +158,6 @@ export class App {
   public async start() {
     try {
       const { port, host } = this.config;
-
-      await this.setup();
 
       await this.fastify.listen({ port, host });
 

@@ -10,7 +10,7 @@ const fastify = Fastify({
 
 const appConfig = createConfig();
 const container = new AppContainer(appConfig, fastify.log, db);
-const app = new App(appConfig, container.build(), fastify);
+const app = await App.create(appConfig, container.build(), fastify);
 
 await app.start();
 

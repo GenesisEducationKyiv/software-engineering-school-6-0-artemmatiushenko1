@@ -19,13 +19,13 @@ describe('Metrics Routes', () => {
 
     const db = drizzle(new PGlite(), { schema }) as unknown as Database;
     const fastify = Fastify({ logger: true });
+    const redisMock = mock<Redis>();
 
     const container = new AppContainer(TEST_APP_CONFIG, fastify.log, db);
-    container.redis = mock<Redis>();
+    container.redis = redisMock;
 
     const deps = container.build();
-    app = new App(TEST_APP_CONFIG, deps, fastify);
-    await app.setup();
+    app = await App.create(TEST_APP_CONFIG, deps, fastify);
   });
 
   it('should return metrics on /metrics', async () => {
