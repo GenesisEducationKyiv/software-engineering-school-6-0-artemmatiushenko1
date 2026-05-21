@@ -1,5 +1,9 @@
 import { type FastifyInstance } from 'fastify';
 import fastifyStatic from '@fastify/static';
+import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUi from '@fastify/swagger-ui';
+import YAML from 'yaml';
+import type { OpenAPIV2 } from 'openapi-types';
 import { DomainError } from './domain/errors.js';
 import fs from 'fs';
 import path from 'path';
@@ -35,6 +39,7 @@ export class App {
   public async setup(): Promise<FastifyInstance> {
     await this.runMigrations();
     await this.serveStaticFiles();
+    await this.setupSwagger();
     this.setupErrorHandler();
     await this.setupRoutes();
     return this.fastify;
@@ -87,6 +92,31 @@ export class App {
         return reply.sendFile('index.html');
       });
     }
+  }
+
+  private async setupSwagger() {
+    const swaggerPath = path.join(__dirname, '../swagger.yaml');
+    const swaggerFile = fs.readFileSync(swaggerPath, 'utf8');
+    const swaggerConfig = YAML.parse(swaggerFile) as OpenAPIV2.Document;
+
+    const appUrl = new URL(this.config.appUrl);
+    swaggerConfig.host = appUrl.host;
+    swaggerConfig.schemes = [appUrl.protocol.replace(':', '')];
+
+    await this.fastify.register(fastifySwagger, {
+      mode: 'static',
+      specification: {
+        document: swaggerConfig,
+      },
+    });
+
+    await this.fastify.register(fastifySwaggerUi, {
+      routePrefix: '/api/docs',
+      uiConfig: {
+        docExpansion: 'full',
+        deepLinking: false,
+      },
+    });
   }
 
   private async setupRoutes() {
