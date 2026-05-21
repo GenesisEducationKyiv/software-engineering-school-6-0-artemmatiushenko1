@@ -36,7 +36,6 @@ export class App {
     await this.setupStaticFiles();
     this.setupErrorHandler();
     await this.setupRoutes();
-    this.setupScanner();
     return this.fastify;
   }
 
@@ -125,9 +124,7 @@ export class App {
     });
   }
 
-  private setupScanner() {
-    if (config.mode === 'test' || config.mode === 'e2e') return;
-
+  startScannerCron() {
     this.scanTask = cron.schedule(config.scannerCron, async () => {
       this.deps.logger.info('Starting scheduled scan...');
       try {

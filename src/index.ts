@@ -9,3 +9,4 @@ const fastify = Fastify({
 const deps = createDependencies(fastify.log);
 const app = new App(deps, fastify);
 await app.start();
+app.startScannerCron();
