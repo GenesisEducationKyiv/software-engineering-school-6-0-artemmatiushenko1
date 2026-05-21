@@ -1,15 +1,43 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page, type APIRequestContext } from '@playwright/test';
 import { db } from '../../src/db/index.js';
-import { subscriptions, subscriptionTokens } from '../../src/db/schema.js';
-import { eq, and } from 'drizzle-orm';
 import * as schema from '../../src/db/schema.js';
 
 const TEST_EMAIL = 'test-e2e@example.com';
 const TEST_REPO = 'facebook/react';
+const MAILPIT_URL = 'http://mailpit:8025';
 
-test.beforeEach(async () => {
+async function clearEmails(request: APIRequestContext) {
+  await request.delete(`${MAILPIT_URL}/api/v1/messages`);
+}
+
+async function getLinkFromEmail(page: Page, linkText: string) {
+  // Navigate to the latest email view directly for stability
+  const latestEmailUrl = `${MAILPIT_URL}/view/latest.html`;
+  
+  // Retry mechanism to wait for the email to arrive
+  let href = null;
+  for (let i = 0; i < 15; i++) {
+    await page.goto(latestEmailUrl);
+    const link = page.getByRole('link', { name: linkText });
+    if (await link.isVisible()) {
+      href = await link.getAttribute('href');
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  if (!href) {
+    throw new Error(`Link "${linkText}" not found in latest email after retries`);
+  }
+
+  // Handle absolute URL with wrong host (localhost:3000 -> api-e2e:3000)
+  return href.replace('http://localhost:3000', '');
+}
+
+test.beforeEach(async ({ request }) => {
   await db.delete(schema.subscriptionTokens);
   await db.delete(schema.subscriptions);
+  await clearEmails(request);
 });
 
 test.describe('Subscription Flow', () => {
@@ -27,25 +55,8 @@ test.describe('Subscription Flow', () => {
       'Check your email',
     );
 
-    const sub = await db.query.subscriptions.findFirst({
-      where: and(
-        eq(subscriptions.email, TEST_EMAIL),
-        eq(subscriptions.repo, TEST_REPO),
-      ),
-    });
-
-    if (!sub) throw new Error('Subscription not found in DB');
-
-    const tokenRecord = await db.query.subscriptionTokens.findFirst({
-      where: and(
-        eq(subscriptionTokens.subscriptionId, sub.id),
-        eq(subscriptionTokens.scope, 'subscribe'),
-      ),
-    });
-
-    if (!tokenRecord) throw new Error('Confirmation token not found in DB');
-
-    await page.goto(`/confirm/${tokenRecord.token}`);
+    const confirmLink = await getLinkFromEmail(page, 'Confirm Subscription');
+    await page.goto(confirmLink);
 
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
       'Subscription Confirmed!',
@@ -55,32 +66,25 @@ test.describe('Subscription Flow', () => {
     ).toBeVisible();
   });
 
-  test('should allow a user to unsubscribe', async ({ page }) => {
+  test('should allow a user to unsubscribe', async ({ page, request }) => {
     await page.goto('/');
     await page.fill('#repo', TEST_REPO);
     await page.fill('#email', TEST_EMAIL);
     await page.click('button:has-text("Subscribe to Notifications")');
     await expect(page).toHaveURL(/\/sent/);
 
-    const sub = await db.query.subscriptions.findFirst({
-      where: and(
-        eq(subscriptions.email, TEST_EMAIL),
-        eq(subscriptions.repo, TEST_REPO),
-      ),
-    });
+    // 1. Confirm subscription first
+    const confirmLink = await getLinkFromEmail(page, 'Confirm Subscription');
+    
+    // Clear emails so we can find the next one (notification) easily
+    await clearEmails(request);
+    
+    await page.goto(confirmLink);
+    await expect(page.locator('text=Subscription Confirmed!')).toBeVisible();
 
-    if (!sub) throw new Error('Subscription not found in DB');
-
-    const unsubTokenRecord = await db.query.subscriptionTokens.findFirst({
-      where: and(
-        eq(subscriptionTokens.subscriptionId, sub.id),
-        eq(subscriptionTokens.scope, 'unsubscribe'),
-      ),
-    });
-
-    if (!unsubTokenRecord) throw new Error('Unsubscribe token not found in DB');
-
-    await page.goto(`/unsubscribe/${unsubTokenRecord.token}`);
+    // 2. Unsubscribe using the link from the notification email (triggered by confirmation)
+    const unsubscribeLink = await getLinkFromEmail(page, 'Unsubscribe');
+    await page.goto(unsubscribeLink);
 
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
       'Unsubscribed Successfully',
@@ -120,6 +124,7 @@ test.describe('Subscription Flow', () => {
 
   test('should allow a user to re-subscribe after unsubscribing', async ({
     page,
+    request,
   }) => {
     await page.goto('/');
     await page.fill('#repo', TEST_REPO);
@@ -127,27 +132,20 @@ test.describe('Subscription Flow', () => {
     await page.click('button:has-text("Subscribe to Notifications")');
     await expect(page).toHaveURL(/\/sent/);
 
-    const sub1 = await db.query.subscriptions.findFirst({
-      where: and(
-        eq(subscriptions.email, TEST_EMAIL),
-        eq(subscriptions.repo, TEST_REPO),
-      ),
-    });
-    if (!sub1) throw new Error('First subscription not found in DB');
+    // 1. Confirm first to get the notification email with Unsubscribe link
+    const confirmLink = await getLinkFromEmail(page, 'Confirm Subscription');
+    await clearEmails(request);
+    await page.goto(confirmLink);
+    await expect(page.locator('text=Subscription Confirmed!')).toBeVisible();
 
-    const unsubTokenRecord = await db.query.subscriptionTokens.findFirst({
-      where: and(
-        eq(subscriptionTokens.subscriptionId, sub1.id),
-        eq(subscriptionTokens.scope, 'unsubscribe'),
-      ),
-    });
-    if (!unsubTokenRecord) throw new Error('Unsubscribe token not found in DB');
-
-    await page.goto(`/unsubscribe/${unsubTokenRecord.token}`);
+    // 2. Unsubscribe
+    const unsubLink = await getLinkFromEmail(page, 'Unsubscribe');
+    await page.goto(unsubLink);
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
       'Unsubscribed Successfully',
     );
 
+    // 3. Re-subscribe
     await page.goto('/');
     await page.fill('#repo', TEST_REPO);
     await page.fill('#email', TEST_EMAIL);
