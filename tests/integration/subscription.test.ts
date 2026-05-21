@@ -92,6 +92,13 @@ describe('Subscription Routes Integration with PGlite', () => {
 
       expect(saved.email).toBe(email);
       expect(saved.confirmed).toBe(false);
+
+      expect(emailMock.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: email,
+          subject: `Confirm subscription: ${repo}`,
+        }),
+      );
     });
 
     describe('Error Assertions', () => {
