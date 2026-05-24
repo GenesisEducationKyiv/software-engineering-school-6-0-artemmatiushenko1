@@ -129,6 +129,7 @@ npm test
 ### End-to-End (E2E) Tests
 
 E2E tests verify the complete user flow from the frontend to the backend using **Playwright**. The tests run in a fully containerized environment that includes:
+
 - **Mailpit**: For capturing and verifying outgoing emails (confirmation/unsubscription links).
 - **GitHub Mock Server**: For simulating repository states and avoiding API rate limits.
 - **PostgreSQL & Redis**: Isolated instances specifically for the E2E suite.
@@ -155,7 +156,7 @@ If you need to run tests locally with the Playwright UI:
     ```
 3.  **Run Playwright**:
     ```bash
-    npm run test:e2e -- --ui
+    npm run test:e2e
     ```
 
 ## Project Structure
