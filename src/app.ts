@@ -16,6 +16,7 @@ import cron, { type ScheduledTask } from 'node-cron';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
 import { type AppDependencies } from './dependencies.js';
+import { randomUUID } from 'node:crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,11 +48,39 @@ export class App {
   }
 
   private async initialize(): Promise<void> {
+    this.setupHttpLogging();
     await this.runMigrations();
     await this.serveStaticFiles();
     await this.setupSwagger();
     this.setupErrorHandler();
     await this.setupRoutes();
+  }
+
+  private setupHttpLogging(): void {
+    this.fastify.addHook('onRequest', async (request, reply) => {
+      const header = request.headers['x-request-id'];
+      const requestId =
+        (typeof header === 'string' ? header : header?.[0]) ?? randomUUID();
+
+      reply.header('x-request-id', requestId);
+      request.log = request.log.child({
+        requestId,
+        method: request.method,
+        url: request.url,
+      });
+
+      request.log.info('incoming request');
+    });
+
+    this.fastify.addHook('onResponse', async (request, reply) => {
+      request.log.info(
+        {
+          statusCode: reply.statusCode,
+          responseTime: reply.elapsedTime,
+        },
+        'request completed',
+      );
+    });
   }
 
   private async runMigrations() {
