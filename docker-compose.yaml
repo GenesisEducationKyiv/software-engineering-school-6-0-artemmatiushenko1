@@ -30,10 +30,65 @@ services:
       - '3000:3000'
     env_file:
       - .env
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    labels:
+      logging_enabled: 'true'
     depends_on:
       - db
       - redis
 
+  elasticsearch:
+    profiles:
+      - logging
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: github-release-notifier-elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: 'false'
+      ES_JAVA_OPTS: '-Xms512m -Xmx512m'
+    ports:
+      - '9200:9200'
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'curl -fsS http://localhost:9200/_cluster/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  kibana:
+    profiles:
+      - logging
+    image: docker.elastic.co/kibana/kibana:8.17.0
+    container_name: github-release-notifier-kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - '5601:5601'
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  filebeat:
+    profiles:
+      - logging
+    image: docker.elastic.co/beats/filebeat:8.17.0
+    container_name: github-release-notifier-filebeat
+    user: root
+    command: filebeat -e -strict.perms=false
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:
+  elasticsearch_data:

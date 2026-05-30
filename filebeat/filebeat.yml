@@ -1,0 +1,36 @@
+filebeat.inputs:
+  - type: container
+    paths:
+      - '/var/lib/docker/containers/*/*.log'
+    processors:
+      - add_docker_metadata:
+          host: 'unix:///var/run/docker.sock'
+      - decode_json_fields:
+          fields: ['message']
+          target: 'docker'
+          overwrite_keys: true
+      - decode_json_fields:
+          fields: ['docker.log']
+          target: ''
+          overwrite_keys: true
+          add_error_key: true
+      - drop_event:
+          when:
+            not:
+              equals:
+                container.name: 'api'
+
+processors:
+  - add_host_metadata: ~
+
+output.elasticsearch:
+  hosts: ['http://elasticsearch:9200']
+  index: 'github-release-notifier-%{+yyyy.MM.dd}'
+
+setup.template.name: 'github-release-notifier'
+setup.template.pattern: 'github-release-notifier-*'
+setup.ilm.enabled: false
+
+logging.level: info
+logging.to_files: false
+logging.to_stderr: true
