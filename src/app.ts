@@ -102,7 +102,7 @@ export class App {
         );
       }
 
-      this.deps.logger.error('Request error:', error as Error);
+      this.deps.logger.error('Request error', error as Error);
 
       reply.status(500).send(
         CommonErrorResponseDtoSchema.parse({
@@ -170,13 +170,13 @@ export class App {
 
   startScannerCron() {
     this.scanTask = cron.schedule(this.config.scannerCron, async () => {
-      this.deps.logger.info('Starting scheduled scan...');
+      this.deps.logger.info('Starting scheduled scan');
       try {
         await this.deps.scannerService.scan();
-        this.deps.logger.info('Scheduled scan completed.');
+        this.deps.logger.info('Scheduled scan completed');
       } catch (error) {
         if (error instanceof Error) {
-          this.deps.logger.error('Scheduled scan failed.', error);
+          this.deps.logger.error('Scheduled scan failed', error);
         } else {
           throw error;
         }
@@ -203,9 +203,7 @@ export class App {
 
   private setupGracefulShutdown() {
     const shutdown = async (signal: string) => {
-      this.deps.logger.info(
-        `Received ${signal}. Starting graceful shutdown...`,
-      );
+      this.deps.logger.info('Starting graceful shutdown', { signal });
 
       try {
         await this.scanTask?.stop();

@@ -96,7 +96,10 @@ export class SubscriptionService {
       ...template,
     });
 
-    this.logger.info(`User ${email} subscribed to ${repoPath}`);
+    this.logger.info('User subscribed', {
+      email: validatedEmail,
+      repoPath: validatedRepo,
+    });
 
     return subscription;
   }
@@ -140,7 +143,9 @@ export class SubscriptionService {
       }
     }
 
-    this.logger.info(`Subscription confirmed for token ${tokenValue}`);
+    this.logger.info('Subscription confirmed', {
+      subscriptionId: token.subscriptionId,
+    });
   }
 
   async unsubscribe(tokenValue: string): Promise<void> {
@@ -167,6 +172,8 @@ export class SubscriptionService {
       await this.tokenManager.invalidateToken(tokenValue, tx);
     });
 
-    this.logger.info(`User unsubscribed via token ${tokenValue}`);
+    this.logger.info('User unsubscribed', {
+      subscriptionId: token.subscriptionId,
+    });
   }
 }
