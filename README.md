@@ -84,7 +84,7 @@ The service operates on two core processes: **Subscription Management** and **Au
 The easiest way to run the entire system is using Docker Compose:
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 Once the containers are running, the application will be accessible at:
@@ -92,6 +92,38 @@ Once the containers are running, the application will be accessible at:
 - **Web Interface**: [http://localhost:3000](http://localhost:3000)
 - **API Documentation (Swagger)**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
 - **Prometheus Metrics**: [http://localhost:3000/metrics](http://localhost:3000/metrics)
+
+### Structured Logging & Elasticsearch (Optional)
+
+The API emits **structured JSON logs** (Pino) to stdout with fixed fields (`service`, `env`, `requestId` on HTTP requests). By default, logs are available via `docker logs api`.
+
+To ship logs to **Elasticsearch** and explore them in **Kibana**, start the optional logging profile (requires ~2GB Docker memory for Elasticsearch):
+
+```bash
+docker compose --profile logging up --build -d
+```
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| Elasticsearch | [http://localhost:9200](http://localhost:9200) | Log storage |
+| Kibana | [http://localhost:5601](http://localhost:5601) | Log search UI |
+
+**Environment variables** (see `.env.example`):
+
+- `LOG_LEVEL` — Pino log level (`info` default)
+- `LOG_PRETTY` — Human-readable logs in local dev only; keep `false` in Docker so Filebeat can parse JSON
+
+**Verify the pipeline:**
+
+1. Check Elasticsearch: `curl http://localhost:9200/_cat/indices?v`
+2. Generate traffic: `curl http://localhost:3000/health`
+3. Inspect raw JSON logs: `docker logs api`
+4. In Kibana → **Discover** → create a data view with index pattern `github-release-notifier-*`
+5. Filter on fields such as `level`, `msg`, `email`, `repo`, `requestId`
+
+Filebeat reads the `api` container logs from the Docker engine and indexes them daily (`github-release-notifier-YYYY.MM.DD`). The logging stack is for **local development only** (Elasticsearch security disabled).
+
+> **Note:** E2E tests (`docker-compose.e2e.yaml`) do not start the ELK stack to keep CI fast.
 
 ### Running Locally
 
@@ -103,6 +135,22 @@ Once the containers are running, the application will be accessible at:
    ```bash
    npm run dev
    ```
+
+## Logging
+
+Application logs use **Pino** via Fastify with a domain `Logger` adapter. Each log line includes:
+
+- `service`: `github-release-notifier`
+- `env`: `development` | `production` | `test`
+- `requestId`: correlates all logs for a single HTTP request (also returned as `x-request-id` response header)
+
+Domain services log structured context (e.g. `email`, `repo`, `subscriptionId`) instead of interpolated strings, which makes filtering in Kibana straightforward.
+
+For local development without Docker, optional pretty printing:
+
+```bash
+LOG_PRETTY=true npm run dev
+```
 
 ## Monitoring & Metrics
 
