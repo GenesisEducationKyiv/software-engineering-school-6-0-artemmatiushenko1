@@ -67,9 +67,8 @@ export class App {
         requestId,
         method: request.method,
         url: request.url,
+        ip: request.ip,
       });
-
-      request.log.info('incoming request');
     });
 
     this.fastify.addHook('onResponse', async (request, reply) => {
