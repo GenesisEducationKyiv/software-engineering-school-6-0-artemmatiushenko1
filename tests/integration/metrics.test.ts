@@ -10,7 +10,7 @@ import * as schema from '../../src/db/schema.js';
 import type { Database } from '../../src/db/types.js';
 import { register } from 'prom-client';
 import { TEST_APP_CONFIG } from './constants.js';
-import { createFastifyLoggerOptions } from '../../src/infrastructure/logger/create-fastify-logger-options.js';
+import { createFastifyServerOptions } from '../../src/infrastructure/fastify/create-fastify-server-options.js';
 
 describe('Metrics Routes', () => {
   let app: App;
@@ -19,10 +19,7 @@ describe('Metrics Routes', () => {
     register.clear();
 
     const db = drizzle(new PGlite(), { schema }) as unknown as Database;
-    const fastify = Fastify({
-      logger: createFastifyLoggerOptions(TEST_APP_CONFIG),
-      disableRequestLogging: true,
-    });
+    const fastify = Fastify(createFastifyServerOptions(TEST_APP_CONFIG));
     const redisMock = mock<Redis>();
 
     const container = new AppContainer(TEST_APP_CONFIG, fastify.log, db);
