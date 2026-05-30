@@ -39,4 +39,23 @@ describe('Metrics Routes', () => {
     expect(response.headers['content-type']).toContain('text/plain');
     expect(response.body).toBeDefined();
   });
+
+  it('should record HTTP RED metrics after a request', async () => {
+    await app.fastify.inject({
+      method: 'GET',
+      url: '/health',
+    });
+
+    const metricsResponse = await app.fastify.inject({
+      method: 'GET',
+      url: '/metrics',
+    });
+
+    expect(metricsResponse.body).toContain(
+      'http_server_requests_total{method="GET",route="/health",status_code="200"}',
+    );
+    expect(metricsResponse.body).toContain(
+      'http_server_request_duration_seconds_bucket{le="0.005",method="GET",route="/health"}',
+    );
+  });
 });

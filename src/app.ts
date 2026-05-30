@@ -66,6 +66,16 @@ export class App {
     });
 
     this.fastify.addHook('onResponse', async (request, reply) => {
+      const route = request.routeOptions?.url ?? 'unknown';
+      const durationSeconds = reply.elapsedTime / 1000;
+
+      this.deps.metrics.recordHttpRequest(
+        request.method,
+        route,
+        reply.statusCode,
+        durationSeconds,
+      );
+
       request.log.info(
         {
           statusCode: reply.statusCode,

@@ -155,12 +155,41 @@ LOG_PRETTY=true npm run dev
 ## Monitoring & Metrics
 
 - **Metrics Endpoint**: `http://localhost:3000/metrics`
-- **Key Indicators**:
-  - `subscription_requests_total`: Total number of subscription attempts.
-  - `notifications_sent_total`: Total number of emails sent.
-  - `scanner_runs_total`: Total number of repository scans.
-  - `cache_hits_total`: GitHub API cache hit count.
-  - `cache_misses_total`: GitHub API cache miss count.
+
+### HTTP RED metrics
+
+The API exposes [RED](https://www.weaveworks.com/blog/2014/06/the-red-method-key-metrics-for-microservices-architecture) (Rate, Errors, Duration) metrics for every HTTP request:
+
+| Metric | Type | Labels | RED signal |
+|--------|------|--------|------------|
+| `http_server_requests_total` | Counter | `method`, `route`, `status_code` | **Rate** and **Errors** |
+| `http_server_request_duration_seconds` | Histogram | `method`, `route` | **Duration** |
+
+`route` uses the Fastify route template (e.g. `/api/confirm/:token`) to avoid high cardinality from tokens in URLs.
+
+**Example PromQL:**
+
+```promql
+# Request rate by route
+sum(rate(http_server_requests_total[5m])) by (route, method)
+
+# 5xx error rate
+sum(rate(http_server_requests_total{status_code=~"5.."}[5m]))
+  / sum(rate(http_server_requests_total[5m]))
+
+# p95 latency by route
+histogram_quantile(0.95,
+  sum(rate(http_server_request_duration_seconds_bucket[5m])) by (le, route)
+)
+```
+
+### Business & batch metrics
+
+- `subscription_requests_total`: Total number of subscription attempts.
+- `notifications_sent_total`: Total number of emails sent.
+- `scanner_runs_total`: Total number of repository scans.
+- `cache_hits_total`: GitHub API cache hit count.
+- `cache_misses_total`: GitHub API cache miss count.
 
 ## Testing
 
