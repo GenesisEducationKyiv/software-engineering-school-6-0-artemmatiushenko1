@@ -17,7 +17,7 @@ filebeat.inputs:
           when:
             not:
               equals:
-                container.name: 'api'
+                container.name: 'app'
 
 processors:
   - add_host_metadata: ~

@@ -95,7 +95,7 @@ Once the containers are running, the application will be accessible at:
 
 ### Structured Logging & Elasticsearch (Optional)
 
-The API emits **structured JSON logs** (Pino) to stdout with fixed fields (`service`, `env`, `requestId` on HTTP requests). By default, logs are available via `docker logs api`.
+The API emits **structured JSON logs** (Pino) to stdout with fixed fields (`service`, `env`, `requestId` on HTTP requests). By default, logs are available via `docker logs app`.
 
 To ship logs to **Elasticsearch** and explore them in **Kibana**, start the optional logging profile (requires ~2GB Docker memory for Elasticsearch):
 
@@ -134,7 +134,7 @@ docker compose --profile logging up -d
 
 1. Check Elasticsearch: `curl -u elastic:changeme http://localhost:9200/_cat/indices?v`
 2. Generate traffic: `curl http://localhost:3000/health`
-3. Inspect raw JSON logs: `docker logs api`
+3. Inspect raw JSON logs: `docker logs app`
 4. Log in to Kibana at [http://localhost:5601](http://localhost:5601) with `elastic` / your `ELASTIC_PASSWORD`
 5. Create a data view:
    - Direct link: [http://localhost:5601/app/management/kibana/dataViews/create](http://localhost:5601/app/management/kibana/dataViews/create)
@@ -143,7 +143,7 @@ docker compose --profile logging up -d
    - Index pattern: `github-release-notifier-*`, timestamp field: `@timestamp`
 6. Open **Discover**, select the data view, and filter on fields such as `level`, `msg`, `email`, `repo`, `requestId`
 
-Filebeat reads the `api` container logs from the Docker engine and indexes them daily (`github-release-notifier-YYYY.MM.DD`). Elasticsearch uses HTTP with authentication enabled and TLS disabled for local development.
+Filebeat reads the `app` container logs from the Docker engine and indexes them daily (`github-release-notifier-YYYY.MM.DD`). Elasticsearch uses HTTP with authentication enabled and TLS disabled for local development.
 
 **Example Kibana queries (KQL in Discover):**
 

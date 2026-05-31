@@ -28,11 +28,11 @@ services:
       - '1025:1025' # SMTP port
       - '8025:8025' # Web UI port
 
-  api:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: api
+    container_name: app
     ports:
       - '3000:3000'
     env_file:
