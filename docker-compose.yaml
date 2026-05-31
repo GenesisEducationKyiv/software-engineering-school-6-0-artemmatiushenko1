@@ -23,7 +23,7 @@ services:
 
   mailpit:
     image: axllent/mailpit
-    container_name: mailpit
+    container_name: github-release-notifier-mailpit
     ports:
       - '1025:1025' # SMTP port
       - '8025:8025' # Web UI port
@@ -32,7 +32,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: app
+    container_name: github-release-notifier-app
     ports:
       - '3000:3000'
     env_file:

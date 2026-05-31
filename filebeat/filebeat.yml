@@ -17,7 +17,7 @@ filebeat.inputs:
           when:
             not:
               equals:
-                container.name: 'app'
+                container.name: 'github-release-notifier-app'
 
 processors:
   - add_host_metadata: ~
