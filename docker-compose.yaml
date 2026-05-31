@@ -21,6 +21,13 @@ services:
     volumes:
       - redis_data:/data
 
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
+    ports:
+      - '1025:1025' # SMTP port
+      - '8025:8025' # Web UI port
+
   api:
     build:
       context: .
@@ -38,6 +45,7 @@ services:
     depends_on:
       - db
       - redis
+      - mailpit
 
   elasticsearch:
     profiles:
