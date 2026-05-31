@@ -3,12 +3,11 @@ import { App } from './app.js';
 import { AppContainer } from './dependencies.js';
 import { createConfig } from './config.js';
 import { db } from './db/index.js';
-
-const fastify = Fastify({
-  logger: true,
-});
+import { createFastifyServerOptions } from './infrastructure/fastify/create-fastify-server-options.js';
 
 const appConfig = createConfig();
+
+const fastify = Fastify(createFastifyServerOptions(appConfig));
 const container = new AppContainer(appConfig, fastify.log, db);
 const app = await App.create(appConfig, container.build(), fastify);
 

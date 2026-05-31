@@ -11,6 +11,11 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -20,20 +25,177 @@ services:
       - '6379:6379'
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  api:
+  mailpit:
+    image: axllent/mailpit
+    container_name: github-release-notifier-mailpit
+    ports:
+      - '1025:1025' # SMTP port
+      - '8025:8025' # Web UI port
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--quiet',
+          '--tries=1',
+          '--spider',
+          'http://localhost:8025/',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: api
+    container_name: github-release-notifier-app
     ports:
       - '3000:3000'
     env_file:
       - .env
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    labels:
+      logging_enabled: 'true'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget --quiet --tries=1 --spider http://127.0.0.1:3000/health || exit 1',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+
+  elasticsearch:
+    profiles:
+      - logging
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: github-release-notifier-elasticsearch
+    environment:
+      discovery.type: single-node
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      xpack.security.enabled: 'true'
+      xpack.security.http.ssl.enabled: 'false'
+      xpack.security.transport.ssl.enabled: 'false'
+      ES_JAVA_OPTS: '-Xms512m -Xmx512m'
+    ports:
+      - '9200:9200'
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fsS -u elastic:${ELASTIC_PASSWORD:-changeme} http://localhost:9200/_cluster/health || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  elasticsearch-setup:
+    profiles:
+      - logging
+    image: curlimages/curl:8.11.1
+    container_name: github-release-notifier-elasticsearch-setup
+    restart: 'no'
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-changeme}
+    command:
+      - sh
+      - -c
+      - |
+        echo "Setting kibana_system password..."
+        until curl -sf -u "elastic:$$ELASTIC_PASSWORD" \
+          -X POST "http://elasticsearch:9200/_security/user/kibana_system/_password" \
+          -H "Content-Type: application/json" \
+          -d "{\"password\":\"$$KIBANA_SYSTEM_PASSWORD\"}"; do
+          echo "Waiting for Elasticsearch security API..."
+          sleep 2
+        done
+        echo "kibana_system password configured."
+
+  kibana:
+    profiles:
+      - logging
+    image: docker.elastic.co/kibana/kibana:8.17.0
+    container_name: github-release-notifier-kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-changeme}
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${KIBANA_ENCRYPTION_KEY:-min-32-char-local-dev-encryption-key!!}
+      XPACK_REPORTING_ENCRYPTIONKEY: ${KIBANA_ENCRYPTION_KEY:-min-32-char-local-dev-encryption-key!!}
+      XPACK_SECURITY_ENCRYPTIONKEY: ${KIBANA_ENCRYPTION_KEY:-min-32-char-local-dev-encryption-key!!}
+    ports:
+      - '5601:5601'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fsS http://localhost:5601/api/status || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    depends_on:
+      elasticsearch-setup:
+        condition: service_completed_successfully
+
+  filebeat:
+    profiles:
+      - logging
+    image: docker.elastic.co/beats/filebeat:8.17.0
+    container_name: github-release-notifier-filebeat
+    user: root
+    environment:
+      ELASTICSEARCH_USERNAME: elastic
+      ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+    command:
+      - filebeat
+      - run
+      - -e
+      - --strict.perms=false
+      - -E
+      - output.elasticsearch.username=elastic
+      - -E
+      - output.elasticsearch.password=${ELASTIC_PASSWORD:-changeme}
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'filebeat test output || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
 volumes:
   postgres_data:
   redis_data:
+  elasticsearch_data:

@@ -27,9 +27,10 @@ export class NotificationService {
       );
 
     if (!unsubscribeToken) {
-      this.logger.error(
-        `No unsubscribe token found for subscription ${subscription.id}`,
-      );
+      this.logger.error('No unsubscribe token found for subscription', undefined, {
+        subscriptionId: subscription.id,
+        repo: subscription.repo,
+      });
       throw new TokenNotFoundError();
     }
 

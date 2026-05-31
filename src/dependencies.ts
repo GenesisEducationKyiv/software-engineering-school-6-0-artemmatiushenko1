@@ -67,7 +67,7 @@ export class AppContainer {
         maxRetriesPerRequest: null,
       });
       this.redisInstance.on('error', (err) => {
-        this.logger.error('Redis error: ', err);
+        this.logger.error('Redis connection error', err);
       });
     }
     return this.redisInstance;

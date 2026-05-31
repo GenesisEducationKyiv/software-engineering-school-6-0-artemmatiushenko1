@@ -59,11 +59,11 @@ services:
       timeout: 5s
       retries: 5
 
-  api-e2e:
+  app-e2e:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: api-e2e
+    container_name: app-e2e
     environment:
       NODE_ENV: test
       DATABASE_URL: postgres://user:password@db-e2e:5432/github_release_notifier_e2e
@@ -71,7 +71,7 @@ services:
       GITHUB_API_URL: http://github-mock:9090
       PORT: 3000
       HOST: 0.0.0.0
-      APP_URL: http://api-e2e:3000
+      APP_URL: http://app-e2e:3000
       API_PREFIX: /api
       SCANNER_CRON: '*/10 * * * *'
       EMAIL_TYPE: smtp
@@ -110,7 +110,7 @@ services:
       GITHUB_API_URL: http://github-mock:9090
       PORT: 3000
       HOST: 0.0.0.0
-      APP_URL: http://api-e2e:3000
+      APP_URL: http://app-e2e:3000
       API_PREFIX: /api
       SCANNER_CRON: '*/10 * * * *'
       EMAIL_TYPE: smtp
@@ -123,5 +123,5 @@ services:
     depends_on:
       db-e2e:
         condition: service_healthy
-      api-e2e:
+      app-e2e:
         condition: service_healthy

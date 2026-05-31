@@ -10,6 +10,7 @@ import * as schema from '../../src/db/schema.js';
 import type { Database } from '../../src/db/types.js';
 import { register } from 'prom-client';
 import { TEST_APP_CONFIG } from './constants.js';
+import { createFastifyServerOptions } from '../../src/infrastructure/fastify/create-fastify-server-options.js';
 
 describe('Metrics Routes', () => {
   let app: App;
@@ -18,7 +19,7 @@ describe('Metrics Routes', () => {
     register.clear();
 
     const db = drizzle(new PGlite(), { schema }) as unknown as Database;
-    const fastify = Fastify({ logger: true });
+    const fastify = Fastify(createFastifyServerOptions(TEST_APP_CONFIG));
     const redisMock = mock<Redis>();
 
     const container = new AppContainer(TEST_APP_CONFIG, fastify.log, db);
@@ -37,5 +38,24 @@ describe('Metrics Routes', () => {
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toContain('text/plain');
     expect(response.body).toBeDefined();
+  });
+
+  it('should record HTTP RED metrics after a request', async () => {
+    await app.fastify.inject({
+      method: 'GET',
+      url: '/health',
+    });
+
+    const metricsResponse = await app.fastify.inject({
+      method: 'GET',
+      url: '/metrics',
+    });
+
+    expect(metricsResponse.body).toContain(
+      'http_server_requests_total{method="GET",route="/health",status_code="200"}',
+    );
+    expect(metricsResponse.body).toContain(
+      'http_server_request_duration_seconds_bucket{le="0.005",method="GET",route="/health"}',
+    );
   });
 });

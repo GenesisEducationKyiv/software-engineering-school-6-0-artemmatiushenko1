@@ -23,9 +23,9 @@ export class ScannerService {
       const activeSubscriptions =
         await this.subscriptionRepo.findAllConfirmedSubscriptions();
 
-      this.logger.info(
-        `Found ${activeSubscriptions.length} active subscriptions to scan.`,
-      );
+      this.logger.info('Active subscriptions found for scan', {
+        count: activeSubscriptions.length,
+      });
 
       for (const sub of activeSubscriptions) {
         await this.scanSubscription(sub.id);
@@ -43,13 +43,17 @@ export class ScannerService {
     const sub =
       await this.subscriptionRepo.findSubscriptionById(subscriptionId);
     if (!sub || !sub.confirmed) {
-      this.logger.warn(
-        `Attempted to scan non-existent or unconfirmed subscription: ${subscriptionId}`,
-      );
+      this.logger.warn('Skipped scan for invalid subscription', {
+        subscriptionId,
+      });
       return;
     }
 
-    this.logger.info(`Processing subscription for ${sub.repo} (${sub.email})`);
+    this.logger.info('Processing subscription', {
+      subscriptionId: sub.id,
+      repo: sub.repo,
+      email: sub.email,
+    });
     const { owner, repo } = parseRepoPath(sub.repo);
 
     try {
@@ -59,14 +63,16 @@ export class ScannerService {
       );
 
       if (!latestRelease) {
-        this.logger.info(`No releases found for ${sub.repo}`);
+        this.logger.info('No releases found', { repo: sub.repo });
         return;
       }
 
       if (latestRelease.tag !== sub.lastSeenTag) {
-        this.logger.info(
-          `New release for ${sub.repo}: ${latestRelease.tag} (was ${sub.lastSeenTag ?? 'none'})`,
-        );
+        this.logger.info('New release detected', {
+          repo: sub.repo,
+          tag: latestRelease.tag,
+          previousTag: sub.lastSeenTag ?? null,
+        });
 
         await this.notificationService.notifyNewRelease(sub, latestRelease);
 
@@ -75,9 +81,10 @@ export class ScannerService {
           latestRelease.tag,
         );
       } else {
-        this.logger.info(
-          `No new releases for ${sub.repo} (current: ${sub.lastSeenTag})`,
-        );
+        this.logger.info('No new releases', {
+          repo: sub.repo,
+          currentTag: sub.lastSeenTag,
+        });
       }
     } catch (error) {
       if (error instanceof GithubRateLimitError) {
@@ -87,8 +94,9 @@ export class ScannerService {
         throw error;
       }
       this.logger.error(
-        `Error scanning ${sub.repo}:`,
+        'Error scanning subscription',
         error instanceof Error ? error : new Error(String(error)),
+        { repo: sub.repo, subscriptionId: sub.id },
       );
       throw error;
     }
