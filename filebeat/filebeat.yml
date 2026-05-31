@@ -8,16 +8,6 @@ filebeat.inputs:
           fields: ['message']
           target: ''
           overwrite_keys: true
-          add_error_key: true
-      # url and service collide with ECS object mappings and cause bulk rejections
-      - rename:
-          fields:
-            - from: url
-              to: path
-            - from: service
-              to: app_name
-          ignore_missing: true
-          fail_on_error: false
       - drop_fields:
           fields: ['message']
           ignore_missing: true
@@ -39,7 +29,3 @@ output.elasticsearch:
 setup.template.name: 'github-release-notifier'
 setup.template.pattern: 'github-release-notifier-*'
 setup.ilm.enabled: false
-
-logging.level: info
-logging.to_files: false
-logging.to_stderr: true

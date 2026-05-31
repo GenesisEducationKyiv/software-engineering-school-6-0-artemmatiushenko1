@@ -7,10 +7,6 @@ export function createFastifyLoggerOptions(
   const options: pino.LoggerOptions = {
     level: config.logLevel,
     timestamp: pino.stdTimeFunctions.isoTime,
-    base: {
-      service: 'github-release-notifier',
-      env: config.mode,
-    },
     redact: {
       paths: [
         'req.headers.authorization',
