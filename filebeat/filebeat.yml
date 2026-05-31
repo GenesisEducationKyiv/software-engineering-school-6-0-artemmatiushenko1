@@ -3,17 +3,26 @@ filebeat.inputs:
     paths:
       - '/var/lib/docker/containers/*/*.log'
     processors:
-      - add_docker_metadata:
-          host: 'unix:///var/run/docker.sock'
+      # Container input unwraps Docker JSON; message is already Pino JSON
       - decode_json_fields:
           fields: ['message']
-          target: 'docker'
-          overwrite_keys: true
-      - decode_json_fields:
-          fields: ['docker.log']
           target: ''
           overwrite_keys: true
           add_error_key: true
+      # url and service collide with ECS object mappings and cause bulk rejections
+      - rename:
+          fields:
+            - from: url
+              to: path
+            - from: service
+              to: app_name
+          ignore_missing: true
+          fail_on_error: false
+      - drop_fields:
+          fields: ['message']
+          ignore_missing: true
+      - add_docker_metadata:
+          host: 'unix:///var/run/docker.sock'
       - drop_event:
           when:
             not:

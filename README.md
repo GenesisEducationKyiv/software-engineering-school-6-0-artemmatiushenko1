@@ -105,23 +105,76 @@ docker compose --profile logging up --build -d
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| Elasticsearch | [http://localhost:9200](http://localhost:9200) | Log storage |
+| Elasticsearch | [http://localhost:9200](http://localhost:9200) | Log storage (auth required) |
 | Kibana | [http://localhost:5601](http://localhost:5601) | Log search UI |
+
+**Credentials** (see `.env.example`):
+
+- **Kibana UI login:** username `elastic`, password `ELASTIC_PASSWORD` (default: `changeme`)
+- **Elasticsearch API / Filebeat:** same `elastic` credentials
+- Kibana connects to Elasticsearch internally as `kibana_system` (configured automatically by the `elasticsearch-setup` service)
+
+If you previously ran Elasticsearch with security disabled, reset its data volume before starting with security enabled:
+
+```bash
+docker compose --profile logging down
+docker volume rm $(docker volume ls -q --filter name=elasticsearch_data)
+docker compose --profile logging up -d
+```
 
 **Environment variables** (see `.env.example`):
 
 - `LOG_LEVEL` — Pino log level (`info` default)
 - `LOG_PRETTY` — Human-readable logs in local dev only; keep `false` in Docker so Filebeat can parse JSON
+- `ELASTIC_PASSWORD` — Elasticsearch superuser password (`elastic` user; Kibana UI login)
+- `KIBANA_SYSTEM_PASSWORD` — internal password for Kibana’s Elasticsearch connection
+- `KIBANA_ENCRYPTION_KEY` — Kibana saved-object encryption key (min 32 characters)
 
 **Verify the pipeline:**
 
-1. Check Elasticsearch: `curl http://localhost:9200/_cat/indices?v`
+1. Check Elasticsearch: `curl -u elastic:changeme http://localhost:9200/_cat/indices?v`
 2. Generate traffic: `curl http://localhost:3000/health`
 3. Inspect raw JSON logs: `docker logs api`
-4. In Kibana → **Discover** → create a data view with index pattern `github-release-notifier-*`
-5. Filter on fields such as `level`, `msg`, `email`, `repo`, `requestId`
+4. Log in to Kibana at [http://localhost:5601](http://localhost:5601) with `elastic` / your `ELASTIC_PASSWORD`
+5. Create a data view:
+   - Direct link: [http://localhost:5601/app/management/kibana/dataViews/create](http://localhost:5601/app/management/kibana/dataViews/create)
+   - Or: **☰ → Stack Management → Data views → Create data view**
+   - If you see "First, you need data", click **create a data view against hidden, system or default indices** at the bottom of that page
+   - Index pattern: `github-release-notifier-*`, timestamp field: `@timestamp`
+6. Open **Discover**, select the data view, and filter on fields such as `level`, `msg`, `email`, `repo`, `requestId`
 
-Filebeat reads the `api` container logs from the Docker engine and indexes them daily (`github-release-notifier-YYYY.MM.DD`). The logging stack is for **local development only** (Elasticsearch security disabled).
+Filebeat reads the `api` container logs from the Docker engine and indexes them daily (`github-release-notifier-YYYY.MM.DD`). Elasticsearch uses HTTP with authentication enabled and TLS disabled for local development.
+
+**Example Kibana queries (KQL in Discover):**
+
+```kql
+# HTTP access logs
+msg: "request completed"
+msg: "request completed" and path: "/health"
+msg: "request completed" and statusCode >= 400
+
+# Business events
+msg: "User subscribed"
+msg: "New release detected" and repo: "owner/repo"
+
+# Errors (Pino level 50)
+level: 50
+
+# Trace one request
+requestId: "your-uuid-here"
+```
+
+> **Note:** Pino's `url` and `service` fields are renamed to `path` and `app_name` before indexing because the Filebeat ECS template maps `url` and `service` as objects. Without this rename, Elasticsearch rejects log lines and Filebeat reports dropped events.
+
+If Filebeat was reconfigured, reset the data stream so field mappings stay consistent:
+
+```bash
+curl -X DELETE -u elastic:changeme 'http://localhost:9200/_data_stream/github-release-notifier-*'
+docker compose --profile logging restart filebeat
+curl http://localhost:3000/health
+```
+
+Restart Filebeat after config changes: `docker compose --profile logging restart filebeat`.
 
 > **Note:** E2E tests (`docker-compose.e2e.yaml`) do not start the ELK stack to keep CI fast.
 

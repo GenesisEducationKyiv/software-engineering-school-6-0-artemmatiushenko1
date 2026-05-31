@@ -46,7 +46,10 @@ services:
     container_name: github-release-notifier-elasticsearch
     environment:
       discovery.type: single-node
-      xpack.security.enabled: 'false'
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      xpack.security.enabled: 'true'
+      xpack.security.http.ssl.enabled: 'false'
+      xpack.security.transport.ssl.enabled: 'false'
       ES_JAVA_OPTS: '-Xms512m -Xmx512m'
     ports:
       - '9200:9200'
@@ -54,11 +57,40 @@ services:
       - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck:
       test:
-        ['CMD-SHELL', 'curl -fsS http://localhost:9200/_cluster/health || exit 1']
+        [
+          'CMD-SHELL',
+          'curl -fsS -u elastic:${ELASTIC_PASSWORD:-changeme} http://localhost:9200/_cluster/health || exit 1',
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 40s
+
+  elasticsearch-setup:
+    profiles:
+      - logging
+    image: curlimages/curl:8.11.1
+    container_name: github-release-notifier-elasticsearch-setup
+    restart: 'no'
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-changeme}
+    command:
+      - sh
+      - -c
+      - |
+        echo "Setting kibana_system password..."
+        until curl -sf -u "elastic:$$ELASTIC_PASSWORD" \
+          -X POST "http://elasticsearch:9200/_security/user/kibana_system/_password" \
+          -H "Content-Type: application/json" \
+          -d "{\"password\":\"$$KIBANA_SYSTEM_PASSWORD\"}"; do
+          echo "Waiting for Elasticsearch security API..."
+          sleep 2
+        done
+        echo "kibana_system password configured."
 
   kibana:
     profiles:
@@ -67,11 +99,16 @@ services:
     container_name: github-release-notifier-kibana
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-changeme}
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${KIBANA_ENCRYPTION_KEY:-min-32-char-local-dev-encryption-key!!}
+      XPACK_REPORTING_ENCRYPTIONKEY: ${KIBANA_ENCRYPTION_KEY:-min-32-char-local-dev-encryption-key!!}
+      XPACK_SECURITY_ENCRYPTIONKEY: ${KIBANA_ENCRYPTION_KEY:-min-32-char-local-dev-encryption-key!!}
     ports:
       - '5601:5601'
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      elasticsearch-setup:
+        condition: service_completed_successfully
 
   filebeat:
     profiles:
@@ -79,7 +116,18 @@ services:
     image: docker.elastic.co/beats/filebeat:8.17.0
     container_name: github-release-notifier-filebeat
     user: root
-    command: filebeat -e -strict.perms=false
+    environment:
+      ELASTICSEARCH_USERNAME: elastic
+      ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+    command:
+      - filebeat
+      - run
+      - -e
+      - --strict.perms=false
+      - -E
+      - output.elasticsearch.username=elastic
+      - -E
+      - output.elasticsearch.password=${ELASTIC_PASSWORD:-changeme}
     volumes:
       - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
