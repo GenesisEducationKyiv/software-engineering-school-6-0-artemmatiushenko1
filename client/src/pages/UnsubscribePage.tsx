@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, XCircle, Loader2, Home } from 'lucide-react';
@@ -9,8 +9,12 @@ export default function UnsubscribePage() {
     'loading',
   );
   const [message, setMessage] = useState('');
+  const initialized = useRef(false);
 
   useEffect(() => {
+    if (!token || initialized.current) return;
+    initialized.current = true;
+
     const unsubscribe = async () => {
       try {
         const response = await fetch(`/api/unsubscribe/${token}`);
@@ -27,9 +31,7 @@ export default function UnsubscribePage() {
       }
     };
 
-    if (token) {
-      unsubscribe();
-    }
+    unsubscribe();
   }, [token]);
 
   return (

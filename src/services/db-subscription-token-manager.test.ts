@@ -1,22 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { Mocked } from 'vitest';
 import { DbSubscriptionTokenManager } from './db-subscription-token-manager.js';
 import type { SubscriptionRepository } from '../domain/subscription.repository.js';
 import type { SubscriptionToken } from '../domain/subscription.js';
+import { mock } from 'vitest-mock-extended';
 
 describe('DbSubscriptionTokenManager', () => {
   let tokenManager: DbSubscriptionTokenManager;
-  let repoMock: Mocked<SubscriptionRepository>;
+  const repoMock = mock<SubscriptionRepository>();
 
   beforeEach(() => {
     vi.useFakeTimers();
-    repoMock = {
-      createToken: vi.fn(),
-      findToken: vi.fn(),
-      findTokenByValue: vi.fn(),
-      findTokenBySubscriptionIdAndScope: vi.fn(),
-      deleteToken: vi.fn(),
-    } as unknown as Mocked<SubscriptionRepository>;
+    vi.clearAllMocks();
 
     tokenManager = new DbSubscriptionTokenManager(repoMock, 24);
   });

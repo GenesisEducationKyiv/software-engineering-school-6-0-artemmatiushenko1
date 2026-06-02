@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Mocked } from 'vitest';
 import { NotificationService } from './notification.service.js';
 import type { EmailService } from '../domain/email.js';
 import type { SubscriptionTokenManager } from '../domain/subscription-token-manager.js';
@@ -7,36 +6,26 @@ import type { Subscription } from '../domain/subscription.js';
 import type { GithubRelease } from '../domain/github.js';
 import { TokenNotFoundError } from '../domain/errors.js';
 import type { Logger } from '../domain/logger.js';
+import { mock } from 'vitest-mock-extended';
+import type { Metrics } from '../domain/metrics.js';
 
 describe('NotificationService', () => {
   let notificationService: NotificationService;
-  let emailServiceMock: Mocked<EmailService>;
-  let tokenManagerMock: Mocked<SubscriptionTokenManager>;
-  let loggerMock: Mocked<Logger>;
+  const emailServiceMock = mock<EmailService>();
+  const tokenManagerMock = mock<SubscriptionTokenManager>();
+  const loggerMock = mock<Logger>();
   const appUrl = 'http://localhost:3000';
+  const metricsMock = mock<Metrics>();
 
   beforeEach(() => {
-    emailServiceMock = {
-      sendEmail: vi.fn(),
-    };
-
-    tokenManagerMock = {
-      getTokenBySubscriptionIdAndScope: vi.fn(),
-    } as unknown as Mocked<SubscriptionTokenManager>;
-
-    loggerMock = {
-      info: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-      debug: vi.fn(),
-    };
+    vi.clearAllMocks();
 
     notificationService = new NotificationService(
       emailServiceMock,
       tokenManagerMock,
       loggerMock,
       appUrl,
-      undefined,
+      metricsMock,
     );
   });
 

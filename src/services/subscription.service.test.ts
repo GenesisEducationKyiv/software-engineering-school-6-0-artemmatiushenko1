@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Mocked } from 'vitest';
 import { SubscriptionService } from './subscription.service.js';
 import type { SubscriptionRepository } from '../domain/subscription.repository.js';
 import type { GithubClient } from '../domain/github.js';
@@ -23,81 +22,37 @@ import type {
   DomainTransaction,
 } from '../domain/transaction-manager.js';
 import type { ScannerService } from './scanner.service.js';
-
-class MockTransactionManager implements TransactionManager {
-  async run<T>(work: (tx: DomainTransaction) => Promise<T>): Promise<T> {
-    return await work({} as DomainTransaction);
-  }
-}
+import { mock } from 'vitest-mock-extended';
+import type { Metrics } from '../domain/metrics.js';
 
 describe('SubscriptionService', () => {
   let subscriptionService: SubscriptionService;
-  let repoMock: Mocked<SubscriptionRepository>;
-  let githubClientMock: Mocked<GithubClient>;
-  let emailServiceMock: Mocked<EmailService>;
-  let tokenManagerMock: Mocked<SubscriptionTokenManager>;
-  let scannerServiceMock: Mocked<ScannerService>;
-  let loggerMock: Mocked<Logger>;
-  let transactionManager: TransactionManager;
+  const repoMock = mock<SubscriptionRepository>();
+  const githubClientMock = mock<GithubClient>();
+  const emailServiceMock = mock<EmailService>();
+  const tokenManagerMock = mock<SubscriptionTokenManager>();
+  const scannerServiceMock = mock<ScannerService>();
+  const loggerMock = mock<Logger>();
+  const transactionManagerMock = mock<TransactionManager>();
+  const metricsMock = mock<Metrics>();
 
   beforeEach(() => {
-    repoMock = {
-      createSubscription: vi.fn(),
-      findByEmailAndRepo: vi.fn(),
-      findSubscriptionById: vi.fn(),
-      findSubscriptionsByEmail: vi.fn(),
-      findConfirmedSubscriptionsByEmail: vi.fn(),
-      findAllConfirmedSubscriptions: vi.fn(),
-      confirmSubscription: vi.fn(),
-      updateLastSeenTag: vi.fn(),
-      deleteSubscription: vi.fn(),
-      createToken: vi.fn(),
-      findToken: vi.fn(),
-      findTokenByValue: vi.fn(),
-      findTokenBySubscriptionIdAndScope: vi.fn(),
-      deleteToken: vi.fn(),
-    };
+    vi.clearAllMocks();
 
-    githubClientMock = {
-      repositoryExists: vi.fn(),
-      getLatestRelease: vi.fn(),
-    };
-
-    emailServiceMock = {
-      sendEmail: vi.fn(),
-    };
-
-    tokenManagerMock = {
-      createToken: vi.fn(),
-      getTokenByValue: vi.fn(),
-      getTokenBySubscriptionIdAndScope: vi.fn(),
-      validateToken: vi.fn(),
-      invalidateToken: vi.fn(),
-    };
-
-    scannerServiceMock = {
-      scanSubscription: vi.fn().mockResolvedValue(undefined),
-    } as unknown as Mocked<ScannerService>;
-
-    loggerMock = {
-      info: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-      debug: vi.fn(),
-    };
-
-    transactionManager = new MockTransactionManager();
+    transactionManagerMock.run.mockImplementation(
+      async (work) => await work({} as DomainTransaction),
+    );
 
     subscriptionService = new SubscriptionService(
       repoMock,
       githubClientMock,
       emailServiceMock,
       tokenManagerMock,
-      transactionManager,
+      transactionManagerMock,
       loggerMock,
       'http://localhost:3000',
       scannerServiceMock,
-      undefined,
+      metricsMock,
     );
   });
 

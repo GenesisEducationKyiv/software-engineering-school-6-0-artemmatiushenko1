@@ -8,4 +8,6 @@ export interface Metrics {
   recordScanDuration(durationSeconds: number): void;
   incrementCacheHit(type: string): void;
   incrementCacheMiss(type: string): void;
+  getMetrics(): Promise<string>;
+  getContentType(): string;
 }
