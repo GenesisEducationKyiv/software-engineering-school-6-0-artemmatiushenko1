@@ -1,5 +1,5 @@
 services:
-  db-e2e:
+  db:
     image: postgres:16-alpine
     container_name: github-release-notifier-db-e2e
     environment:
@@ -12,7 +12,7 @@ services:
       timeout: 5s
       retries: 5
 
-  redis-e2e:
+  redis:
     image: redis:7-alpine
     container_name: github-release-notifier-redis-e2e
     healthcheck:
@@ -25,7 +25,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.e2e
-    container_name: github-mock
+    container_name: github-release-notifier-github-mock-e2e
     command: npx tsx tests/e2e/mocks/github/github-server.mock.ts
     ports:
       - '9090:9090'
@@ -41,7 +41,7 @@ services:
 
   mailpit:
     image: axllent/mailpit
-    container_name: mailpit
+    container_name: github-release-notifier-mailpit-e2e
     ports:
       - '1025:1025' # SMTP port
       - '8025:8025' # Web UI port
@@ -59,19 +59,19 @@ services:
       timeout: 5s
       retries: 5
 
-  api-e2e:
+  api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: api-e2e
+    container_name: github-release-notifier-api-e2e
     environment:
       NODE_ENV: test
-      DATABASE_URL: postgres://user:password@db-e2e:5432/github_release_notifier_e2e
-      REDIS_URL: redis://redis-e2e:6379
+      DATABASE_URL: postgres://user:password@db:5432/github_release_notifier_e2e
+      REDIS_URL: redis://redis:6379
       GITHUB_API_URL: http://github-mock:9090
       PORT: 3000
       HOST: 0.0.0.0
-      APP_URL: http://api-e2e:3000
+      APP_URL: http://api:3000
       API_PREFIX: /api
       SCANNER_CRON: '*/10 * * * *'
       EMAIL_TYPE: smtp
@@ -88,9 +88,9 @@ services:
       timeout: 5s
       retries: 5
     depends_on:
-      db-e2e:
+      db:
         condition: service_healthy
-      redis-e2e:
+      redis:
         condition: service_healthy
       github-mock:
         condition: service_healthy
@@ -102,15 +102,15 @@ services:
       context: .
       dockerfile: Dockerfile.e2e
     command: npm run test:e2e
-    container_name: e2e
+    container_name: github-release-notifier-e2e
     environment:
       NODE_ENV: test
-      DATABASE_URL: postgres://user:password@db-e2e:5432/github_release_notifier_e2e
-      REDIS_URL: redis://redis-e2e:6379
+      DATABASE_URL: postgres://user:password@db:5432/github_release_notifier_e2e
+      REDIS_URL: redis://redis:6379
       GITHUB_API_URL: http://github-mock:9090
       PORT: 3000
       HOST: 0.0.0.0
-      APP_URL: http://api-e2e:3000
+      APP_URL: http://api:3000
       API_PREFIX: /api
       SCANNER_CRON: '*/10 * * * *'
       EMAIL_TYPE: smtp
@@ -121,7 +121,7 @@ services:
       - ./playwright-report:/app/playwright-report
       - ./test-results:/app/test-results
     depends_on:
-      db-e2e:
+      db:
         condition: service_healthy
-      api-e2e:
+      api:
         condition: service_healthy
