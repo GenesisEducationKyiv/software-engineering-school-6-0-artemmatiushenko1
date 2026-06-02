@@ -152,7 +152,7 @@ If you need to run tests locally with the Playwright UI:
     ```
 2.  **Start the E2E infrastructure**:
     ```bash
-    docker compose -f docker-compose.e2e.yaml up db-e2e redis-e2e github-mock mailpit -d
+    docker compose -f docker-compose.e2e.yaml up db redis github-mock mailpit -d
     ```
 3.  **Run Playwright**:
     ```bash
