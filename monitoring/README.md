@@ -4,6 +4,8 @@ Prometheus, Grafana, and the optional ELK logging pipeline (Elasticsearch, Kiban
 
 These services are defined in `docker-compose.yaml` in this folder and are meant to run **together with** the app stack in the repository root. Compose merges both files into one project so services share a network and can reach `app` by hostname.
 
+> **Important:** Run all commands from the **repository root**. Volume paths in `monitoring/docker-compose.yaml` are relative to the project root (e.g. `./monitoring/prometheus/...`), not this folder.
+
 ## Commands (run from repository root)
 
 **Metrics only** (Prometheus + Grafana):
