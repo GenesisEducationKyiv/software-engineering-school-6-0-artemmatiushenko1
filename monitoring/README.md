@@ -35,7 +35,8 @@ COMPOSE_FILE=docker-compose.yaml:monitoring/docker-compose.yaml
 ## Layout
 
 - `prometheus/` — scrape config (`app:3000/metrics`)
-- `grafana/` — datasource provisioning (Prometheus)
+- `grafana/provisioning/` — Prometheus datasource + dashboards (auto-loaded on startup)
+- `grafana/provisioning/dashboards/json/monitoring.json` — RED metrics dashboard
 - `filebeat/` — ship `github-release-notifier-app` container logs to Elasticsearch
 
 ## URLs
