@@ -93,6 +93,7 @@ Once the containers are running, the application will be accessible at:
 - **API Documentation (Swagger)**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
 - **Prometheus Metrics**: [http://localhost:3000/metrics](http://localhost:3000/metrics)
 - **Prometheus UI**: [http://localhost:9090](http://localhost:9090) (scrapes the app `/metrics` endpoint)
+- **Grafana**: [http://localhost:3001](http://localhost:3001) (default login `admin` / `admin`, Prometheus datasource preconfigured)
 
 ### Structured Logging & Elasticsearch (Optional)
 
@@ -210,6 +211,7 @@ LOG_PRETTY=true npm run dev
 
 - **Metrics Endpoint**: `http://localhost:3000/metrics`
 - **Prometheus** (Docker): `http://localhost:9090` — targets `app:3000/metrics` on the Compose network
+- **Grafana** (Docker): `http://localhost:3001` — Prometheus datasource at `http://prometheus:9090` (provisioned on startup)
 
 ### HTTP RED metrics
 
