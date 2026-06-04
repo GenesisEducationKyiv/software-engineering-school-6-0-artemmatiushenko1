@@ -92,6 +92,7 @@ Once the containers are running, the application will be accessible at:
 - **Web Interface**: [http://localhost:3000](http://localhost:3000)
 - **API Documentation (Swagger)**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
 - **Prometheus Metrics**: [http://localhost:3000/metrics](http://localhost:3000/metrics)
+- **Prometheus UI**: [http://localhost:9090](http://localhost:9090) (scrapes the app `/metrics` endpoint)
 
 ### Structured Logging & Elasticsearch (Optional)
 
@@ -208,6 +209,7 @@ LOG_PRETTY=true npm run dev
 ## Monitoring & Metrics
 
 - **Metrics Endpoint**: `http://localhost:3000/metrics`
+- **Prometheus** (Docker): `http://localhost:9090` — targets `app:3000/metrics` on the Compose network
 
 ### HTTP RED metrics
 
