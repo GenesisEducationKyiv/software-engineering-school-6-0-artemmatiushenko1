@@ -81,28 +81,36 @@ The service operates on two core processes: **Subscription Management** and **Au
 
 ### Running with Docker (Recommended)
 
-The easiest way to run the entire system is using Docker Compose:
+**App stack only** (Postgres, Redis, Mailpit, API):
 
 ```bash
 docker compose up --build
 ```
+
+**App + monitoring** (Prometheus, Grafana):
+
+```bash
+docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml up --build
+```
+
+See [monitoring/README.md](./monitoring/README.md) for details. You can set `COMPOSE_FILE=docker-compose.yaml:monitoring/docker-compose.yaml` in `.env` to omit the `-f` flags.
 
 Once the containers are running, the application will be accessible at:
 
 - **Web Interface**: [http://localhost:3000](http://localhost:3000)
 - **API Documentation (Swagger)**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
 - **Prometheus Metrics**: [http://localhost:3000/metrics](http://localhost:3000/metrics)
-- **Prometheus UI**: [http://localhost:9090](http://localhost:9090) (scrapes the app `/metrics` endpoint)
+- **Prometheus UI**: [http://localhost:9090](http://localhost:9090) (requires monitoring compose; scrapes `app:3000/metrics`)
 - **Grafana**: [http://localhost:3001](http://localhost:3001) (default login `admin` / `admin`, Prometheus datasource preconfigured)
 
 ### Structured Logging & Elasticsearch (Optional)
 
-The API emits **structured JSON logs** (Pino) to stdout with fixed fields (`service`, `env`, `requestId` on HTTP requests). By default, logs are available via `docker logs app`.
+The API emits **structured JSON logs** (Pino) to stdout with fixed fields (`service`, `env`, `requestId` on HTTP requests). By default, logs are available via `docker logs github-release-notifier-app`.
 
-To ship logs to **Elasticsearch** and explore them in **Kibana**, start the optional logging profile (requires ~2GB Docker memory for Elasticsearch):
+To ship logs to **Elasticsearch** and explore them in **Kibana**, start the logging profile on the monitoring stack (requires ~2GB Docker memory for Elasticsearch):
 
 ```bash
-docker compose --profile logging up --build -d
+docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml --profile logging up --build -d
 ```
 
 | Service | URL | Purpose |
@@ -119,9 +127,9 @@ docker compose --profile logging up --build -d
 If you previously ran Elasticsearch with security disabled, reset its data volume before starting with security enabled:
 
 ```bash
-docker compose --profile logging down
+docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml --profile logging down
 docker volume rm $(docker volume ls -q --filter name=elasticsearch_data)
-docker compose --profile logging up -d
+docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml --profile logging up -d
 ```
 
 **Environment variables** (see `.env.example`):
@@ -136,7 +144,7 @@ docker compose --profile logging up -d
 
 1. Check Elasticsearch: `curl -u elastic:changeme http://localhost:9200/_cat/indices?v`
 2. Generate traffic: `curl http://localhost:3000/health`
-3. Inspect raw JSON logs: `docker logs app`
+3. Inspect raw JSON logs: `docker logs github-release-notifier-app`
 4. Log in to Kibana at [http://localhost:5601](http://localhost:5601) with `elastic` / your `ELASTIC_PASSWORD`
 5. Create a data view:
    - Direct link: [http://localhost:5601/app/management/kibana/dataViews/create](http://localhost:5601/app/management/kibana/dataViews/create)
@@ -172,11 +180,11 @@ If Filebeat was reconfigured, reset the data stream so field mappings stay consi
 
 ```bash
 curl -X DELETE -u elastic:changeme 'http://localhost:9200/_data_stream/github-release-notifier-*'
-docker compose --profile logging restart filebeat
+docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml --profile logging restart filebeat
 curl http://localhost:3000/health
 ```
 
-Restart Filebeat after config changes: `docker compose --profile logging restart filebeat`.
+Restart Filebeat after config changes: `docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml --profile logging restart filebeat`.
 
 > **Note:** E2E tests (`docker-compose.e2e.yaml`) do not start the ELK stack to keep CI fast.
 
@@ -210,8 +218,8 @@ LOG_PRETTY=true npm run dev
 ## Monitoring & Metrics
 
 - **Metrics Endpoint**: `http://localhost:3000/metrics`
-- **Prometheus** (Docker): `http://localhost:9090` — targets `app:3000/metrics` on the Compose network
-- **Grafana** (Docker): `http://localhost:3001` — Prometheus datasource at `http://prometheus:9090` (provisioned on startup)
+- **Prometheus** (`monitoring/`): `http://localhost:9090` — targets `app:3000/metrics` on the shared Compose network
+- **Grafana** (`monitoring/`): `http://localhost:3001` — Prometheus datasource at `http://prometheus:9090` (provisioned on startup)
 
 ### HTTP RED metrics
 
@@ -301,6 +309,7 @@ If you need to run tests locally with the Playwright UI:
 - `src/routes`: API route definitions.
 - `client/`: Frontend application code.
 - `drizzle/`: Database migrations.
+- `monitoring/`: Prometheus, Grafana, Filebeat, and optional ELK stack (`docker-compose.yaml` + configs).
 
 ## Database Schema
 
