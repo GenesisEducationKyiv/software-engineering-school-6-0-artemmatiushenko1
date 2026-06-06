@@ -3,7 +3,6 @@ filebeat.inputs:
     paths:
       - '/var/lib/docker/containers/*/*.log'
     processors:
-      # Container input unwraps Docker JSON; message is already Pino JSON
       - decode_json_fields:
           fields: ['message']
           target: ''
