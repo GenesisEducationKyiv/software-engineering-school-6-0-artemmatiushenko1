@@ -16,6 +16,7 @@ import cron, { type ScheduledTask } from 'node-cron';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
 import { type AppDependencies } from './dependencies.js';
+import { elapsedTimeToSeconds } from './infrastructure/fastify/elapsed-time.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,7 +68,7 @@ export class App {
 
     this.fastify.addHook('onResponse', async (request, reply) => {
       const route = request.routeOptions?.url ?? 'unknown';
-      const durationSeconds = reply.elapsedTime / 1000;
+      const durationSeconds = elapsedTimeToSeconds(reply);
 
       this.deps.metrics.recordHttpRequest(
         request.method,
