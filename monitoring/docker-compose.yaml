@@ -28,8 +28,6 @@ services:
       - prometheus
 
   elasticsearch:
-    profiles:
-      - logging
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
     container_name: github-release-notifier-elasticsearch
     environment:
@@ -55,8 +53,6 @@ services:
       start_period: 40s
 
   elasticsearch-setup:
-    profiles:
-      - logging
     image: curlimages/curl:8.11.1
     container_name: github-release-notifier-elasticsearch-setup
     restart: 'no'
@@ -81,8 +77,6 @@ services:
         echo "kibana_system password configured."
 
   kibana:
-    profiles:
-      - logging
     image: docker.elastic.co/kibana/kibana:8.17.0
     container_name: github-release-notifier-kibana
     environment:
@@ -109,8 +103,6 @@ services:
         condition: service_completed_successfully
 
   filebeat:
-    profiles:
-      - logging
     image: docker.elastic.co/beats/filebeat:8.17.0
     container_name: github-release-notifier-filebeat
     user: root

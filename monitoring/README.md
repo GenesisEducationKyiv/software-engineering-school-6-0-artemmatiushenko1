@@ -1,6 +1,6 @@
 # Monitoring stack
 
-Prometheus, Grafana, and the optional ELK logging pipeline (Elasticsearch, Kibana, Filebeat).
+Prometheus, Grafana, and the ELK logging pipeline (Elasticsearch, Kibana, Filebeat).
 
 These services are defined in `docker-compose.yaml` in this folder and are meant to run **together with** the app stack in the repository root. Compose merges both files into one project so services share a network and can reach `app` by hostname.
 
@@ -8,16 +8,10 @@ These services are defined in `docker-compose.yaml` in this folder and are meant
 
 ## Commands (run from repository root)
 
-**Metrics only** (Prometheus + Grafana):
+**App + monitoring** (Prometheus, Grafana, Elasticsearch, Kibana, Filebeat):
 
 ```bash
 docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml up --build -d
-```
-
-**Metrics + structured logging** (adds Elasticsearch, Kibana, Filebeat):
-
-```bash
-docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml --profile logging up --build -d
 ```
 
 **App only** (no monitoring):

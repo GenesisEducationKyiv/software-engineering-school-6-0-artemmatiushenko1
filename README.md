@@ -87,7 +87,7 @@ The service operates on two core processes: **Subscription Management** and **Au
 docker compose up --build
 ```
 
-**App + monitoring** (Prometheus, Grafana):
+**App + monitoring** (Prometheus, Grafana, Elasticsearch, Kibana, Filebeat):
 
 ```bash
 docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml up --build
@@ -103,14 +103,14 @@ Once the containers are running, the application will be accessible at:
 - **Prometheus UI**: [http://localhost:9090](http://localhost:9090) (requires monitoring compose; scrapes `app:3000/metrics`)
 - **Grafana**: [http://localhost:3001](http://localhost:3001) (default login `admin` / `admin`, Prometheus datasource preconfigured)
 
-### Structured Logging & Elasticsearch (Optional)
+### Structured Logging & Elasticsearch
 
 The API emits **structured JSON logs** (Pino) to stdout with fixed fields (`service`, `env`, `requestId` on HTTP requests). By default, logs are available via `docker logs github-release-notifier-app`.
 
-To ship logs to **Elasticsearch** and explore them in **Kibana**, start the logging profile on the monitoring stack (requires ~2GB Docker memory for Elasticsearch):
+When you start the monitoring stack, **Filebeat** ships logs to **Elasticsearch** and you can explore them in **Kibana** (requires ~2GB Docker memory for Elasticsearch):
 
 ```bash
-docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml --profile logging up --build -d
+docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml up --build -d
 ```
 
 | Service | URL | Purpose |
@@ -127,9 +127,9 @@ docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml --profil
 If you previously ran Elasticsearch with security disabled, reset its data volume before starting with security enabled:
 
 ```bash
-docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml --profile logging down
+docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml down
 docker volume rm $(docker volume ls -q --filter name=elasticsearch_data)
-docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml --profile logging up -d
+docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml up -d
 ```
 
 **Environment variables** (see `.env.example`):
@@ -180,11 +180,11 @@ If Filebeat was reconfigured, reset the data stream so field mappings stay consi
 
 ```bash
 curl -X DELETE -u elastic:changeme 'http://localhost:9200/_data_stream/github-release-notifier-*'
-docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml --profile logging restart filebeat
+docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml restart filebeat
 curl http://localhost:3000/health
 ```
 
-Restart Filebeat after config changes: `docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml --profile logging restart filebeat`.
+Restart Filebeat after config changes: `docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml restart filebeat`.
 
 > **Note:** E2E tests (`docker-compose.e2e.yaml`) do not start the ELK stack to keep CI fast.
 
