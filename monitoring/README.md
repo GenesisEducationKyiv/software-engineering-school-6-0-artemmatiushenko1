@@ -4,6 +4,20 @@ Prometheus, Grafana, and the ELK logging pipeline (Elasticsearch, Kibana, Filebe
 
 This stack collects application metrics and structured logs so we can observe request rates, errors, latency, and business events in Grafana and search or filter app logs in Kibana.
 
+## Architecture
+
+```mermaid
+flowchart LR
+  App[App]
+
+  App -->|/metrics| Prometheus
+  Prometheus --> Grafana
+
+  App -->|JSON logs| Filebeat
+  Filebeat --> Elasticsearch
+  Elasticsearch --> Kibana
+```
+
 > **Important:** Run all commands from the **repository root**. Volume paths in `docker-compose.yaml` here are relative to the project root (e.g. `./monitoring/prometheus/...`), not this folder.
 
 ## Start
@@ -20,13 +34,6 @@ See `.env.example` in the repository root:
 - `ELASTIC_PASSWORD` — Elasticsearch superuser (`elastic`)
 - `KIBANA_SYSTEM_PASSWORD` — internal Kibana → Elasticsearch connection
 - `KIBANA_ENCRYPTION_KEY` — Kibana saved-object encryption (min 32 characters)
-
-## Layout
-
-- `prometheus/` — Prometheus scrape config
-- `grafana/provisioning/` — Prometheus datasource and dashboards (auto-loaded on startup)
-- `grafana/provisioning/dashboards/json/monitoring.json` — metrics dashboard
-- `filebeat/` — Filebeat output and log shipping config
 
 ## URLs
 
