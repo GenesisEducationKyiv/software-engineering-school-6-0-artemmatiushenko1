@@ -60,7 +60,7 @@ export class App {
       reply.header('x-request-id', request.id);
       request.log = request.log.child({
         method: request.method,
-        path: request.url,
+        route: request.url,
         ip: request.ip,
       });
     });

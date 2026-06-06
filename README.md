@@ -160,7 +160,7 @@ Filebeat reads the `app` container logs from the Docker engine and indexes them 
 ```kql
 # HTTP access logs
 msg: "request completed"
-msg: "request completed" and path: "/health"
+msg: "request completed" and route: "/health"
 msg: "request completed" and statusCode >= 400
 
 # Business events
