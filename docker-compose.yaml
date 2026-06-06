@@ -60,11 +60,6 @@ services:
       - '3000:3000'
     env_file:
       - .env
-    environment:
-      NODE_ENV: production
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-    labels:
-      logging_enabled: 'true'
     healthcheck:
       test:
         [
