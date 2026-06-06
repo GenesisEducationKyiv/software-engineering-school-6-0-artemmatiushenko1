@@ -118,7 +118,7 @@ export class PrometheusMetrics implements Metrics {
     statusCode: number,
     durationSeconds: number,
   ): void {
-    const labels = { method, route, status_code: String(statusCode) };
+    const labels = { method, route, status_code: statusCode };
     this.httpRequests.inc(labels);
     this.httpRequestDuration.observe({ method, route }, durationSeconds);
   }
