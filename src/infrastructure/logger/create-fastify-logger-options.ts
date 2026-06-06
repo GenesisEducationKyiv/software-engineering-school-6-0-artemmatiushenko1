@@ -7,18 +7,6 @@ export function createFastifyLoggerOptions(
   const options: pino.LoggerOptions = {
     level: config.logLevel,
     timestamp: pino.stdTimeFunctions.isoTime,
-    redact: {
-      paths: [
-        'req.headers.authorization',
-        'req.headers.cookie',
-        '*.password',
-        '*.pass',
-        '*.token',
-        '*.refreshToken',
-        '*.clientSecret',
-      ],
-      remove: true,
-    },
   };
 
   if (config.mode === 'development' && config.logPretty) {
