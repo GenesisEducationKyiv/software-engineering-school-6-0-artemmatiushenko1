@@ -2,42 +2,40 @@
 
 Prometheus, Grafana, and the ELK logging pipeline (Elasticsearch, Kibana, Filebeat).
 
-These services are defined in `docker-compose.yaml` in this folder and are meant to run **together with** the app stack in the repository root. Compose merges both files into one project so services share a network and can reach `app` by hostname.
+This stack collects application metrics and structured logs so we can observe request rates, errors, latency, and business events in Grafana and search or filter app logs in Kibana.
 
-> **Important:** Run all commands from the **repository root**. Volume paths in `monitoring/docker-compose.yaml` are relative to the project root (e.g. `./monitoring/prometheus/...`), not this folder.
+> **Important:** Run all commands from the **repository root**. Volume paths in `docker-compose.yaml` here are relative to the project root (e.g. `./monitoring/prometheus/...`), not this folder.
 
-## Commands (run from repository root)
-
-**App + monitoring** (Prometheus, Grafana, Elasticsearch, Kibana, Filebeat):
+## Start
 
 ```bash
-docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml up --build -d
+docker compose -f monitoring/docker-compose.yaml up
 ```
 
-**App only** (no monitoring):
+## Environment variables
 
-```bash
-docker compose up --build -d
-```
+See `.env.example` in the repository root:
 
-Optional: set in `.env` so you can omit `-f` flags:
-
-```bash
-COMPOSE_FILE=docker-compose.yaml:monitoring/docker-compose.yaml
-```
+- `GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD` — Grafana login
+- `ELASTIC_PASSWORD` — Elasticsearch superuser (`elastic`)
+- `KIBANA_SYSTEM_PASSWORD` — internal Kibana → Elasticsearch connection
+- `KIBANA_ENCRYPTION_KEY` — Kibana saved-object encryption (min 32 characters)
 
 ## Layout
 
-- `prometheus/` — scrape config (`app:3000/metrics`)
-- `grafana/provisioning/` — Prometheus datasource + dashboards (auto-loaded on startup)
-- `grafana/provisioning/dashboards/json/monitoring.json` — RED metrics dashboard
-- `filebeat/` — ship `github-release-notifier-app` container logs to Elasticsearch
+- `prometheus/` — Prometheus scrape config
+- `grafana/provisioning/` — Prometheus datasource and dashboards (auto-loaded on startup)
+- `grafana/provisioning/dashboards/json/monitoring.json` — metrics dashboard
+- `filebeat/` — Filebeat output and log shipping config
 
 ## URLs
 
-| Service     | URL                      |
-|-------------|--------------------------|
-| Prometheus  | http://localhost:9090    |
-| Grafana     | http://localhost:3001    |
-| Elasticsearch | http://localhost:9200 |
-| Kibana      | http://localhost:5601    |
+| Service       | URL                       |
+|---------------|---------------------------|
+| Prometheus    | http://localhost:9090     |
+| Grafana       | http://localhost:3001     |
+| Elasticsearch | http://localhost:9200     |
+| Kibana        | http://localhost:5601     |
+
+Grafana default login: `admin` / `admin` (override via env vars above).  
+Kibana login: `elastic` / value of `ELASTIC_PASSWORD`.
