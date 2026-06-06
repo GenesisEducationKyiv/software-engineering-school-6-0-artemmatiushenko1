@@ -93,100 +93,13 @@ docker compose up --build
 docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml up --build
 ```
 
-See [monitoring/README.md](./monitoring/README.md) for details. You can set `COMPOSE_FILE=docker-compose.yaml:monitoring/docker-compose.yaml` in `.env` to omit the `-f` flags.
+See [monitoring/README.md](./monitoring/README.md) for the monitoring stack architecture, service URLs, and configuration.
 
 Once the containers are running, the application will be accessible at:
 
 - **Web Interface**: [http://localhost:3000](http://localhost:3000)
 - **API Documentation (Swagger)**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
-- **Prometheus Metrics**: [http://localhost:3000/metrics](http://localhost:3000/metrics)
-- **Prometheus UI**: [http://localhost:9090](http://localhost:9090) (requires monitoring compose; scrapes `app:3000/metrics`)
-- **Grafana**: [http://localhost:3001](http://localhost:3001) (default login `admin` / `admin`, Prometheus datasource preconfigured)
-
-### Structured Logging & Elasticsearch
-
-The API emits **structured JSON logs** (Pino) to stdout with fixed fields (`service`, `env`, `requestId` on HTTP requests). By default, logs are available via `docker logs github-release-notifier-app`.
-
-When you start the monitoring stack, **Filebeat** ships logs to **Elasticsearch** and you can explore them in **Kibana** (requires ~2GB Docker memory for Elasticsearch):
-
-```bash
-docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml up --build -d
-```
-
-| Service | URL | Purpose |
-|---------|-----|---------|
-| Elasticsearch | [http://localhost:9200](http://localhost:9200) | Log storage (auth required) |
-| Kibana | [http://localhost:5601](http://localhost:5601) | Log search UI |
-
-**Credentials** (see `.env.example`):
-
-- **Kibana UI login:** username `elastic`, password `ELASTIC_PASSWORD` (default: `changeme`)
-- **Elasticsearch API / Filebeat:** same `elastic` credentials
-- Kibana connects to Elasticsearch internally as `kibana_system` (configured automatically by the `elasticsearch-setup` service)
-
-If you previously ran Elasticsearch with security disabled, reset its data volume before starting with security enabled:
-
-```bash
-docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml down
-docker volume rm $(docker volume ls -q --filter name=elasticsearch_data)
-docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml up -d
-```
-
-**Environment variables** (see `.env.example`):
-
-- `LOG_LEVEL` — Pino log level (`info` default)
-- `LOG_PRETTY` — Human-readable logs in local dev only; keep `false` in Docker so Filebeat can parse JSON
-- `ELASTIC_PASSWORD` — Elasticsearch superuser password (`elastic` user; Kibana UI login)
-- `KIBANA_SYSTEM_PASSWORD` — internal password for Kibana’s Elasticsearch connection
-- `KIBANA_ENCRYPTION_KEY` — Kibana saved-object encryption key (min 32 characters)
-
-**Verify the pipeline:**
-
-1. Check Elasticsearch: `curl -u elastic:changeme http://localhost:9200/_cat/indices?v`
-2. Generate traffic: `curl http://localhost:3000/health`
-3. Inspect raw JSON logs: `docker logs github-release-notifier-app`
-4. Log in to Kibana at [http://localhost:5601](http://localhost:5601) with `elastic` / your `ELASTIC_PASSWORD`
-5. Create a data view:
-   - Direct link: [http://localhost:5601/app/management/kibana/dataViews/create](http://localhost:5601/app/management/kibana/dataViews/create)
-   - Or: **☰ → Stack Management → Data views → Create data view**
-   - If you see "First, you need data", click **create a data view against hidden, system or default indices** at the bottom of that page
-   - Index pattern: `github-release-notifier-*`, timestamp field: `@timestamp`
-6. Open **Discover**, select the data view, and filter on fields such as `level`, `msg`, `email`, `repo`, `requestId`
-
-Filebeat reads the `app` container logs from the Docker engine and indexes them daily (`github-release-notifier-YYYY.MM.DD`). Elasticsearch uses HTTP with authentication enabled and TLS disabled for local development.
-
-**Example Kibana queries (KQL in Discover):**
-
-```kql
-# HTTP access logs
-msg: "request completed"
-msg: "request completed" and route: "/health"
-msg: "request completed" and statusCode >= 400
-
-# Business events
-msg: "User subscribed"
-msg: "New release detected" and repo: "owner/repo"
-
-# Errors (Pino level 50)
-level: 50
-
-# Trace one request
-requestId: "your-uuid-here"
-```
-
-> **Note:** Pino's `url` and `service` fields are renamed to `path` and `app_name` before indexing because the Filebeat ECS template maps `url` and `service` as objects. Without this rename, Elasticsearch rejects log lines and Filebeat reports dropped events.
-
-If Filebeat was reconfigured, reset the data stream so field mappings stay consistent:
-
-```bash
-curl -X DELETE -u elastic:changeme 'http://localhost:9200/_data_stream/github-release-notifier-*'
-docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml restart filebeat
-curl http://localhost:3000/health
-```
-
-Restart Filebeat after config changes: `docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml restart filebeat`.
-
-> **Note:** E2E tests (`docker-compose.e2e.yaml`) do not start the ELK stack to keep CI fast.
+- **Metrics**: [http://localhost:3000/metrics](http://localhost:3000/metrics)
 
 ### Running Locally
 
@@ -199,62 +112,13 @@ Restart Filebeat after config changes: `docker compose -f docker-compose.yaml -f
    npm run dev
    ```
 
-## Logging
+## Observability
 
-Application logs use **Pino** via Fastify with a domain `Logger` adapter. Each log line includes:
+The API emits **structured JSON logs** (Pino) to stdout and exposes **Prometheus metrics** at `/metrics` (HTTP RED plus business counters for subscriptions, notifications, scans, and cache hits).
 
-- `service`: `github-release-notifier`
-- `env`: `development` | `production` | `test`
-- `requestId`: correlates all logs for a single HTTP request (also returned as `x-request-id` response header)
+Start the optional monitoring stack together with the app (see [monitoring/README.md](./monitoring/README.md)) to scrape metrics into Grafana and ship logs to Kibana.
 
-Domain services log structured context (e.g. `email`, `repo`, `subscriptionId`) instead of interpolated strings, which makes filtering in Kibana straightforward.
-
-For local development without Docker, optional pretty printing:
-
-```bash
-LOG_PRETTY=true npm run dev
-```
-
-## Monitoring & Metrics
-
-- **Metrics Endpoint**: `http://localhost:3000/metrics`
-- **Prometheus** (`monitoring/`): `http://localhost:9090` — targets `app:3000/metrics` on the shared Compose network
-- **Grafana** (`monitoring/`): `http://localhost:3001` — Prometheus datasource at `http://prometheus:9090` (provisioned on startup)
-
-### HTTP RED metrics
-
-The API exposes [RED](https://www.weaveworks.com/blog/2014/06/the-red-method-key-metrics-for-microservices-architecture) (Rate, Errors, Duration) metrics for every HTTP request:
-
-| Metric | Type | Labels | RED signal |
-|--------|------|--------|------------|
-| `http_server_requests_total` | Counter | `method`, `route`, `status_code` | **Rate** and **Errors** |
-| `http_server_request_duration_seconds` | Histogram | `method`, `route` | **Duration** |
-
-`route` uses the Fastify route template (e.g. `/api/confirm/:token`) to avoid high cardinality from tokens in URLs.
-
-**Example PromQL:**
-
-```promql
-# Request rate by route
-sum(rate(http_server_requests_total[5m])) by (route, method)
-
-# 5xx error rate
-sum(rate(http_server_requests_total{status_code=~"5.."}[5m]))
-  / sum(rate(http_server_requests_total[5m]))
-
-# p95 latency by route
-histogram_quantile(0.95,
-  sum(rate(http_server_request_duration_seconds_bucket[5m])) by (le, route)
-)
-```
-
-### Business & batch metrics
-
-- `subscription_requests_total`: Total number of subscription attempts.
-- `notifications_sent_total`: Total number of emails sent.
-- `scanner_runs_total`: Total number of repository scans.
-- `cache_hits_total`: GitHub API cache hit count.
-- `cache_misses_total`: GitHub API cache miss count.
+For local development without Docker, set `LOG_PRETTY=true` for human-readable logs.
 
 ## Testing
 
@@ -309,7 +173,7 @@ If you need to run tests locally with the Playwright UI:
 - `src/routes`: API route definitions.
 - `client/`: Frontend application code.
 - `drizzle/`: Database migrations.
-- `monitoring/`: Prometheus, Grafana, Filebeat, and optional ELK stack (`docker-compose.yaml` + configs).
+- `monitoring/`: Prometheus, Grafana, and ELK stack — see [monitoring/README.md](./monitoring/README.md).
 
 ## Database Schema
 
