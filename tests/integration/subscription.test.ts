@@ -6,6 +6,7 @@ import {
   beforeEach,
   beforeAll,
   afterAll,
+  afterEach,
 } from 'vitest';
 import Fastify from 'fastify';
 import { App } from '../../src/app.js';
@@ -13,6 +14,10 @@ import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/db/schema.js';
+import {
+  MIGRATIONS_FOLDER,
+  runDatabaseMigrations,
+} from '../../src/db/migrate.js';
 import type { Database } from '../../src/db/types.js';
 import assert from 'assert';
 import {
@@ -37,10 +42,11 @@ describe('Subscription Routes Integration with PGlite', () => {
   const emailMock = mock<EmailService>();
   const redisMock = mock<Redis>();
 
-  beforeAll(() => {
+  beforeAll(async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-01-01T12:00:00Z'));
-    db = drizzle(new PGlite(), { schema }) as unknown as Database;
+    db = drizzle(new PGlite(), { schema });
+    await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
   });
 
   afterAll(() => {
@@ -49,7 +55,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
   beforeEach(async () => {
     register.clear();
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
     githubMock.repositoryExists.mockResolvedValue(true);
 
@@ -62,7 +68,9 @@ describe('Subscription Routes Integration with PGlite', () => {
 
     const deps = container.build();
     app = await App.create(TEST_APP_CONFIG, deps, fastify);
+  });
 
+  afterEach(async () => {
     await db.delete(schema.subscriptionTokens);
     await db.delete(schema.subscriptions);
   });

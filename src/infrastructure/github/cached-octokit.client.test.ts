@@ -13,7 +13,7 @@ describe('CachedOctokitGithubClient', () => {
   const TTL = 600;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
     cachedClient = new CachedOctokitGithubClient(
       githubClientMock,

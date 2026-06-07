@@ -18,7 +18,7 @@ describe('ScannerService', () => {
   const metricsMock = mock<Metrics>();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
     scannerService = new ScannerService(
       repoMock,

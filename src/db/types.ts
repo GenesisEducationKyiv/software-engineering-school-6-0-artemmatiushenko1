@@ -1,15 +1,15 @@
-import type {
-  NodePgDatabase,
-  NodePgQueryResultHKT,
-} from 'drizzle-orm/node-postgres';
-import type { PgTransaction } from 'drizzle-orm/pg-core';
+import type { PgDatabase, PgTransaction } from 'drizzle-orm/pg-core';
+import type { NodePgQueryResultHKT } from 'drizzle-orm/node-postgres';
+import type { PgliteQueryResultHKT } from 'drizzle-orm/pglite';
 import type { ExtractTablesWithRelations } from 'drizzle-orm';
 import * as schema from './schema.js';
 
-export type Database = NodePgDatabase<typeof schema>;
+type SupportedQueryResultHKT = NodePgQueryResultHKT | PgliteQueryResultHKT;
+
+export type Database = PgDatabase<SupportedQueryResultHKT, typeof schema>;
 
 export type Transaction = PgTransaction<
-  NodePgQueryResultHKT,
+  SupportedQueryResultHKT,
   typeof schema,
   ExtractTablesWithRelations<typeof schema>
 >;
