@@ -1,10 +1,13 @@
-import type { GithubClient } from '../domain/github.js';
-import { parseRepoPath } from '../utils/repo.utils.js';
-import { NotificationService } from './notification.service.js';
-import type { SubscriptionService } from './subscription.service.js';
-import type { Logger } from '../domain/logger.js';
-import { GithubRateLimitError, TokenNotFoundError } from '../domain/errors.js';
-import type { Metrics } from '../domain/metrics.js';
+import type { GithubClient } from '../../domain/github.js';
+import { parseRepoPath } from '../../utils/repo.utils.js';
+import { NotificationService } from '../notification/notification.service.js';
+import type { SubscriptionService } from '../subscription/subscription.service.js';
+import type { Logger } from '../../domain/logger.js';
+import {
+  GithubRateLimitError,
+  TokenNotFoundError,
+} from '../../domain/errors.js';
+import type { Metrics } from '../../domain/metrics.js';
 
 export class ScannerService {
   constructor(

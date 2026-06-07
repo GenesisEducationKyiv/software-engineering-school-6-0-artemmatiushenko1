@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DbSubscriptionTokenManager } from './db-subscription-token-manager.js';
-import type { SubscriptionRepository } from '../domain/subscription.repository.js';
-import type { SubscriptionToken } from '../domain/subscription.js';
+import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
+import type { SubscriptionToken } from '../../domain/subscription.js';
 import { mock } from 'vitest-mock-extended';
 
 describe('DbSubscriptionTokenManager', () => {

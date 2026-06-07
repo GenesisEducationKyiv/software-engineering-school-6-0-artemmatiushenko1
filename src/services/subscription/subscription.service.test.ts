@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SubscriptionService } from './subscription.service.js';
-import type { SubscriptionRepository } from '../domain/subscription.repository.js';
-import type { GithubClient } from '../domain/github.js';
-import type { EmailService } from '../domain/email.js';
-import type { SubscriptionTokenManager } from '../domain/subscription-token-manager.js';
+import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
+import type { GithubClient } from '../../domain/github.js';
+import type { EmailService } from '../../domain/email.js';
+import type { SubscriptionTokenManager } from '../../domain/subscription-token-manager.js';
 import type {
   Subscription,
   SubscriptionToken,
-} from '../domain/subscription.js';
+} from '../../domain/subscription.js';
 import {
   InvalidRepoFormatError,
   InvalidEmailError,
@@ -15,14 +15,14 @@ import {
   AlreadySubscribedError,
   TokenNotFoundError,
   InvalidTokenError,
-} from '../domain/errors.js';
-import type { Logger } from '../domain/logger.js';
+} from '../../domain/errors.js';
+import type { Logger } from '../../domain/logger.js';
 import type {
   TransactionManager,
   DomainTransaction,
-} from '../domain/transaction-manager.js';
+} from '../../domain/transaction-manager.js';
 import { mock } from 'vitest-mock-extended';
-import type { Metrics } from '../domain/metrics.js';
+import type { Metrics } from '../../domain/metrics.js';
 
 describe('SubscriptionService', () => {
   let subscriptionService: SubscriptionService;

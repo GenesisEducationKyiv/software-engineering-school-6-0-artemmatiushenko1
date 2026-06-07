@@ -3,9 +3,9 @@ import {
   NotificationService,
   type NewReleaseNotificationContext,
 } from './notification.service.js';
-import type { EmailService } from '../domain/email.js';
+import type { EmailService } from '../../domain/email.js';
 import { mock } from 'vitest-mock-extended';
-import type { Metrics } from '../domain/metrics.js';
+import type { Metrics } from '../../domain/metrics.js';
 
 describe('NotificationService', () => {
   let notificationService: NotificationService;

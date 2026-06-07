@@ -1,10 +1,10 @@
-import type { GithubClient } from '../domain/github.js';
-import type { SubscriptionRepository } from '../domain/subscription.repository.js';
-import type { EmailService } from '../domain/email.js';
-import type { Subscription } from '../domain/subscription.js';
-import { RepoPathSchema } from '../domain/subscription.js';
-import type { SubscriptionToken } from '../domain/subscription.js';
-import type { SubscriptionTokenManager } from '../domain/subscription-token-manager.js';
+import type { GithubClient } from '../../domain/github.js';
+import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
+import type { EmailService } from '../../domain/email.js';
+import type { Subscription } from '../../domain/subscription.js';
+import { RepoPathSchema } from '../../domain/subscription.js';
+import type { SubscriptionToken } from '../../domain/subscription.js';
+import type { SubscriptionTokenManager } from '../../domain/subscription-token-manager.js';
 import {
   InvalidRepoFormatError,
   InvalidEmailError,
@@ -12,13 +12,13 @@ import {
   AlreadySubscribedError,
   TokenNotFoundError,
   InvalidTokenError,
-} from '../domain/errors.js';
+} from '../../domain/errors.js';
 import { z } from 'zod';
-import { parseRepoPath } from '../utils/repo.utils.js';
-import type { Logger } from '../domain/logger.js';
-import type { TransactionManager } from '../domain/transaction-manager.js';
-import { subscriptionConfirmationTemplate } from '../infrastructure/email/templates.js';
-import type { Metrics } from '../domain/metrics.js';
+import { parseRepoPath } from '../../utils/repo.utils.js';
+import type { Logger } from '../../domain/logger.js';
+import type { TransactionManager } from '../../domain/transaction-manager.js';
+import { subscriptionConfirmationTemplate } from '../../infrastructure/email/templates.js';
+import type { Metrics } from '../../domain/metrics.js';
 
 export class SubscriptionService {
   constructor(

@@ -1,11 +1,11 @@
 import { randomUUID } from 'crypto';
-import type { SubscriptionTokenManager } from '../domain/subscription-token-manager.js';
+import type { SubscriptionTokenManager } from '../../domain/subscription-token-manager.js';
 import type {
   SubscriptionToken,
   SubscriptionTokenScope,
-} from '../domain/subscription.js';
-import type { SubscriptionRepository } from '../domain/subscription.repository.js';
-import type { DomainTransaction } from '../domain/transaction-manager.js';
+} from '../../domain/subscription.js';
+import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
+import type { DomainTransaction } from '../../domain/transaction-manager.js';
 
 export class DbSubscriptionTokenManager implements SubscriptionTokenManager {
   constructor(

@@ -1,6 +1,6 @@
-import type { EmailService } from '../domain/email.js';
-import { newReleaseNotificationTemplate } from '../infrastructure/email/templates.js';
-import type { Metrics } from '../domain/metrics.js';
+import type { EmailService } from '../../domain/email.js';
+import { newReleaseNotificationTemplate } from '../../infrastructure/email/templates.js';
+import type { Metrics } from '../../domain/metrics.js';
 
 export type NewReleaseNotificationContext = {
   email: string;
