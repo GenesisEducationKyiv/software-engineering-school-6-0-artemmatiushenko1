@@ -21,7 +21,6 @@ import type {
   TransactionManager,
   DomainTransaction,
 } from '../domain/transaction-manager.js';
-import type { ScannerService } from './scanner.service.js';
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../domain/metrics.js';
 
@@ -31,7 +30,6 @@ describe('SubscriptionService', () => {
   const githubClientMock = mock<GithubClient>();
   const emailServiceMock = mock<EmailService>();
   const tokenManagerMock = mock<SubscriptionTokenManager>();
-  const scannerServiceMock = mock<ScannerService>();
   const loggerMock = mock<Logger>();
   const transactionManagerMock = mock<TransactionManager>();
   const metricsMock = mock<Metrics>();
@@ -51,7 +49,6 @@ describe('SubscriptionService', () => {
       transactionManagerMock,
       loggerMock,
       'http://localhost:3000',
-      scannerServiceMock,
       metricsMock,
     );
   });
@@ -187,7 +184,7 @@ describe('SubscriptionService', () => {
   });
 
   describe('confirmSubscription', () => {
-    it('should successfully confirm subscription and trigger scan', async () => {
+    it('should successfully confirm subscription', async () => {
       const tokenValue = 'valid-token';
       const subscriptionId = 10;
       const token: SubscriptionToken = {
@@ -225,9 +222,6 @@ describe('SubscriptionService', () => {
       expect(tokenManagerMock.invalidateToken).toHaveBeenCalledWith(
         tokenValue,
         expect.anything(),
-      );
-      expect(scannerServiceMock.scanSubscription).toHaveBeenCalledWith(
-        subscriptionId,
       );
       expect(loggerMock.info).toHaveBeenCalled();
     });

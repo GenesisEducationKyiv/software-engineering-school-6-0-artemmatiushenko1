@@ -18,7 +18,6 @@ import type { Logger } from '../domain/logger.js';
 import type { TransactionManager } from '../domain/transaction-manager.js';
 import { subscriptionConfirmationTemplate } from '../infrastructure/email/templates.js';
 import type { Metrics } from '../domain/metrics.js';
-import type { ScannerService } from './scanner.service.js';
 
 export class SubscriptionService {
   constructor(
@@ -29,7 +28,6 @@ export class SubscriptionService {
     private transactionManager: TransactionManager,
     private logger: Logger,
     private appUrl: string,
-    private scannerService?: ScannerService,
     private metrics?: Metrics,
   ) {}
 
@@ -137,10 +135,6 @@ export class SubscriptionService {
     );
     if (sub) {
       this.metrics?.incrementSubscriptionConfirmations(sub.repo);
-
-      if (this.scannerService) {
-        await this.scannerService.scanSubscription(sub.id);
-      }
     }
 
     this.logger.info('Subscription confirmed', {
