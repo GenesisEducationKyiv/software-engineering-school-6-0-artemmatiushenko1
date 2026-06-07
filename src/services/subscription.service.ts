@@ -3,6 +3,7 @@ import type { SubscriptionRepository } from '../domain/subscription.repository.j
 import type { EmailService } from '../domain/email.js';
 import type { Subscription } from '../domain/subscription.js';
 import { RepoPathSchema } from '../domain/subscription.js';
+import type { SubscriptionToken } from '../domain/subscription.js';
 import type { SubscriptionTokenManager } from '../domain/subscription-token-manager.js';
 import {
   InvalidRepoFormatError,
@@ -123,6 +124,15 @@ export class SubscriptionService {
 
   async updateLastSeenTag(id: number, tag: string): Promise<void> {
     await this.subscriptionRepo.updateLastSeenTag(id, tag);
+  }
+
+  async getUnsubscribeToken(
+    subscriptionId: number,
+  ): Promise<SubscriptionToken | null> {
+    return this.tokenManager.getTokenBySubscriptionIdAndScope(
+      subscriptionId,
+      'unsubscribe',
+    );
   }
 
   async confirmSubscription(tokenValue: string): Promise<void> {

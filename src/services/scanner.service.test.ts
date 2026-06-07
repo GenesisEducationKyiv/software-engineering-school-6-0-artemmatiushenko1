@@ -5,7 +5,7 @@ import type { GithubClient } from '../domain/github.js';
 import type { Subscription } from '../domain/subscription.js';
 import { NotificationService } from './notification.service.js';
 import type { Logger } from '../domain/logger.js';
-import { GithubRateLimitError } from '../domain/errors.js';
+import { GithubRateLimitError, TokenNotFoundError } from '../domain/errors.js';
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../domain/metrics.js';
 
@@ -19,6 +19,15 @@ describe('ScannerService', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+
+    subscriptionServiceMock.getUnsubscribeToken.mockResolvedValue({
+      id: 1,
+      token: 'unsub-token',
+      subscriptionId: 1,
+      scope: 'unsubscribe',
+      expiresAt: new Date(),
+      createdAt: new Date(),
+    });
 
     scannerService = new ScannerService(
       subscriptionServiceMock,
@@ -54,10 +63,13 @@ describe('ScannerService', () => {
 
       await scannerService.scan();
 
-      expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith(
-        sub,
-        latestRelease,
-      );
+      expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
+        email: sub.email,
+        repo: sub.repo,
+        tag: latestRelease.tag,
+        releaseName: latestRelease.name,
+        unsubscribeToken: 'unsub-token',
+      });
       expect(subscriptionServiceMock.updateLastSeenTag).toHaveBeenCalledWith(
         1,
         'v1.1.0',
@@ -112,10 +124,13 @@ describe('ScannerService', () => {
 
       await scannerService.scanSubscription(1);
 
-      expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith(
-        sub,
-        latestRelease,
-      );
+      expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
+        email: sub.email,
+        repo: sub.repo,
+        tag: latestRelease.tag,
+        releaseName: latestRelease.name,
+        unsubscribeToken: 'unsub-token',
+      });
       expect(subscriptionServiceMock.updateLastSeenTag).toHaveBeenCalledWith(
         1,
         'v1.0.0',
@@ -160,6 +175,31 @@ describe('ScannerService', () => {
 
       expect(githubClientMock.getLatestRelease).not.toHaveBeenCalled();
       expect(loggerMock.warn).toHaveBeenCalled();
+    });
+
+    it('should throw if unsubscribe token is missing', async () => {
+      const sub: Subscription = {
+        id: 1,
+        email: 'test@example.com',
+        repo: 'owner/repo',
+        confirmed: true,
+        lastSeenTag: 'v1.0.0',
+        createdAt: new Date(),
+      };
+
+      subscriptionServiceMock.findSubscriptionById.mockResolvedValue(sub);
+      githubClientMock.getLatestRelease.mockResolvedValue({
+        tag: 'v1.1.0',
+        name: 'New Release',
+        publishedAt: new Date().toISOString(),
+      });
+      subscriptionServiceMock.getUnsubscribeToken.mockResolvedValue(null);
+
+      await expect(scannerService.scanSubscription(1)).rejects.toThrow(
+        TokenNotFoundError,
+      );
+
+      expect(notificationServiceMock.notifyNewRelease).not.toHaveBeenCalled();
     });
 
     it('should throw if rate limit is exceeded', async () => {

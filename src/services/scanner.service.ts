@@ -3,7 +3,7 @@ import { parseRepoPath } from '../utils/repo.utils.js';
 import { NotificationService } from './notification.service.js';
 import type { SubscriptionService } from './subscription.service.js';
 import type { Logger } from '../domain/logger.js';
-import { GithubRateLimitError } from '../domain/errors.js';
+import { GithubRateLimitError, TokenNotFoundError } from '../domain/errors.js';
 import type { Metrics } from '../domain/metrics.js';
 
 export class ScannerService {
@@ -74,7 +74,13 @@ export class ScannerService {
           previousTag: sub.lastSeenTag ?? null,
         });
 
-        await this.notificationService.notifyNewRelease(sub, latestRelease);
+        await this.notificationService.notifyNewRelease({
+          email: sub.email,
+          repo: sub.repo,
+          tag: latestRelease.tag,
+          releaseName: latestRelease.name,
+          unsubscribeToken: await this.resolveUnsubscribeToken(sub.id),
+        });
 
         await this.subscriptionService.updateLastSeenTag(
           sub.id,
@@ -104,5 +110,20 @@ export class ScannerService {
 
   private recordScanDuration(durationSeconds: number): void {
     this.metrics?.recordScanDuration(durationSeconds);
+  }
+
+  private async resolveUnsubscribeToken(
+    subscriptionId: number,
+  ): Promise<string> {
+    const token =
+      await this.subscriptionService.getUnsubscribeToken(subscriptionId);
+
+    if (!token) {
+      throw new TokenNotFoundError(
+        `No unsubscribe token found for subscription ${subscriptionId}`,
+      );
+    }
+
+    return token.token;
   }
 }

@@ -136,8 +136,6 @@ export class AppContainer {
   get notificationService(): NotificationService {
     return (this.notificationServiceInstance ??= new NotificationService(
       this.emailService,
-      this.tokenManager,
-      this.logger,
       this.config.appUrl,
       this.metrics,
     ));

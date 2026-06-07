@@ -1,49 +1,39 @@
 import type { EmailService } from '../domain/email.js';
-import type { SubscriptionTokenManager } from '../domain/subscription-token-manager.js';
-import type { Subscription } from '../domain/subscription.js';
-import type { GithubRelease } from '../domain/github.js';
-import { TokenNotFoundError } from '../domain/errors.js';
 import { newReleaseNotificationTemplate } from '../infrastructure/email/templates.js';
 import type { Metrics } from '../domain/metrics.js';
+
+export type NewReleaseNotificationContext = {
+  email: string;
+  repo: string;
+  tag: string;
+  releaseName: string | null;
+  unsubscribeToken: string;
+};
 
 export class NotificationService {
   constructor(
     private emailService: EmailService,
-    private tokenManager: SubscriptionTokenManager,
     private appUrl: string,
     private metrics?: Metrics,
   ) {}
 
   async notifyNewRelease(
-    subscription: Subscription,
-    release: GithubRelease,
+    context: NewReleaseNotificationContext,
   ): Promise<void> {
-    const unsubscribeToken =
-      await this.tokenManager.getTokenBySubscriptionIdAndScope(
-        subscription.id,
-        'unsubscribe',
-      );
-
-    if (!unsubscribeToken) {
-      throw new TokenNotFoundError(
-        `No unsubscribe token found for subscription ${subscription.id}`,
-      );
-    }
-
-    const unsubscribeUrl = `${this.appUrl}/unsubscribe/${unsubscribeToken.token}`;
+    const unsubscribeUrl = `${this.appUrl}/unsubscribe/${context.unsubscribeToken}`;
 
     const template = newReleaseNotificationTemplate(
-      subscription.repo,
-      release.tag,
-      release.name,
+      context.repo,
+      context.tag,
+      context.releaseName,
       unsubscribeUrl,
     );
 
     await this.emailService.sendEmail({
-      to: subscription.email,
+      to: context.email,
       ...template,
     });
 
-    this.metrics?.incrementNotificationsSent(subscription.repo);
+    this.metrics?.incrementNotificationsSent(context.repo);
   }
 }
