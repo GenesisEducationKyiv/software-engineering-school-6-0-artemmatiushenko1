@@ -13,7 +13,7 @@ import { subscriptionRoutes } from './routes/subscription.routes.js';
 import { metricsRoutes } from './routes/metrics.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
 import cron, { type ScheduledTask } from 'node-cron';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import { runDatabaseMigrations } from './db/migrate.js';
 import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
 import { type AppDependencies } from './dependencies.js';
 
@@ -56,7 +56,7 @@ export class App {
 
   private async runMigrations() {
     this.deps.logger.info('Running database migrations...');
-    await migrate(this.deps.db, {
+    await runDatabaseMigrations(this.deps.db, {
       migrationsFolder: path.join(__dirname, '../drizzle'),
     });
     this.deps.logger.info('Migrations completed successfully.');

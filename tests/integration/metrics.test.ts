@@ -7,7 +7,6 @@ import { Redis } from 'ioredis';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/db/schema.js';
-import type { Database } from '../../src/db/types.js';
 import { register } from 'prom-client';
 import { TEST_APP_CONFIG } from './constants.js';
 
@@ -17,7 +16,7 @@ describe('Metrics Routes', () => {
   beforeEach(async () => {
     register.clear();
 
-    const db = drizzle(new PGlite(), { schema }) as unknown as Database;
+    const db = drizzle(new PGlite(), { schema });
     const fastify = Fastify({ logger: true });
     const redisMock = mock<Redis>();
 
