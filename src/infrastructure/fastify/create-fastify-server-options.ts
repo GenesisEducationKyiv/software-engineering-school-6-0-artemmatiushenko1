@@ -2,6 +2,7 @@ import type { FastifyServerOptions } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import type { AppConfig } from '../../config.js';
 import { createFastifyLoggerOptions } from '../logger/create-fastify-logger-options.js';
+import { REQUEST_ID_HEADER } from './constants.js';
 
 export function createFastifyServerOptions(
   config: AppConfig,
@@ -9,7 +10,7 @@ export function createFastifyServerOptions(
   return {
     logger: createFastifyLoggerOptions(config),
     disableRequestLogging: true,
-    requestIdHeader: 'x-request-id',
+    requestIdHeader: REQUEST_ID_HEADER,
     requestIdLogLabel: 'requestId',
     genReqId: () => randomUUID(),
   };

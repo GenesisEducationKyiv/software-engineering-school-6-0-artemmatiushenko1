@@ -16,6 +16,7 @@ import cron, { type ScheduledTask } from 'node-cron';
 import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
 import { type AppDependencies } from './dependencies.js';
 import { elapsedTimeToSeconds } from './infrastructure/fastify/elapsed-time.js';
+import { REQUEST_ID_HEADER } from './infrastructure/fastify/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,7 +57,7 @@ export class App {
 
   private setupHttpLogging(): void {
     this.fastify.addHook('onRequest', async (request, reply) => {
-      reply.header('x-request-id', request.id);
+      reply.header(REQUEST_ID_HEADER, request.id);
       request.log = request.log.child({
         method: request.method,
         route: request.url,
