@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import Fastify from 'fastify';
 import { App } from '../../src/app.js';
 import { AppContainer } from '../../src/dependencies.js';
@@ -7,16 +7,26 @@ import { Redis } from 'ioredis';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/db/schema.js';
+import {
+  MIGRATIONS_FOLDER,
+  runDatabaseMigrations,
+} from '../../src/db/migrate.js';
+import type { Database } from '../../src/db/types.js';
 import { register } from 'prom-client';
 import { TEST_APP_CONFIG } from './constants.js';
 
 describe('Metrics Routes', () => {
   let app: App;
+  let db: Database;
+
+  beforeAll(async () => {
+    db = drizzle(new PGlite(), { schema });
+    await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
+  });
 
   beforeEach(async () => {
     register.clear();
 
-    const db = drizzle(new PGlite(), { schema });
     const fastify = Fastify({ logger: true });
     const redisMock = mock<Redis>();
 

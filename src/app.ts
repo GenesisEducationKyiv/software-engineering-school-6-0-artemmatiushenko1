@@ -13,7 +13,6 @@ import { subscriptionRoutes } from './routes/subscription.routes.js';
 import { metricsRoutes } from './routes/metrics.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
 import cron, { type ScheduledTask } from 'node-cron';
-import { runDatabaseMigrations } from './db/migrate.js';
 import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
 import { type AppDependencies } from './dependencies.js';
 
@@ -47,19 +46,10 @@ export class App {
   }
 
   private async initialize(): Promise<void> {
-    await this.runMigrations();
     await this.serveStaticFiles();
     await this.setupSwagger();
     this.setupErrorHandler();
     await this.setupRoutes();
-  }
-
-  private async runMigrations() {
-    this.deps.logger.info('Running database migrations...');
-    await runDatabaseMigrations(this.deps.db, {
-      migrationsFolder: path.join(__dirname, '../drizzle'),
-    });
-    this.deps.logger.info('Migrations completed successfully.');
   }
 
   private setupErrorHandler() {

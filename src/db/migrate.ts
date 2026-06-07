@@ -1,3 +1,5 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { is } from 'drizzle-orm/entity';
 import type { MigrationConfig } from 'drizzle-orm/migrator';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
@@ -6,6 +8,9 @@ import { migrate as migratePglite } from 'drizzle-orm/pglite/migrator';
 import { PgliteDatabase } from 'drizzle-orm/pglite';
 import * as schema from './schema.js';
 import type { Database } from './types.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+export const MIGRATIONS_FOLDER = path.join(__dirname, '../../drizzle');
 
 const isPgliteDatabase = (
   db: Database,
