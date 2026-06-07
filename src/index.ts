@@ -9,7 +9,6 @@ const fastify = Fastify({
   logger: true,
 });
 
-
 const appConfig = createConfig();
 const container = new AppContainer(appConfig, fastify.log, db);
 const deps = container.build();
