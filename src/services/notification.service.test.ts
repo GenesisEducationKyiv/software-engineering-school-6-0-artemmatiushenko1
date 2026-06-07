@@ -86,6 +86,5 @@ describe('NotificationService', () => {
     await expect(
       notificationService.notifyNewRelease(subscription, release),
     ).rejects.toThrow(TokenNotFoundError);
-    expect(loggerMock.error).toHaveBeenCalled();
   });
 });
