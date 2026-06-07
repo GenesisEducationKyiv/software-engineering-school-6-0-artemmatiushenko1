@@ -5,7 +5,6 @@ import type { SubscriptionTokenManager } from '../domain/subscription-token-mana
 import type { Subscription } from '../domain/subscription.js';
 import type { GithubRelease } from '../domain/github.js';
 import { TokenNotFoundError } from '../domain/errors.js';
-import type { Logger } from '../domain/logger.js';
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../domain/metrics.js';
 
@@ -13,7 +12,6 @@ describe('NotificationService', () => {
   let notificationService: NotificationService;
   const emailServiceMock = mock<EmailService>();
   const tokenManagerMock = mock<SubscriptionTokenManager>();
-  const loggerMock = mock<Logger>();
   const appUrl = 'http://localhost:3000';
   const metricsMock = mock<Metrics>();
 
@@ -23,7 +21,6 @@ describe('NotificationService', () => {
     notificationService = new NotificationService(
       emailServiceMock,
       tokenManagerMock,
-      loggerMock,
       appUrl,
       metricsMock,
     );

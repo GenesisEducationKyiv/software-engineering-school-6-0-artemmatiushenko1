@@ -3,7 +3,6 @@ import type { SubscriptionTokenManager } from '../domain/subscription-token-mana
 import type { Subscription } from '../domain/subscription.js';
 import type { GithubRelease } from '../domain/github.js';
 import { TokenNotFoundError } from '../domain/errors.js';
-import type { Logger } from '../domain/logger.js';
 import { newReleaseNotificationTemplate } from '../infrastructure/email/templates.js';
 import type { Metrics } from '../domain/metrics.js';
 
@@ -11,7 +10,6 @@ export class NotificationService {
   constructor(
     private emailService: EmailService,
     private tokenManager: SubscriptionTokenManager,
-    private logger: Logger,
     private appUrl: string,
     private metrics?: Metrics,
   ) {}
@@ -27,7 +25,9 @@ export class NotificationService {
       );
 
     if (!unsubscribeToken) {
-      throw new TokenNotFoundError(`No unsubscribe token found for subscription ${subscription.id}`);
+      throw new TokenNotFoundError(
+        `No unsubscribe token found for subscription ${subscription.id}`,
+      );
     }
 
     const unsubscribeUrl = `${this.appUrl}/unsubscribe/${unsubscribeToken.token}`;
