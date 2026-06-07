@@ -64,10 +64,10 @@ describe('Subscription Routes Integration with PGlite', () => {
     app = await App.create(TEST_APP_CONFIG, deps, fastify);
   });
 
-  afterEach(async() => {
+  afterEach(async () => {
     await db.delete(schema.subscriptionTokens);
     await db.delete(schema.subscriptions);
-  })
+  });
 
   describe('POST /api/subscribe', () => {
     it('should return 200 and persist subscription in database', async () => {

@@ -7,13 +7,17 @@ import { PgliteDatabase } from 'drizzle-orm/pglite';
 import * as schema from './schema.js';
 import type { Database } from './types.js';
 
-const isPgliteDatabase = (db: Database): db is PgliteDatabase<typeof schema> => {
+const isPgliteDatabase = (
+  db: Database,
+): db is PgliteDatabase<typeof schema> => {
   return is(db, PgliteDatabase);
-}
+};
 
-const isPostgresDatabase = (db: Database): db is NodePgDatabase<typeof schema> => {
+const isPostgresDatabase = (
+  db: Database,
+): db is NodePgDatabase<typeof schema> => {
   return is(db, NodePgDatabase);
-}
+};
 
 export const runDatabaseMigrations = async (
   db: Database,
@@ -32,4 +36,4 @@ export const runDatabaseMigrations = async (
   throw new Error(
     `Unsupported database driver for migrations: ${db.constructor.name}`,
   );
-}
+};
