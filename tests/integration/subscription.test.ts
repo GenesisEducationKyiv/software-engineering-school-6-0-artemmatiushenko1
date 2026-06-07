@@ -48,7 +48,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
   beforeEach(async () => {
     register.clear();
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
     githubMock.repositoryExists.mockResolvedValue(true);
 

@@ -10,7 +10,7 @@ describe('DbSubscriptionTokenManager', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
     tokenManager = new DbSubscriptionTokenManager(repoMock, 24);
   });

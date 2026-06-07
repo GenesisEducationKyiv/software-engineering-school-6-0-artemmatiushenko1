@@ -37,7 +37,7 @@ describe('SubscriptionService', () => {
   const metricsMock = mock<Metrics>();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
     transactionManagerMock.run.mockImplementation(
       async (work) => await work({} as DomainTransaction),

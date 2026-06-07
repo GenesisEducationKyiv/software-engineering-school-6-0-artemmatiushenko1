@@ -18,7 +18,7 @@ describe('NotificationService', () => {
   const metricsMock = mock<Metrics>();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
     notificationService = new NotificationService(
       emailServiceMock,
