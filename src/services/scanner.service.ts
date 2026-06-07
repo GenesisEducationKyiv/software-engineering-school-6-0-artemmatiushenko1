@@ -1,14 +1,14 @@
 import type { GithubClient } from '../domain/github.js';
-import type { SubscriptionRepository } from '../domain/subscription.repository.js';
 import { parseRepoPath } from '../utils/repo.utils.js';
 import { NotificationService } from './notification.service.js';
+import type { SubscriptionService } from './subscription.service.js';
 import type { Logger } from '../domain/logger.js';
 import { GithubRateLimitError } from '../domain/errors.js';
 import type { Metrics } from '../domain/metrics.js';
 
 export class ScannerService {
   constructor(
-    private subscriptionRepo: SubscriptionRepository,
+    private subscriptionService: SubscriptionService,
     private githubClient: GithubClient,
     private notificationService: NotificationService,
     private logger: Logger,
@@ -21,7 +21,7 @@ export class ScannerService {
 
     try {
       const activeSubscriptions =
-        await this.subscriptionRepo.findAllConfirmedSubscriptions();
+        await this.subscriptionService.findAllConfirmedSubscriptions();
 
       this.logger.info('Active subscriptions found for scan', {
         count: activeSubscriptions.length,
@@ -41,7 +41,7 @@ export class ScannerService {
 
   async scanSubscription(subscriptionId: number): Promise<void> {
     const sub =
-      await this.subscriptionRepo.findSubscriptionById(subscriptionId);
+      await this.subscriptionService.findSubscriptionById(subscriptionId);
     if (!sub || !sub.confirmed) {
       this.logger.warn('Skipped scan for invalid subscription', {
         subscriptionId,
@@ -76,7 +76,7 @@ export class ScannerService {
 
         await this.notificationService.notifyNewRelease(sub, latestRelease);
 
-        await this.subscriptionRepo.updateLastSeenTag(
+        await this.subscriptionService.updateLastSeenTag(
           sub.id,
           latestRelease.tag,
         );

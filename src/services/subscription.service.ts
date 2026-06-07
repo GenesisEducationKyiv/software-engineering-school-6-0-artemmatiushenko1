@@ -113,6 +113,18 @@ export class SubscriptionService {
     );
   }
 
+  async findAllConfirmedSubscriptions(): Promise<Subscription[]> {
+    return this.subscriptionRepo.findAllConfirmedSubscriptions();
+  }
+
+  async findSubscriptionById(id: number): Promise<Subscription | null> {
+    return this.subscriptionRepo.findSubscriptionById(id);
+  }
+
+  async updateLastSeenTag(id: number, tag: string): Promise<void> {
+    await this.subscriptionRepo.updateLastSeenTag(id, tag);
+  }
+
   async confirmSubscription(tokenValue: string): Promise<void> {
     const token = await this.tokenManager.getTokenByValue(tokenValue);
 

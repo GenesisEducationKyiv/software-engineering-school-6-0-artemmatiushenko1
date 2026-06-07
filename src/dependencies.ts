@@ -149,7 +149,7 @@ export class AppContainer {
 
   get scannerService(): ScannerService {
     return (this.scannerServiceInstance ??= new ScannerService(
-      this.subscriptionRepo,
+      this.subscriptionService,
       this.githubClient,
       this.notificationService,
       this.logger,
