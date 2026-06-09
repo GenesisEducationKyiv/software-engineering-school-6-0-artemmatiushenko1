@@ -51,6 +51,36 @@ export function subscriptionConfirmationTemplate(
   };
 }
 
+export function subscriptionConfirmedTemplate(
+  repo: string,
+  unsubscribeUrl: string,
+): BaseTemplate {
+  const githubRepoUrl = `https://github.com/${repo}`;
+
+  return {
+    subject: `Subscription confirmed: ${repo}`,
+    text: `Your subscription to ${repo} is now active. You'll receive notifications when new releases are published.\n\nTo unsubscribe: ${unsubscribeUrl}`,
+    html: wrapHtml(
+      `
+      <h1 style="${styles.header}">Subscription confirmed</h1>
+      <p style="${styles.text}">
+        You're all set! You'll now receive release notifications for <b style="${styles.code}">${repo}</b>.
+      </p>
+      <div style="background-color: #f6f8fa; padding: 20px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #e1e4e8;">
+        <div style="font-size: 14px; color: #6a737d; margin-bottom: 4px;">Repository</div>
+        <div style="font-size: 18px; font-weight: 600;">
+          <a href="${githubRepoUrl}" style="${styles.link}">${repo}</a>
+        </div>
+      </div>
+    `,
+      `
+      Stay up to date with <a href="${githubRepoUrl}" style="${styles.link}">${repo}</a>.<br/>
+      <a href="${unsubscribeUrl}" style="${styles.link}">Unsubscribe</a> from these notifications.
+    `,
+    ),
+  };
+}
+
 export function newReleaseNotificationTemplate(
   repo: string,
   tag: string,

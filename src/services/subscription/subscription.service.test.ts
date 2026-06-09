@@ -15,6 +15,7 @@ import {
   AlreadySubscribedError,
   TokenNotFoundError,
   InvalidTokenError,
+  SubscriptionNotFoundError,
 } from '../../domain/errors.js';
 import type { Logger } from '../../domain/logger.js';
 import type {
@@ -204,9 +205,21 @@ describe('SubscriptionService', () => {
         createdAt: new Date(),
       };
 
+      const unsubscribeToken: SubscriptionToken = {
+        id: 2,
+        token: 'unsub-token',
+        subscriptionId,
+        scope: 'unsubscribe',
+        expiresAt: new Date(),
+        createdAt: new Date(),
+      };
+
       tokenManagerMock.getTokenByValue.mockResolvedValue(token);
       tokenManagerMock.validateToken.mockResolvedValue(true);
       repoMock.findSubscriptionById.mockResolvedValue(sub);
+      tokenManagerMock.getTokenBySubscriptionIdAndScope.mockResolvedValue(
+        unsubscribeToken,
+      );
 
       await subscriptionService.confirmSubscription(tokenValue);
 
@@ -223,6 +236,13 @@ describe('SubscriptionService', () => {
         tokenValue,
         expect.anything(),
       );
+      expect(emailServiceMock.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: sub.email,
+          subject: expect.stringContaining(sub.repo),
+          text: expect.stringContaining('unsub-token'),
+        }),
+      );
       expect(loggerMock.info).toHaveBeenCalled();
     });
 
@@ -231,6 +251,57 @@ describe('SubscriptionService', () => {
 
       await expect(
         subscriptionService.confirmSubscription('non-existent'),
+      ).rejects.toThrow(TokenNotFoundError);
+    });
+
+    it('should throw SubscriptionNotFoundError if subscription is not found', async () => {
+      const tokenValue = 'valid-token';
+      const subscriptionId = 10;
+      const token: SubscriptionToken = {
+        id: 1,
+        token: tokenValue,
+        subscriptionId,
+        scope: 'subscribe',
+        expiresAt: new Date(),
+        createdAt: new Date(),
+      };
+
+      tokenManagerMock.getTokenByValue.mockResolvedValue(token);
+      tokenManagerMock.validateToken.mockResolvedValue(true);
+      repoMock.findSubscriptionById.mockResolvedValue(null);
+
+      await expect(
+        subscriptionService.confirmSubscription(tokenValue),
+      ).rejects.toThrow(SubscriptionNotFoundError);
+    });
+
+    it('should throw TokenNotFoundError if unsubscribe token is not found', async () => {
+      const tokenValue = 'valid-token';
+      const subscriptionId = 10;
+      const token: SubscriptionToken = {
+        id: 1,
+        token: tokenValue,
+        subscriptionId,
+        scope: 'subscribe',
+        expiresAt: new Date(),
+        createdAt: new Date(),
+      };
+      const sub: Subscription = {
+        id: subscriptionId,
+        email: 'test@example.com',
+        repo: 'owner/repo',
+        confirmed: true,
+        lastSeenTag: null,
+        createdAt: new Date(),
+      };
+
+      tokenManagerMock.getTokenByValue.mockResolvedValue(token);
+      tokenManagerMock.validateToken.mockResolvedValue(true);
+      repoMock.findSubscriptionById.mockResolvedValue(sub);
+      tokenManagerMock.getTokenBySubscriptionIdAndScope.mockResolvedValue(null);
+
+      await expect(
+        subscriptionService.confirmSubscription(tokenValue),
       ).rejects.toThrow(TokenNotFoundError);
     });
 
