@@ -170,7 +170,6 @@ export class AppContainer {
       this.transactionManager,
       this.logger,
       this.config.appUrl,
-      this.scannerService,
       this.metrics,
     ));
   }

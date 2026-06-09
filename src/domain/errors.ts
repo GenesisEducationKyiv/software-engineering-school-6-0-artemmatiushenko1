@@ -41,9 +41,19 @@ export class AlreadySubscribedError extends DomainError {
   }
 }
 
+export class SubscriptionNotFoundError extends DomainError {
+  constructor(subscriptionId: number) {
+    super(
+      `Subscription not found: ${subscriptionId}`,
+      'SUBSCRIPTION_NOT_FOUND',
+      404,
+    );
+  }
+}
+
 export class TokenNotFoundError extends DomainError {
-  constructor() {
-    super('Token not found', 'TOKEN_NOT_FOUND', 404);
+  constructor(message: string = 'Token not found') {
+    super(message, 'TOKEN_NOT_FOUND', 404);
   }
 }
 
