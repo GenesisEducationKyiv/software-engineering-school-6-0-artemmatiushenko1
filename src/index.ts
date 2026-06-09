@@ -162,7 +162,6 @@ class App {
       transactionManager,
       logger,
       config.appUrl,
-      this.scannerService,
       this.metrics,
     );
 

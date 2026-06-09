@@ -11,14 +11,17 @@ import {
   AlreadySubscribedError,
   TokenNotFoundError,
   InvalidTokenError,
+  SubscriptionNotFoundError,
 } from '../domain/errors.js';
 import { z } from 'zod';
 import { parseRepoPath } from '../utils/repo.utils.js';
 import type { Logger } from '../domain/logger.js';
 import type { TransactionManager } from '../domain/transaction-manager.js';
-import { subscriptionConfirmationTemplate } from '../infrastructure/email/templates.js';
+import {
+  subscriptionConfirmationTemplate,
+  subscriptionConfirmedTemplate,
+} from '../infrastructure/email/templates.js';
 import type { Metrics } from '../domain/metrics.js';
-import type { ScannerService } from './scanner.service.js';
 
 export class SubscriptionService {
   constructor(
@@ -29,7 +32,6 @@ export class SubscriptionService {
     private transactionManager: TransactionManager,
     private logger: Logger,
     private appUrl: string,
-    private scannerService?: ScannerService,
     private metrics?: Metrics,
   ) {}
 
@@ -132,13 +134,29 @@ export class SubscriptionService {
     const sub = await this.subscriptionRepo.findSubscriptionById(
       token.subscriptionId,
     );
-    if (sub) {
-      this.metrics?.incrementSubscriptionConfirmations(sub.repo);
-
-      if (this.scannerService) {
-        await this.scannerService.scanSubscription(sub.id);
-      }
+    if (!sub) {
+      throw new SubscriptionNotFoundError(token.subscriptionId);
     }
+
+    this.metrics?.incrementSubscriptionConfirmations(sub.repo);
+
+    const unsubscribeToken =
+      await this.tokenManager.getTokenBySubscriptionIdAndScope(
+        sub.id,
+        'unsubscribe',
+      );
+    if (!unsubscribeToken) {
+      throw new TokenNotFoundError(
+        `Unsubscribe token not found for subscription ${sub.id}`,
+      );
+    }
+
+    const unsubscribeUrl = `${this.appUrl}/unsubscribe/${unsubscribeToken.token}`;
+    const template = subscriptionConfirmedTemplate(sub.repo, unsubscribeUrl);
+    await this.emailService.sendEmail({
+      to: sub.email,
+      ...template,
+    });
 
     this.logger.info(`Subscription confirmed for token ${tokenValue}`);
   }
