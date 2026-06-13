@@ -6,7 +6,7 @@ import type {
 } from '../../domain/subscription.js';
 import type { DomainTransaction } from '../../domain/transaction-manager.js';
 
-export class DbSubscriptionTokenManager {
+export class SubscriptionTokenManager {
   constructor(
     private subscriptionRepo: SubscriptionRepository,
     private tokenExpiryHours: number = 24,
