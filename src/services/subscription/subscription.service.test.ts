@@ -120,7 +120,7 @@ describe('SubscriptionServiceImpl', () => {
     ).rejects.toThrow(RepoNotFoundError);
   });
 
-  it('should throw AlreadySubscribedError if already subscribed', async () => {
+  it('should throw AlreadySubscribedError if already confirmed', async () => {
     const subscription: Subscription = {
       id: 1,
       email: 'test@example.com',
@@ -136,6 +136,188 @@ describe('SubscriptionServiceImpl', () => {
     await expect(
       subscriptionService.subscribe('test@example.com', 'owner/repo'),
     ).rejects.toThrow(AlreadySubscribedError);
+  });
+
+  it('should refresh tokens and resend confirmation for an unconfirmed subscription', async () => {
+    const email = 'test@example.com';
+    const repo = 'owner/repo';
+    const existingSubscription: Subscription = {
+      id: 1,
+      email,
+      repo,
+      confirmed: false,
+      lastSeenTag: null,
+      createdAt: new Date(),
+    };
+    const subscribeToken: SubscriptionToken = {
+      id: 1,
+      token: 'old-confirm-token',
+      subscriptionId: 1,
+      scope: 'subscribe',
+      expiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(),
+    };
+    const unsubscribeToken: SubscriptionToken = {
+      id: 2,
+      token: 'old-unsub-token',
+      subscriptionId: 1,
+      scope: 'unsubscribe',
+      expiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(),
+    };
+
+    githubClientMock.repositoryExists.mockResolvedValue(true);
+    repoMock.findByEmailAndRepo.mockResolvedValue(existingSubscription);
+    tokenManagerMock.getTokenBySubscriptionIdAndScope.mockImplementation(
+      async (_subscriptionId, scope) =>
+        Promise.resolve(
+          scope === 'subscribe' ? subscribeToken : unsubscribeToken,
+        ),
+    );
+    tokenManagerMock.createToken
+      .mockResolvedValueOnce('new-unsub-token')
+      .mockResolvedValueOnce('new-confirm-token');
+
+    const result = await subscriptionService.subscribe(email, repo);
+
+    expect(result).toEqual(existingSubscription);
+    expect(repoMock.createSubscription).not.toHaveBeenCalled();
+    expect(tokenManagerMock.invalidateToken).toHaveBeenCalledWith(
+      'old-confirm-token',
+      expect.anything(),
+    );
+    expect(tokenManagerMock.invalidateToken).toHaveBeenCalledWith(
+      'old-unsub-token',
+      expect.anything(),
+    );
+    expect(tokenManagerMock.createToken).toHaveBeenCalledWith(
+      existingSubscription.id,
+      'unsubscribe',
+      expect.anything(),
+    );
+    expect(tokenManagerMock.createToken).toHaveBeenCalledWith(
+      existingSubscription.id,
+      'subscribe',
+      expect.anything(),
+    );
+    expect(
+      notificationServiceMock.notifySubscriptionConfirmation,
+    ).toHaveBeenCalledWith({
+      email,
+      repo,
+      confirmToken: 'new-confirm-token',
+    });
+  });
+
+  it('should not leave partial db state when confirmation email fails for a new subscription', async () => {
+    const email = 'test@example.com';
+    const repo = 'owner/repo';
+    const subscription: Subscription = {
+      id: 1,
+      email,
+      repo,
+      confirmed: false,
+      lastSeenTag: null,
+      createdAt: new Date(),
+    };
+
+    repoMock.findByEmailAndRepo.mockResolvedValue(null);
+    githubClientMock.repositoryExists.mockResolvedValue(true);
+    repoMock.createSubscription.mockResolvedValue(subscription);
+    tokenManagerMock.createToken
+      .mockResolvedValueOnce('confirm-token')
+      .mockResolvedValueOnce('unsub-token');
+    notificationServiceMock.notifySubscriptionConfirmation.mockRejectedValue(
+      new Error('SMTP error'),
+    );
+
+    await expect(subscriptionService.subscribe(email, repo)).rejects.toThrow(
+      'SMTP error',
+    );
+
+    expect(repoMock.createSubscription).toHaveBeenCalledTimes(1);
+    expect(tokenManagerMock.createToken).toHaveBeenCalledWith(
+      subscription.id,
+      'subscribe',
+      expect.anything(),
+    );
+    expect(tokenManagerMock.createToken).toHaveBeenCalledWith(
+      subscription.id,
+      'unsubscribe',
+      expect.anything(),
+    );
+    expect(repoMock.deleteSubscription).not.toHaveBeenCalled();
+    expect(loggerMock.info).not.toHaveBeenCalled();
+  });
+
+  it('should not leave partial db state when confirmation email fails for a pending resubscribe', async () => {
+    const email = 'test@example.com';
+    const repo = 'owner/repo';
+    const existingSubscription: Subscription = {
+      id: 1,
+      email,
+      repo,
+      confirmed: false,
+      lastSeenTag: null,
+      createdAt: new Date(),
+    };
+    const subscribeToken: SubscriptionToken = {
+      id: 1,
+      token: 'old-confirm-token',
+      subscriptionId: 1,
+      scope: 'subscribe',
+      expiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(),
+    };
+    const unsubscribeToken: SubscriptionToken = {
+      id: 2,
+      token: 'old-unsub-token',
+      subscriptionId: 1,
+      scope: 'unsubscribe',
+      expiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(),
+    };
+
+    githubClientMock.repositoryExists.mockResolvedValue(true);
+    repoMock.findByEmailAndRepo.mockResolvedValue(existingSubscription);
+    tokenManagerMock.getTokenBySubscriptionIdAndScope.mockImplementation(
+      (_subscriptionId, scope) =>
+        Promise.resolve(
+          scope === 'subscribe' ? subscribeToken : unsubscribeToken,
+        ),
+    );
+    tokenManagerMock.createToken
+      .mockResolvedValueOnce('new-unsub-token')
+      .mockResolvedValueOnce('new-confirm-token');
+    notificationServiceMock.notifySubscriptionConfirmation.mockRejectedValue(
+      new Error('SMTP error'),
+    );
+
+    await expect(subscriptionService.subscribe(email, repo)).rejects.toThrow(
+      'SMTP error',
+    );
+
+    expect(repoMock.createSubscription).not.toHaveBeenCalled();
+    expect(tokenManagerMock.invalidateToken).toHaveBeenCalledWith(
+      'old-confirm-token',
+      expect.anything(),
+    );
+    expect(tokenManagerMock.invalidateToken).toHaveBeenCalledWith(
+      'old-unsub-token',
+      expect.anything(),
+    );
+    expect(tokenManagerMock.createToken).toHaveBeenCalledWith(
+      existingSubscription.id,
+      'unsubscribe',
+      expect.anything(),
+    );
+    expect(tokenManagerMock.createToken).toHaveBeenCalledWith(
+      existingSubscription.id,
+      'subscribe',
+      expect.anything(),
+    );
+    expect(repoMock.deleteSubscription).not.toHaveBeenCalled();
+    expect(loggerMock.info).not.toHaveBeenCalled();
   });
 
   describe('getSubscriptionsByEmail', () => {

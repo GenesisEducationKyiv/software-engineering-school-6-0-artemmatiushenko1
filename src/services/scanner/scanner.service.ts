@@ -1,4 +1,5 @@
 import type { GithubClient } from '../../domain/github.js';
+import type { Subscription } from '../../domain/subscription.js';
 import { parseRepoPath } from '../../utils/repo.utils.js';
 import type { NotificationService } from '../../domain/notification.js';
 import type { SubscriptionService } from '../../domain/subscription.js';
@@ -8,6 +9,7 @@ import {
   TokenNotFoundError,
 } from '../../domain/errors.js';
 import type { Metrics } from '../../domain/metrics.js';
+import { msToSeconds } from '../../utils/time.utils.js';
 
 export class ScannerService {
   constructor(
@@ -31,14 +33,10 @@ export class ScannerService {
       });
 
       for (const sub of activeSubscriptions) {
-        await this.scanSubscription(sub.id);
+        await this.safeScanSubscription(sub);
       }
-    } catch (error) {
-      this.metrics?.incrementScanFailures();
-      throw error;
     } finally {
-      const durationSeconds = (Date.now() - startTime) / 1000;
-      this.recordScanDuration(durationSeconds);
+      this.metrics?.recordScanDuration(msToSeconds(Date.now() - startTime));
     }
   }
 
@@ -52,49 +50,8 @@ export class ScannerService {
       return;
     }
 
-    this.logger.info('Processing subscription', {
-      subscriptionId: sub.id,
-      repo: sub.repo,
-      email: sub.email,
-    });
-    const { owner, repo } = parseRepoPath(sub.repo);
-
     try {
-      const latestRelease = await this.githubClient.getLatestRelease(
-        owner,
-        repo,
-      );
-
-      if (!latestRelease) {
-        this.logger.info('No releases found', { repo: sub.repo });
-        return;
-      }
-
-      if (latestRelease.tag !== sub.lastSeenTag) {
-        this.logger.info('New release detected', {
-          repo: sub.repo,
-          tag: latestRelease.tag,
-          previousTag: sub.lastSeenTag ?? null,
-        });
-
-        await this.notificationService.notifyNewRelease({
-          email: sub.email,
-          repo: sub.repo,
-          tag: latestRelease.tag,
-          releaseName: latestRelease.name,
-          unsubscribeToken: await this.resolveUnsubscribeToken(sub.id),
-        });
-
-        await this.subscriptionService.updateLastSeenTag(
-          sub.id,
-          latestRelease.tag,
-        );
-      } else {
-        this.logger.info('No new releases', {
-          repo: sub.repo,
-          currentTag: sub.lastSeenTag,
-        });
-      }
+      await this.processSubscription(sub);
     } catch (error) {
       if (error instanceof GithubRateLimitError) {
         this.logger.warn(
@@ -111,8 +68,66 @@ export class ScannerService {
     }
   }
 
-  private recordScanDuration(durationSeconds: number): void {
-    this.metrics?.recordScanDuration(durationSeconds);
+  private async safeScanSubscription(sub: Subscription): Promise<void> {
+    try {
+      await this.processSubscription(sub);
+    } catch (error) {
+      this.metrics?.incrementScanFailures();
+
+      if (error instanceof GithubRateLimitError) {
+        this.logger.warn(
+          'GitHub API rate limit exceeded while scanning single subscription.',
+        );
+        throw error;
+      }
+      this.logger.error(
+        'Error scanning subscription',
+        error instanceof Error ? error : new Error(String(error)),
+        { repo: sub.repo, subscriptionId: sub.id },
+      );
+    }
+  }
+
+  private async processSubscription(sub: Subscription): Promise<void> {
+    this.logger.info('Processing subscription', {
+      subscriptionId: sub.id,
+      repo: sub.repo,
+      email: sub.email,
+    });
+    const { owner, repo } = parseRepoPath(sub.repo);
+
+    const latestRelease = await this.githubClient.getLatestRelease(owner, repo);
+
+    if (!latestRelease) {
+      this.logger.info('No releases found', { repo: sub.repo });
+      return;
+    }
+
+    if (latestRelease.tag !== sub.lastSeenTag) {
+      this.logger.info('New release detected', {
+        repo: sub.repo,
+        tag: latestRelease.tag,
+        previousTag: sub.lastSeenTag ?? null,
+      });
+
+      await this.notificationService.notifyNewRelease({
+        email: sub.email,
+        repo: sub.repo,
+        tag: latestRelease.tag,
+        releaseName: latestRelease.name,
+        unsubscribeToken: await this.resolveUnsubscribeToken(sub.id),
+      });
+
+      await this.subscriptionService.updateLastSeenTag(
+        sub.id,
+        latestRelease.tag,
+      );
+    } else {
+      this.logger.info('No new releases', {
+        repo: sub.repo,
+        currentTag: sub.lastSeenTag,
+      });
+    }
   }
 
   private async resolveUnsubscribeToken(

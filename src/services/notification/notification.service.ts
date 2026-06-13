@@ -70,6 +70,6 @@ export class NotificationServiceImpl implements NotificationService {
       ...template,
     });
 
-    this.metrics?.incrementNotificationsSent(context.repo);
+    this.metrics?.incrementNotificationsSent();
   }
 }

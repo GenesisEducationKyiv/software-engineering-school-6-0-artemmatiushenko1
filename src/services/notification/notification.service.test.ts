@@ -77,8 +77,6 @@ describe('NotificationServiceImpl', () => {
         text: expect.stringContaining(`${appUrl}/unsubscribe/unsub-token`),
       }),
     );
-    expect(metricsMock.incrementNotificationsSent).toHaveBeenCalledWith(
-      context.repo,
-    );
+    expect(metricsMock.incrementNotificationsSent).toHaveBeenCalled();
   });
 });

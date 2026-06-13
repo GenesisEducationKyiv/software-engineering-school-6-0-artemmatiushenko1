@@ -56,8 +56,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: github-release-notifier-app
-    ports:
-      - '3000:3000'
     env_file:
       - .env
     healthcheck:
@@ -75,6 +73,26 @@ services:
       redis:
         condition: service_healthy
       mailpit:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: github-release-notifier-nginx
+    ports:
+      - '3000:80'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget --quiet --tries=1 --spider http://127.0.0.1/health || exit 1',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      app:
         condition: service_healthy
 
 networks:

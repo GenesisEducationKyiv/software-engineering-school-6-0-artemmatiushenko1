@@ -61,7 +61,6 @@ describe('ScannerService', () => {
       subscriptionServiceMock.findAllConfirmedSubscriptions.mockResolvedValue([
         sub,
       ]);
-      subscriptionServiceMock.findSubscriptionById.mockResolvedValue(sub);
       githubClientMock.getLatestRelease.mockResolvedValue(latestRelease);
 
       await scannerService.scan();
@@ -79,6 +78,79 @@ describe('ScannerService', () => {
       );
     });
 
+    it('should continue scanning other subscriptions when one fails', async () => {
+      const sub1: Subscription = {
+        id: 1,
+        email: 'fail@example.com',
+        repo: 'owner/fail',
+        confirmed: true,
+        lastSeenTag: null,
+        createdAt: new Date(),
+      };
+      const sub2: Subscription = {
+        id: 2,
+        email: 'ok@example.com',
+        repo: 'owner/ok',
+        confirmed: true,
+        lastSeenTag: null,
+        createdAt: new Date(),
+      };
+
+      const latestRelease = {
+        tag: 'v1.0.0',
+        name: 'Release',
+        publishedAt: new Date().toISOString(),
+      };
+
+      subscriptionServiceMock.findAllConfirmedSubscriptions.mockResolvedValue([
+        sub1,
+        sub2,
+      ]);
+      githubClientMock.getLatestRelease
+        .mockRejectedValueOnce(new Error('GitHub unavailable'))
+        .mockResolvedValueOnce(latestRelease);
+
+      await scannerService.scan();
+
+      expect(loggerMock.error).toHaveBeenCalledWith(
+        'Error scanning subscription',
+        expect.any(Error),
+        { repo: 'owner/fail', subscriptionId: 1 },
+      );
+      expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
+        email: sub2.email,
+        repo: sub2.repo,
+        tag: latestRelease.tag,
+        releaseName: latestRelease.name,
+        unsubscribeToken: 'unsub-token',
+      });
+    });
+
+    it('should not notify when the latest release tag is unchanged', async () => {
+      const sub: Subscription = {
+        id: 1,
+        email: 'test@example.com',
+        repo: 'owner/repo',
+        confirmed: true,
+        lastSeenTag: 'v1.0.0',
+        createdAt: new Date(),
+      };
+
+      subscriptionServiceMock.findAllConfirmedSubscriptions.mockResolvedValue([
+        sub,
+      ]);
+      githubClientMock.getLatestRelease.mockResolvedValue({
+        tag: 'v1.0.0',
+        name: 'Same Release',
+        publishedAt: new Date().toISOString(),
+      });
+
+      await scannerService.scan();
+
+      expect(notificationServiceMock.notifyNewRelease).not.toHaveBeenCalled();
+      expect(subscriptionServiceMock.updateLastSeenTag).not.toHaveBeenCalled();
+    });
+
     it('should stop scanning if rate limit is exceeded', async () => {
       const sub: Subscription = {
         id: 1,
@@ -92,7 +164,6 @@ describe('ScannerService', () => {
       subscriptionServiceMock.findAllConfirmedSubscriptions.mockResolvedValue([
         sub,
       ]);
-      subscriptionServiceMock.findSubscriptionById.mockResolvedValue(sub);
       githubClientMock.getLatestRelease.mockRejectedValueOnce(
         new GithubRateLimitError(),
       );
