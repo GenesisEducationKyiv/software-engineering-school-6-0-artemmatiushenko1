@@ -15,7 +15,7 @@ import { healthRoutes } from './routes/health.routes.js';
 import cron, { type ScheduledTask } from 'node-cron';
 import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
 import { type AppDependencies } from './dependencies.js';
-import { elapsedTimeToSeconds } from './infrastructure/fastify/elapsed-time.js';
+import { msToSeconds } from './utils/time.utils.js';
 import { REQUEST_ID_HEADER } from './infrastructure/fastify/constants.js';
 import { runWithRequestLogger } from './infrastructure/logger/request-log-context.js';
 
@@ -75,7 +75,7 @@ export class App {
 
     this.fastify.addHook('onResponse', async (request, reply) => {
       const route = request.routeOptions?.url ?? 'unknown';
-      const durationSeconds = elapsedTimeToSeconds(reply);
+      const durationSeconds = msToSeconds(reply.elapsedTime);
 
       this.deps.metrics.recordHttpRequest(
         request.method,

@@ -6,6 +6,7 @@ import { NotificationService } from './notification.service.js';
 import type { Logger } from '../domain/logger.js';
 import { GithubRateLimitError } from '../domain/errors.js';
 import type { Metrics } from '../domain/metrics.js';
+import { msToSeconds } from '../utils/time.utils.js';
 
 export class ScannerService {
   constructor(
@@ -32,8 +33,8 @@ export class ScannerService {
         await this.safeScanSubscription(sub);
       }
     } finally {
-      const durationSeconds = (Date.now() - startTime) / 1000;
-      this.recordScanDuration(durationSeconds);
+      const endTime = Date.now();
+      this.metrics?.recordScanDuration(msToSeconds(endTime - startTime));
     }
   }
 
@@ -88,9 +89,5 @@ export class ScannerService {
         currentTag: sub.lastSeenTag,
       });
     }
-  }
-
-  private recordScanDuration(durationSeconds: number): void {
-    this.metrics?.recordScanDuration(durationSeconds);
   }
 }
