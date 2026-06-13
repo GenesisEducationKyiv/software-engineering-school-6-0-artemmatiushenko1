@@ -52,7 +52,7 @@ export class SubscriptionService {
     const validatedRepo = repoResult.data;
     const validatedEmail = emailResult.data;
 
-    this.metrics?.incrementSubscriptionRequests(validatedRepo);
+    this.metrics?.incrementSubscriptionRequests();
 
     const { owner, repo } = parseRepoPath(validatedRepo);
 
@@ -185,7 +185,7 @@ export class SubscriptionService {
       throw new SubscriptionNotFoundError(token.subscriptionId);
     }
 
-    this.metrics?.incrementSubscriptionConfirmations(sub.repo);
+    this.metrics?.incrementSubscriptionConfirmations();
 
     const unsubscribeToken =
       await this.tokenManager.getTokenBySubscriptionIdAndScope(
@@ -226,7 +226,7 @@ export class SubscriptionService {
       token.subscriptionId,
     );
     if (sub) {
-      this.metrics?.incrementUnsubscribeRequests(sub.repo);
+      this.metrics?.incrementUnsubscribeRequests();
     }
 
     await this.transactionManager.run(async (tx) => {

@@ -1,8 +1,8 @@
 export interface Metrics {
-  incrementSubscriptionRequests(repo: string): void;
-  incrementSubscriptionConfirmations(repo: string): void;
-  incrementUnsubscribeRequests(repo: string): void;
-  incrementNotificationsSent(repo: string): void;
+  incrementSubscriptionRequests(): void;
+  incrementSubscriptionConfirmations(): void;
+  incrementUnsubscribeRequests(): void;
+  incrementNotificationsSent(): void;
   incrementScanTotal(): void;
   incrementScanFailures(): void;
   recordScanDuration(durationSeconds: number): void;

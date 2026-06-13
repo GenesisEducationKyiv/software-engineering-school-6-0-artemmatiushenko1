@@ -14,25 +14,21 @@ export class PrometheusMetrics implements Metrics {
   private subscriptionRequests = new Counter({
     name: 'subscription_requests_total',
     help: 'Total number of subscription requests',
-    labelNames: ['repo'],
   });
 
   private subscriptionConfirmations = new Counter({
     name: 'subscription_confirmations_total',
     help: 'Total number of confirmed subscriptions',
-    labelNames: ['repo'],
   });
 
   private unsubscribeRequests = new Counter({
     name: 'unsubscribe_requests_total',
     help: 'Total number of unsubscribe requests',
-    labelNames: ['repo'],
   });
 
   private notificationsSent = new Counter({
     name: 'notifications_sent_total',
     help: 'Total number of notifications sent',
-    labelNames: ['repo'],
   });
 
   private scanTotal = new Counter({
@@ -76,20 +72,20 @@ export class PrometheusMetrics implements Metrics {
     buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
   });
 
-  incrementSubscriptionRequests(repo: string): void {
-    this.subscriptionRequests.inc({ repo });
+  incrementSubscriptionRequests(): void {
+    this.subscriptionRequests.inc();
   }
 
-  incrementSubscriptionConfirmations(repo: string): void {
-    this.subscriptionConfirmations.inc({ repo });
+  incrementSubscriptionConfirmations(): void {
+    this.subscriptionConfirmations.inc();
   }
 
-  incrementUnsubscribeRequests(repo: string): void {
-    this.unsubscribeRequests.inc({ repo });
+  incrementUnsubscribeRequests(): void {
+    this.unsubscribeRequests.inc();
   }
 
-  incrementNotificationsSent(repo: string): void {
-    this.notificationsSent.inc({ repo });
+  incrementNotificationsSent(): void {
+    this.notificationsSent.inc();
   }
 
   incrementScanTotal(): void {
