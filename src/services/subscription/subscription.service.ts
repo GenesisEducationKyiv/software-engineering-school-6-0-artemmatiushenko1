@@ -1,6 +1,6 @@
 import type { GithubClient } from '../../domain/github.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
-import type { EmailClient } from '../../domain/email.js';
+import type { NotificationService } from '../notification/notification.service.js';
 import type { Subscription } from '../../domain/subscription.js';
 import { RepoPathSchema } from '../../domain/subscription.js';
 import type { SubscriptionToken } from '../../domain/subscription.js';
@@ -18,21 +18,16 @@ import { z } from 'zod';
 import { parseRepoPath } from '../../utils/repo.utils.js';
 import type { Logger } from '../../domain/logger.js';
 import type { TransactionManager } from '../../domain/transaction-manager.js';
-import {
-  subscriptionConfirmationTemplate,
-  subscriptionConfirmedTemplate,
-} from '../../infrastructure/email/templates.js';
 import type { Metrics } from '../../domain/metrics.js';
 
 export class SubscriptionService {
   constructor(
     private subscriptionRepo: SubscriptionRepository,
     private githubClient: GithubClient,
-    private emailClient: EmailClient,
+    private notificationService: NotificationService,
     private tokenManager: SubscriptionTokenManager,
     private transactionManager: TransactionManager,
     private logger: Logger,
-    private appUrl: string,
     private metrics?: Metrics,
   ) {}
 
@@ -89,14 +84,10 @@ export class SubscriptionService {
       },
     );
 
-    const confirmUrl = `${this.appUrl}/confirm/${confirmToken}`;
-    const template = subscriptionConfirmationTemplate(
-      validatedRepo,
-      confirmUrl,
-    );
-    await this.emailClient.sendEmail({
-      to: validatedEmail,
-      ...template,
+    await this.notificationService.notifySubscriptionConfirmation({
+      email: validatedEmail,
+      repo: validatedRepo,
+      confirmToken,
     });
 
     this.logger.info('User subscribed', {
@@ -181,11 +172,10 @@ export class SubscriptionService {
       );
     }
 
-    const unsubscribeUrl = `${this.appUrl}/unsubscribe/${unsubscribeToken.token}`;
-    const template = subscriptionConfirmedTemplate(sub.repo, unsubscribeUrl);
-    await this.emailClient.sendEmail({
-      to: sub.email,
-      ...template,
+    await this.notificationService.notifySubscriptionConfirmed({
+      email: sub.email,
+      repo: sub.repo,
+      unsubscribeToken: unsubscribeToken.token,
     });
   }
 

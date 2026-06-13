@@ -163,11 +163,10 @@ export class AppContainer {
     return (this.subscriptionServiceInstance ??= new SubscriptionService(
       this.subscriptionRepo,
       this.githubClient,
-      this.emailClient,
+      this.notificationService,
       this.tokenManager,
       this.transactionManager,
       this.logger,
-      this.config.appUrl,
       this.metrics,
     ));
   }

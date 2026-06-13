@@ -23,6 +23,44 @@ describe('NotificationService', () => {
     );
   });
 
+  it('should send subscription confirmation email', async () => {
+    const context = {
+      email: 'user@example.com',
+      repo: 'owner/repo',
+      confirmToken: 'confirm-token',
+    };
+
+    await notificationService.notifySubscriptionConfirmation(context);
+
+    expect(emailClientMock.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: context.email,
+        subject: `Confirm subscription: ${context.repo}`,
+        text: expect.stringContaining(
+          `${appUrl}/confirm/${context.confirmToken}`,
+        ),
+      }),
+    );
+  });
+
+  it('should send subscription confirmed email', async () => {
+    const context = {
+      email: 'user@example.com',
+      repo: 'owner/repo',
+      unsubscribeToken: 'unsub-token',
+    };
+
+    await notificationService.notifySubscriptionConfirmed(context);
+
+    expect(emailClientMock.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: context.email,
+        subject: expect.stringContaining(context.repo),
+        text: expect.stringContaining(`${appUrl}/unsubscribe/unsub-token`),
+      }),
+    );
+  });
+
   it('should send email with unsubscribe link', async () => {
     const context: NewReleaseNotificationContext = {
       email: 'user@example.com',

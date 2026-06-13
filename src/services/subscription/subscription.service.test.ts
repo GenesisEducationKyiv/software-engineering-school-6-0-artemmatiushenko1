@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SubscriptionService } from './subscription.service.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
 import type { GithubClient } from '../../domain/github.js';
-import type { EmailClient } from '../../domain/email.js';
+import type { NotificationService } from '../notification/notification.service.js';
 import type { SubscriptionTokenManager } from '../../domain/subscription-token-manager.js';
 import type {
   Subscription,
@@ -29,7 +29,7 @@ describe('SubscriptionService', () => {
   let subscriptionService: SubscriptionService;
   const repoMock = mock<SubscriptionRepository>();
   const githubClientMock = mock<GithubClient>();
-  const emailClientMock = mock<EmailClient>();
+  const notificationServiceMock = mock<NotificationService>();
   const tokenManagerMock = mock<SubscriptionTokenManager>();
   const loggerMock = mock<Logger>();
   const transactionManagerMock = mock<TransactionManager>();
@@ -45,11 +45,10 @@ describe('SubscriptionService', () => {
     subscriptionService = new SubscriptionService(
       repoMock,
       githubClientMock,
-      emailClientMock,
+      notificationServiceMock,
       tokenManagerMock,
       transactionManagerMock,
       loggerMock,
-      'http://localhost:3000',
       metricsMock,
     );
   });
@@ -91,12 +90,13 @@ describe('SubscriptionService', () => {
       'unsubscribe',
       expect.anything(),
     );
-    expect(emailClientMock.sendEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: email,
-        text: expect.stringContaining(confirmToken),
-      }),
-    );
+    expect(
+      notificationServiceMock.notifySubscriptionConfirmation,
+    ).toHaveBeenCalledWith({
+      email,
+      repo,
+      confirmToken,
+    });
     expect(loggerMock.info).toHaveBeenCalled();
   });
 
@@ -236,13 +236,13 @@ describe('SubscriptionService', () => {
         tokenValue,
         expect.anything(),
       );
-      expect(emailClientMock.sendEmail).toHaveBeenCalledWith(
-        expect.objectContaining({
-          to: sub.email,
-          subject: expect.stringContaining(sub.repo),
-          text: expect.stringContaining('unsub-token'),
-        }),
-      );
+      expect(
+        notificationServiceMock.notifySubscriptionConfirmed,
+      ).toHaveBeenCalledWith({
+        email: sub.email,
+        repo: sub.repo,
+        unsubscribeToken: unsubscribeToken.token,
+      });
       expect(loggerMock.info).toHaveBeenCalled();
     });
 

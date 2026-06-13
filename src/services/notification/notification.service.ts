@@ -1,5 +1,9 @@
 import type { EmailClient } from '../../domain/email.js';
-import { newReleaseNotificationTemplate } from '../../infrastructure/email/templates.js';
+import {
+  newReleaseNotificationTemplate,
+  subscriptionConfirmationTemplate,
+  subscriptionConfirmedTemplate,
+} from '../../infrastructure/email/templates.js';
 import type { Metrics } from '../../domain/metrics.js';
 
 export type NewReleaseNotificationContext = {
@@ -10,12 +14,51 @@ export type NewReleaseNotificationContext = {
   unsubscribeToken: string;
 };
 
+export type SubscriptionConfirmationContext = {
+  email: string;
+  repo: string;
+  confirmToken: string;
+};
+
+export type SubscriptionConfirmedContext = {
+  email: string;
+  repo: string;
+  unsubscribeToken: string;
+};
+
 export class NotificationService {
   constructor(
     private emailClient: EmailClient,
     private appUrl: string,
     private metrics?: Metrics,
   ) {}
+
+  async notifySubscriptionConfirmation(
+    context: SubscriptionConfirmationContext,
+  ): Promise<void> {
+    const confirmUrl = `${this.appUrl}/confirm/${context.confirmToken}`;
+    const template = subscriptionConfirmationTemplate(context.repo, confirmUrl);
+
+    await this.emailClient.sendEmail({
+      to: context.email,
+      ...template,
+    });
+  }
+
+  async notifySubscriptionConfirmed(
+    context: SubscriptionConfirmedContext,
+  ): Promise<void> {
+    const unsubscribeUrl = `${this.appUrl}/unsubscribe/${context.unsubscribeToken}`;
+    const template = subscriptionConfirmedTemplate(
+      context.repo,
+      unsubscribeUrl,
+    );
+
+    await this.emailClient.sendEmail({
+      to: context.email,
+      ...template,
+    });
+  }
 
   async notifyNewRelease(
     context: NewReleaseNotificationContext,
