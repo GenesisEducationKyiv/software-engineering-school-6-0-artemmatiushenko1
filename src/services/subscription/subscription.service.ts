@@ -3,7 +3,7 @@ import type { SubscriptionRepository } from '../../domain/subscription.repositor
 import type { NotificationService } from '../../domain/notification.js';
 import type {
   Subscription,
-  SubscriptionService as ISubscriptionService,
+  SubscriptionService,
   SubscriptionToken,
 } from '../../domain/subscription.js';
 import { RepoPathSchema } from '../../domain/subscription.js';
@@ -23,7 +23,7 @@ import type { Logger } from '../../domain/logger.js';
 import type { TransactionManager } from '../../domain/transaction-manager.js';
 import type { Metrics } from '../../domain/metrics.js';
 
-export class SubscriptionService implements ISubscriptionService {
+export class SubscriptionServiceImpl implements SubscriptionService {
   constructor(
     private subscriptionRepo: SubscriptionRepository,
     private githubClient: GithubClient,

@@ -7,9 +7,9 @@ import { NodemailerEmailClient } from './infrastructure/email/nodemailer.client.
 import { DrizzleSubscriptionRepository } from './repositories/subscription.repository.js';
 import { SubscriptionTokenManager } from './services/subscription/db-subscription-token-manager.js';
 import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
-import { NotificationService as NotificationServiceImpl } from './services/notification/notification.service.js';
+import { NotificationServiceImpl } from './services/notification/notification.service.js';
 import { ScannerService } from './services/scanner/scanner.service.js';
-import { SubscriptionService as SubscriptionServiceImpl } from './services/subscription/subscription.service.js';
+import { SubscriptionServiceImpl } from './services/subscription/subscription.service.js';
 import { PrometheusMetrics } from './infrastructure/metrics/prometheus-metrics.js';
 import { FastifyLogger } from './infrastructure/logger/fastify-logger.js';
 import type { FastifyBaseLogger } from 'fastify';

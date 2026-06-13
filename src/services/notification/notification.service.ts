@@ -1,6 +1,6 @@
 import type { EmailClient } from '../../domain/email.js';
 import type {
-  NotificationService as INotificationService,
+  NotificationService,
   NewReleaseNotificationContext,
   SubscriptionConfirmationContext,
   SubscriptionConfirmedContext,
@@ -13,7 +13,7 @@ import {
 import { buildConfirmUrl, buildUnsubscribeUrl } from './links.js';
 import type { Metrics } from '../../domain/metrics.js';
 
-export class NotificationService implements INotificationService {
+export class NotificationServiceImpl implements NotificationService {
   constructor(
     private emailClient: EmailClient,
     private appUrl: string,

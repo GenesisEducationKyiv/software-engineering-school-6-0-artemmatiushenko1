@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SubscriptionService } from './subscription.service.js';
+import { SubscriptionServiceImpl } from './subscription.service.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
 import type { GithubClient } from '../../domain/github.js';
 import type { NotificationService } from '../../domain/notification.js';
@@ -25,8 +25,8 @@ import type {
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../../domain/metrics.js';
 
-describe('SubscriptionService', () => {
-  let subscriptionService: SubscriptionService;
+describe('SubscriptionServiceImpl', () => {
+  let subscriptionService: SubscriptionServiceImpl;
   const repoMock = mock<SubscriptionRepository>();
   const githubClientMock = mock<GithubClient>();
   const notificationServiceMock = mock<NotificationService>();
@@ -42,7 +42,7 @@ describe('SubscriptionService', () => {
       async (work) => await work({} as DomainTransaction),
     );
 
-    subscriptionService = new SubscriptionService(
+    subscriptionService = new SubscriptionServiceImpl(
       repoMock,
       githubClientMock,
       notificationServiceMock,
