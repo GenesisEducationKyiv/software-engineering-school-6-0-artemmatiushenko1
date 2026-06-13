@@ -16,7 +16,10 @@ import {
 import { z } from 'zod';
 import { parseRepoPath } from '../utils/repo.utils.js';
 import type { Logger } from '../domain/logger.js';
-import type { TransactionManager } from '../domain/transaction-manager.js';
+import type {
+  TransactionManager,
+  DomainTransaction,
+} from '../domain/transaction-manager.js';
 import {
   subscriptionConfirmationTemplate,
   subscriptionConfirmedTemplate,
@@ -68,6 +71,16 @@ export class SubscriptionService {
 
     const { subscription, confirmToken } = await this.transactionManager.run(
       async (tx) => {
+        if (existing) {
+          return {
+            subscription: existing,
+            confirmToken: await this.refreshPendingSubscriptionTokens(
+              existing.id,
+              tx,
+            ),
+          };
+        }
+
         const subscription = await this.subscriptionRepo.createSubscription(
           {
             email: validatedEmail,
@@ -101,6 +114,36 @@ export class SubscriptionService {
     this.logger.info(`User ${email} subscribed to ${repoPath}`);
 
     return subscription;
+  }
+
+  private async refreshPendingSubscriptionTokens(
+    subscriptionId: number,
+    tx: DomainTransaction,
+  ): Promise<string> {
+    const existingSubscribeToken =
+      await this.tokenManager.getTokenBySubscriptionIdAndScope(
+        subscriptionId,
+        'subscribe',
+      );
+    if (existingSubscribeToken) {
+      await this.tokenManager.invalidateToken(existingSubscribeToken.token, tx);
+    }
+
+    const existingUnsubscribeToken =
+      await this.tokenManager.getTokenBySubscriptionIdAndScope(
+        subscriptionId,
+        'unsubscribe',
+      );
+    if (existingUnsubscribeToken) {
+      await this.tokenManager.invalidateToken(
+        existingUnsubscribeToken.token,
+        tx,
+      );
+    }
+
+    await this.tokenManager.createToken(subscriptionId, 'unsubscribe', tx);
+
+    return this.tokenManager.createToken(subscriptionId, 'subscribe', tx);
   }
 
   async getSubscriptionsByEmail(email: string): Promise<Subscription[]> {
