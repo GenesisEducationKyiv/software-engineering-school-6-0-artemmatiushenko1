@@ -58,6 +58,47 @@ describe('ScannerService', () => {
       expect(repoMock.updateLastSeenTag).toHaveBeenCalledWith(1, 'v1.1.0');
     });
 
+    it('should continue scanning other subscriptions when one fails', async () => {
+      const sub1: Subscription = {
+        id: 1,
+        email: 'fail@example.com',
+        repo: 'owner/fail',
+        confirmed: true,
+        lastSeenTag: null,
+        createdAt: new Date(),
+      };
+      const sub2: Subscription = {
+        id: 2,
+        email: 'ok@example.com',
+        repo: 'owner/ok',
+        confirmed: true,
+        lastSeenTag: null,
+        createdAt: new Date(),
+      };
+
+      const latestRelease = {
+        tag: 'v1.0.0',
+        name: 'Release',
+        publishedAt: new Date().toISOString(),
+      };
+
+      repoMock.findAllConfirmedSubscriptions.mockResolvedValue([sub1, sub2]);
+      githubClientMock.getLatestRelease
+        .mockRejectedValueOnce(new Error('GitHub unavailable'))
+        .mockResolvedValueOnce(latestRelease);
+
+      await scannerService.scan();
+
+      expect(loggerMock.error).toHaveBeenCalledWith(
+        'Error scanning owner/fail:',
+        expect.any(Error),
+      );
+      expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith(
+        sub2,
+        latestRelease,
+      );
+    });
+
     it('should stop scanning if rate limit is exceeded', async () => {
       const sub: Subscription = {
         id: 1,
@@ -75,6 +116,52 @@ describe('ScannerService', () => {
 
       await expect(scannerService.scan()).rejects.toThrow(GithubRateLimitError);
 
+      expect(loggerMock.warn).toHaveBeenCalledWith(
+        expect.stringContaining('rate limit exceeded'),
+      );
+    });
+  });
+
+  describe('safeScanSubscription', () => {
+    it('should log and swallow non-rate-limit errors', async () => {
+      const sub: Subscription = {
+        id: 1,
+        email: 'test@example.com',
+        repo: 'owner/repo',
+        confirmed: true,
+        lastSeenTag: null,
+        createdAt: new Date(),
+      };
+
+      githubClientMock.getLatestRelease.mockRejectedValue(
+        new Error('GitHub unavailable'),
+      );
+
+      await scannerService.safeScanSubscription(sub);
+
+      expect(loggerMock.error).toHaveBeenCalledWith(
+        'Error scanning owner/repo:',
+        expect.any(Error),
+      );
+    });
+
+    it('should rethrow rate limit errors', async () => {
+      const sub: Subscription = {
+        id: 1,
+        email: 'test@example.com',
+        repo: 'owner/repo',
+        confirmed: true,
+        lastSeenTag: null,
+        createdAt: new Date(),
+      };
+
+      githubClientMock.getLatestRelease.mockRejectedValue(
+        new GithubRateLimitError(),
+      );
+
+      await expect(scannerService.safeScanSubscription(sub)).rejects.toThrow(
+        GithubRateLimitError,
+      );
       expect(loggerMock.warn).toHaveBeenCalledWith(
         expect.stringContaining('rate limit exceeded'),
       );

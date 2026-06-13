@@ -20,58 +20,26 @@ export class ScannerService {
     const startTime = Date.now();
     this.metrics?.incrementScanTotal();
 
-    try {
-      const activeSubscriptions =
-        await this.subscriptionRepo.findAllConfirmedSubscriptions();
+    const activeSubscriptions =
+      await this.subscriptionRepo.findAllConfirmedSubscriptions();
 
-      this.logger.info(
-        `Found ${activeSubscriptions.length} active subscriptions to scan.`,
-      );
+    this.logger.info(
+      `Found ${activeSubscriptions.length} active subscriptions to scan.`,
+    );
 
-      for (const sub of activeSubscriptions) {
-        await this.scanSubscription(sub);
-      }
-    } catch (error) {
-      this.metrics?.incrementScanFailures();
-      throw error;
-    } finally {
-      const durationSeconds = (Date.now() - startTime) / 1000;
-      this.recordScanDuration(durationSeconds);
+    for (const sub of activeSubscriptions) {
+      await this.safeScanSubscription(sub);
     }
+    const durationSeconds = (Date.now() - startTime) / 1000;
+    this.recordScanDuration(durationSeconds);
   }
 
-  async scanSubscription(sub: Subscription): Promise<void> {
-    this.logger.info(`Processing subscription for ${sub.repo} (${sub.email})`);
-    const { owner, repo } = parseRepoPath(sub.repo);
-
+  async safeScanSubscription(sub: Subscription): Promise<void> {
     try {
-      const latestRelease = await this.githubClient.getLatestRelease(
-        owner,
-        repo,
-      );
-
-      if (!latestRelease) {
-        this.logger.info(`No releases found for ${sub.repo}`);
-        return;
-      }
-
-      if (latestRelease.tag !== sub.lastSeenTag) {
-        this.logger.info(
-          `New release for ${sub.repo}: ${latestRelease.tag} (was ${sub.lastSeenTag ?? 'none'})`,
-        );
-
-        await this.notificationService.notifyNewRelease(sub, latestRelease);
-
-        await this.subscriptionRepo.updateLastSeenTag(
-          sub.id,
-          latestRelease.tag,
-        );
-      } else {
-        this.logger.info(
-          `No new releases for ${sub.repo} (current: ${sub.lastSeenTag})`,
-        );
-      }
+      await this.scanSubscription(sub);
     } catch (error) {
+      this.metrics?.incrementScanFailures();
+
       if (error instanceof GithubRateLimitError) {
         this.logger.warn(
           'GitHub API rate limit exceeded while scanning single subscription.',
@@ -82,7 +50,32 @@ export class ScannerService {
         `Error scanning ${sub.repo}:`,
         error instanceof Error ? error : new Error(String(error)),
       );
-      throw error;
+    }
+  }
+
+  async scanSubscription(sub: Subscription): Promise<void> {
+    this.logger.info(`Processing subscription for ${sub.repo} (${sub.email})`);
+    const { owner, repo } = parseRepoPath(sub.repo);
+
+    const latestRelease = await this.githubClient.getLatestRelease(owner, repo);
+
+    if (!latestRelease) {
+      this.logger.info(`No releases found for ${sub.repo}`);
+      return;
+    }
+
+    if (latestRelease.tag !== sub.lastSeenTag) {
+      this.logger.info(
+        `New release for ${sub.repo}: ${latestRelease.tag} (was ${sub.lastSeenTag ?? 'none'})`,
+      );
+
+      await this.notificationService.notifyNewRelease(sub, latestRelease);
+
+      await this.subscriptionRepo.updateLastSeenTag(sub.id, latestRelease.tag);
+    } else {
+      this.logger.info(
+        `No new releases for ${sub.repo} (current: ${sub.lastSeenTag})`,
+      );
     }
   }
 
