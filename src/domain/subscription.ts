@@ -35,3 +35,23 @@ export const SubscriptionTokenSchema = z.object({
 });
 
 export type SubscriptionToken = z.infer<typeof SubscriptionTokenSchema>;
+
+export interface SubscriptionService {
+  subscribe(email: string, repoPath: string): Promise<Subscription>;
+
+  getSubscriptionsByEmail(email: string): Promise<Subscription[]>;
+
+  findAllConfirmedSubscriptions(): Promise<Subscription[]>;
+
+  findSubscriptionById(id: number): Promise<Subscription | null>;
+
+  updateLastSeenTag(id: number, tag: string): Promise<void>;
+
+  getUnsubscribeToken(
+    subscriptionId: number,
+  ): Promise<SubscriptionToken | null>;
+
+  confirmSubscription(tokenValue: string): Promise<void>;
+
+  unsubscribe(tokenValue: string): Promise<void>;
+}

@@ -9,13 +9,14 @@ import { SubscriptionTokenManager } from './services/subscription/db-subscriptio
 import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
 import { NotificationService as NotificationServiceImpl } from './services/notification/notification.service.js';
 import { ScannerService } from './services/scanner/scanner.service.js';
-import { SubscriptionService } from './services/subscription/subscription.service.js';
+import { SubscriptionService as SubscriptionServiceImpl } from './services/subscription/subscription.service.js';
 import { PrometheusMetrics } from './infrastructure/metrics/prometheus-metrics.js';
 import { FastifyLogger } from './infrastructure/logger/fastify-logger.js';
 import type { FastifyBaseLogger } from 'fastify';
 import type { GithubClient } from './domain/github.js';
 import type { EmailClient } from './domain/email.js';
 import type { NotificationService } from './domain/notification.js';
+import type { SubscriptionService } from './domain/subscription.js';
 import type { Logger } from './domain/logger.js';
 
 export interface AppDependencies {
@@ -161,7 +162,7 @@ export class AppContainer {
   }
 
   get subscriptionService(): SubscriptionService {
-    return (this.subscriptionServiceInstance ??= new SubscriptionService(
+    return (this.subscriptionServiceInstance ??= new SubscriptionServiceImpl(
       this.subscriptionRepo,
       this.githubClient,
       this.notificationService,

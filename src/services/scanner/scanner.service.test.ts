@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ScannerService } from './scanner.service.js';
-import type { SubscriptionService } from '../subscription/subscription.service.js';
+import type { SubscriptionService } from '../../domain/subscription.js';
 import type { GithubClient } from '../../domain/github.js';
 import type { Subscription } from '../../domain/subscription.js';
 import type { NotificationService } from '../../domain/notification.js';

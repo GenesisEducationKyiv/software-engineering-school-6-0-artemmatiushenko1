@@ -1,9 +1,12 @@
 import type { GithubClient } from '../../domain/github.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
 import type { NotificationService } from '../../domain/notification.js';
-import type { Subscription } from '../../domain/subscription.js';
+import type {
+  Subscription,
+  SubscriptionService as ISubscriptionService,
+  SubscriptionToken,
+} from '../../domain/subscription.js';
 import { RepoPathSchema } from '../../domain/subscription.js';
-import type { SubscriptionToken } from '../../domain/subscription.js';
 import type { SubscriptionTokenManager } from './db-subscription-token-manager.js';
 import {
   InvalidRepoFormatError,
@@ -20,7 +23,7 @@ import type { Logger } from '../../domain/logger.js';
 import type { TransactionManager } from '../../domain/transaction-manager.js';
 import type { Metrics } from '../../domain/metrics.js';
 
-export class SubscriptionService {
+export class SubscriptionService implements ISubscriptionService {
   constructor(
     private subscriptionRepo: SubscriptionRepository,
     private githubClient: GithubClient,
