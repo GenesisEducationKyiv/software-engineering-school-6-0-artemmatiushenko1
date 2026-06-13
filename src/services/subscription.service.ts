@@ -24,7 +24,6 @@ import {
   subscriptionConfirmationTemplate,
   subscriptionConfirmedTemplate,
 } from '../infrastructure/email/templates.js';
-import type { Metrics } from '../domain/metrics.js';
 
 export class SubscriptionService {
   constructor(
@@ -35,7 +34,6 @@ export class SubscriptionService {
     private transactionManager: TransactionManager,
     private logger: Logger,
     private appUrl: string,
-    private metrics?: Metrics,
   ) {}
 
   async subscribe(email: string, repoPath: string): Promise<Subscription> {
@@ -51,8 +49,6 @@ export class SubscriptionService {
 
     const validatedRepo = repoResult.data;
     const validatedEmail = emailResult.data;
-
-    this.metrics?.incrementSubscriptionRequests();
 
     const { owner, repo } = parseRepoPath(validatedRepo);
 
@@ -185,8 +181,6 @@ export class SubscriptionService {
       throw new SubscriptionNotFoundError(token.subscriptionId);
     }
 
-    this.metrics?.incrementSubscriptionConfirmations();
-
     const unsubscribeToken =
       await this.tokenManager.getTokenBySubscriptionIdAndScope(
         sub.id,
@@ -220,13 +214,6 @@ export class SubscriptionService {
     const isValid = await this.tokenManager.validateToken(token, 'unsubscribe');
     if (!isValid) {
       throw new InvalidTokenError();
-    }
-
-    const sub = await this.subscriptionRepo.findSubscriptionById(
-      token.subscriptionId,
-    );
-    if (sub) {
-      this.metrics?.incrementUnsubscribeRequests();
     }
 
     await this.transactionManager.run(async (tx) => {

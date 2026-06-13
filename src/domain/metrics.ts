@@ -1,7 +1,4 @@
 export interface Metrics {
-  incrementSubscriptionRequests(): void;
-  incrementSubscriptionConfirmations(): void;
-  incrementUnsubscribeRequests(): void;
   incrementNotificationsSent(): void;
   incrementScanTotal(): void;
   incrementScanFailures(): void;

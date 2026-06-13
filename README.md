@@ -115,7 +115,7 @@ The app container is not published to the host directly. **nginx** listens on po
 
 ## Observability
 
-The API emits **structured JSON logs** (Pino) to stdout and exposes **Prometheus metrics** at `/metrics` on the internal network (HTTP RED plus business counters for subscriptions, notifications, scans, and cache hits). In Docker, nginx blocks public access to `/metrics`; only Prometheus scrapes it directly via `app:3000`.
+The API emits **structured JSON logs** (Pino) to stdout and exposes **Prometheus metrics** at `/metrics` on the internal network (HTTP RED plus business counters for notifications, scans, and cache hits). In Docker, nginx blocks public access to `/metrics`; only Prometheus scrapes it directly via `app:3000`.
 
 Start the optional monitoring stack together with the app (see [monitoring/README.md](./monitoring/README.md)) to scrape metrics into Grafana and ship logs to Kibana.
 

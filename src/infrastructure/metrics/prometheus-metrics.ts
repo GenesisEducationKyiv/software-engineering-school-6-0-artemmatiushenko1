@@ -11,21 +11,6 @@ export class PrometheusMetrics implements Metrics {
     collectDefaultMetrics();
   }
 
-  private subscriptionRequests = new Counter({
-    name: 'subscription_requests_total',
-    help: 'Total number of subscription requests',
-  });
-
-  private subscriptionConfirmations = new Counter({
-    name: 'subscription_confirmations_total',
-    help: 'Total number of confirmed subscriptions',
-  });
-
-  private unsubscribeRequests = new Counter({
-    name: 'unsubscribe_requests_total',
-    help: 'Total number of unsubscribe requests',
-  });
-
   private notificationsSent = new Counter({
     name: 'notifications_sent_total',
     help: 'Total number of notifications sent',
@@ -71,18 +56,6 @@ export class PrometheusMetrics implements Metrics {
     labelNames: ['method', 'route'],
     buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
   });
-
-  incrementSubscriptionRequests(): void {
-    this.subscriptionRequests.inc();
-  }
-
-  incrementSubscriptionConfirmations(): void {
-    this.subscriptionConfirmations.inc();
-  }
-
-  incrementUnsubscribeRequests(): void {
-    this.unsubscribeRequests.inc();
-  }
 
   incrementNotificationsSent(): void {
     this.notificationsSent.inc();

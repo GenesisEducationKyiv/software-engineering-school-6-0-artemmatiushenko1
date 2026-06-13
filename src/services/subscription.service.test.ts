@@ -23,7 +23,6 @@ import type {
   DomainTransaction,
 } from '../domain/transaction-manager.js';
 import { mock } from 'vitest-mock-extended';
-import type { Metrics } from '../domain/metrics.js';
 
 describe('SubscriptionService', () => {
   let subscriptionService: SubscriptionService;
@@ -33,7 +32,6 @@ describe('SubscriptionService', () => {
   const tokenManagerMock = mock<SubscriptionTokenManager>();
   const loggerMock = mock<Logger>();
   const transactionManagerMock = mock<TransactionManager>();
-  const metricsMock = mock<Metrics>();
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -50,7 +48,6 @@ describe('SubscriptionService', () => {
       transactionManagerMock,
       loggerMock,
       'http://localhost:3000',
-      metricsMock,
     );
   });
 
