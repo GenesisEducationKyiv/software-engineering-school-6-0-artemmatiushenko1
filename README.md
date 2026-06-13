@@ -99,7 +99,8 @@ Once the containers are running, the application will be accessible at:
 
 - **Web Interface**: [http://localhost:3000](http://localhost:3000)
 - **API Documentation (Swagger)**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
-- **Metrics**: [http://localhost:3000/metrics](http://localhost:3000/metrics)
+
+The app container is not published to the host directly. **nginx** listens on port 3000 and proxies public traffic to the app. `/metrics` is blocked at the proxy and is only reachable on the internal Docker network (scraped by Prometheus).
 
 ### Running Locally
 
@@ -114,7 +115,7 @@ Once the containers are running, the application will be accessible at:
 
 ## Observability
 
-The API emits **structured JSON logs** (Pino) to stdout and exposes **Prometheus metrics** at `/metrics` (HTTP RED plus business counters for subscriptions, notifications, scans, and cache hits).
+The API emits **structured JSON logs** (Pino) to stdout and exposes **Prometheus metrics** at `/metrics` on the internal network (HTTP RED plus business counters for subscriptions, notifications, scans, and cache hits). In Docker, nginx blocks public access to `/metrics`; only Prometheus scrapes it directly via `app:3000`.
 
 Start the optional monitoring stack together with the app (see [monitoring/README.md](./monitoring/README.md)) to scrape metrics into Grafana and ship logs to Kibana.
 
@@ -173,6 +174,7 @@ If you need to run tests locally with the Playwright UI:
 - `src/routes`: API route definitions.
 - `client/`: Frontend application code.
 - `drizzle/`: Database migrations.
+- `nginx/`: Public reverse proxy (blocks `/metrics` from the internet).
 - `monitoring/`: Prometheus, Grafana, and ELK stack — see [monitoring/README.md](./monitoring/README.md).
 
 ## Database Schema

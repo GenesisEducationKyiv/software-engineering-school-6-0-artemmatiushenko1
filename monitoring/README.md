@@ -8,9 +8,11 @@ This stack collects application metrics and structured logs so we can observe re
 
 ```mermaid
 flowchart LR
-  App[App]
+  User[User] -->|":3000"| Nginx[nginx]
+  Nginx -->|"/api, UI, /health"| App[App]
+  Nginx -.->|"/metrics blocked"| X[403]
 
-  App -->|/metrics| Prometheus
+  App -->|"/metrics internal"| Prometheus
   Prometheus --> Grafana
 
   App -->|JSON logs| Filebeat
@@ -22,8 +24,10 @@ flowchart LR
 
 ## Start
 
+Run together with the app stack so Prometheus can reach `app:3000` on the shared Docker network:
+
 ```bash
-docker compose -f monitoring/docker-compose.yaml up
+docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml up --build
 ```
 
 ## Environment variables
@@ -37,12 +41,12 @@ See `.env.example` in the repository root:
 
 ## URLs
 
-| Service       | URL                       |
-|---------------|---------------------------|
-| Prometheus    | http://localhost:9090     |
-| Grafana       | http://localhost:3001     |
-| Elasticsearch | http://localhost:9200     |
-| Kibana        | http://localhost:5601     |
+| Service       | URL                   |
+| ------------- | --------------------- |
+| Prometheus    | http://localhost:9090 |
+| Grafana       | http://localhost:3001 |
+| Elasticsearch | http://localhost:9200 |
+| Kibana        | http://localhost:5601 |
 
 Grafana default login: `admin` / `admin` (override via env vars above).  
 Kibana login: `elastic` / value of `ELASTIC_PASSWORD`.
