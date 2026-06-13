@@ -185,10 +185,6 @@ export class SubscriptionService {
       throw new SubscriptionNotFoundError(token.subscriptionId);
     }
 
-    this.logger.info('Subscription confirmed', {
-      subscriptionId: token.subscriptionId,
-    });
-
     this.metrics?.incrementSubscriptionConfirmations(sub.repo);
 
     const unsubscribeToken =
@@ -209,7 +205,9 @@ export class SubscriptionService {
       ...template,
     });
 
-    this.logger.info(`Subscription confirmed for token ${tokenValue}`);
+    this.logger.info('Subscription confirmed', {
+      subscriptionId: token.subscriptionId,
+    });
   }
 
   async unsubscribe(tokenValue: string): Promise<void> {

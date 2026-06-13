@@ -17,6 +17,7 @@ import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
 import { type AppDependencies } from './dependencies.js';
 import { elapsedTimeToSeconds } from './infrastructure/fastify/elapsed-time.js';
 import { REQUEST_ID_HEADER } from './infrastructure/fastify/constants.js';
+import { runWithRequestLogger } from './infrastructure/logger/request-log-context.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,12 +57,19 @@ export class App {
   }
 
   private setupHttpLogging(): void {
-    this.fastify.addHook('onRequest', async (request, reply) => {
+    this.fastify.addHook('onRequest', (request, reply, done) => {
       reply.header(REQUEST_ID_HEADER, request.id);
-      request.log = request.log.child({
+
+      const requestLogger = request.log.child({
         method: request.method,
         route: request.url,
         ip: request.ip,
+      });
+
+      request.log = requestLogger;
+
+      runWithRequestLogger(requestLogger, () => {
+        done();
       });
     });
 
@@ -76,18 +84,17 @@ export class App {
         durationSeconds,
       );
 
-      request.log.info(
-        {
-          statusCode: reply.statusCode,
-          responseTime: reply.elapsedTime,
-        },
-        'request completed',
-      );
+      this.deps.logger.info('Request completed', {
+        statusCode: reply.statusCode,
+        responseTime: reply.elapsedTime,
+      });
     });
   }
 
   private setupErrorHandler() {
     this.fastify.setErrorHandler((error, _, reply) => {
+      this.deps.logger.error('Request error', error as Error);
+
       if (error instanceof DomainError) {
         return reply.status(error.status).send(
           CommonErrorResponseDtoSchema.parse({
@@ -96,8 +103,6 @@ export class App {
           }),
         );
       }
-
-      this.deps.logger.error('Request error', error as Error);
 
       reply.status(500).send(
         CommonErrorResponseDtoSchema.parse({

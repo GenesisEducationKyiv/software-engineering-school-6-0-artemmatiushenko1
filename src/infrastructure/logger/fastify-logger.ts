@@ -1,14 +1,20 @@
 import type { FastifyBaseLogger } from 'fastify';
 import type { Logger } from '../../domain/logger.js';
+import { getRequestScopedLogger } from './request-log-context.js';
 
 export class FastifyLogger implements Logger {
-  constructor(private fastifyLogger: FastifyBaseLogger) {}
+  constructor(private baseLogger: FastifyBaseLogger) {}
+
+  private resolveLogger(): FastifyBaseLogger {
+    return getRequestScopedLogger() ?? this.baseLogger;
+  }
 
   info(message: string, context?: Record<string, unknown>): void {
+    const logger = this.resolveLogger();
     if (context) {
-      this.fastifyLogger.info(context, message);
+      logger.info(context, message);
     } else {
-      this.fastifyLogger.info(message);
+      logger.info(message);
     }
   }
 
@@ -17,31 +23,34 @@ export class FastifyLogger implements Logger {
     error?: Error,
     context?: Record<string, unknown>,
   ): void {
+    const logger = this.resolveLogger();
     const payload = {
       ...(context || {}),
       ...(error ? { err: error } : {}),
     };
 
     if (Object.keys(payload).length > 0) {
-      this.fastifyLogger.error(payload, message);
+      logger.error(payload, message);
     } else {
-      this.fastifyLogger.error(message);
+      logger.error(message);
     }
   }
 
   warn(message: string, context?: Record<string, unknown>): void {
+    const logger = this.resolveLogger();
     if (context) {
-      this.fastifyLogger.warn(context, message);
+      logger.warn(context, message);
     } else {
-      this.fastifyLogger.warn(message);
+      logger.warn(message);
     }
   }
 
   debug(message: string, context?: Record<string, unknown>): void {
+    const logger = this.resolveLogger();
     if (context) {
-      this.fastifyLogger.debug(context, message);
+      logger.debug(context, message);
     } else {
-      this.fastifyLogger.debug(message);
+      logger.debug(message);
     }
   }
 }
