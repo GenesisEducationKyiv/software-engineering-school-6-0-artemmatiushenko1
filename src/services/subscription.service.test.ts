@@ -223,8 +223,9 @@ describe('SubscriptionService', () => {
     repoMock.findByEmailAndRepo.mockResolvedValue(null);
     githubClientMock.repositoryExists.mockResolvedValue(true);
     repoMock.createSubscription.mockResolvedValue(subscription);
-    tokenManagerMock.createToken.mockResolvedValueOnce('confirm-token');
-    tokenManagerMock.createToken.mockResolvedValueOnce('unsub-token');
+    tokenManagerMock.createToken
+      .mockResolvedValueOnce('confirm-token')
+      .mockResolvedValueOnce('unsub-token');
     emailServiceMock.sendEmail.mockRejectedValue(new Error('SMTP error'));
 
     await expect(subscriptionService.subscribe(email, repo)).rejects.toThrow(
