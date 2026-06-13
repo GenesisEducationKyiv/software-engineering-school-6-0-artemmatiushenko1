@@ -1,4 +1,5 @@
 import type { GithubClient } from '../domain/github.js';
+import type { Subscription } from '../domain/subscription.js';
 import type { SubscriptionRepository } from '../domain/subscription.repository.js';
 import { parseRepoPath } from '../utils/repo.utils.js';
 import { NotificationService } from './notification.service.js';
@@ -28,7 +29,7 @@ export class ScannerService {
       );
 
       for (const sub of activeSubscriptions) {
-        await this.scanSubscription(sub.id);
+        await this.scanSubscription(sub);
       }
     } catch (error) {
       this.metrics?.incrementScanFailures();
@@ -39,16 +40,7 @@ export class ScannerService {
     }
   }
 
-  async scanSubscription(subscriptionId: number): Promise<void> {
-    const sub =
-      await this.subscriptionRepo.findSubscriptionById(subscriptionId);
-    if (!sub || !sub.confirmed) {
-      this.logger.warn(
-        `Attempted to scan non-existent or unconfirmed subscription: ${subscriptionId}`,
-      );
-      return;
-    }
-
+  async scanSubscription(sub: Subscription): Promise<void> {
     this.logger.info(`Processing subscription for ${sub.repo} (${sub.email})`);
     const { owner, repo } = parseRepoPath(sub.repo);
 

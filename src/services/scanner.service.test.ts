@@ -47,7 +47,6 @@ describe('ScannerService', () => {
       };
 
       repoMock.findAllConfirmedSubscriptions.mockResolvedValue([sub]);
-      repoMock.findSubscriptionById.mockResolvedValue(sub);
       githubClientMock.getLatestRelease.mockResolvedValue(latestRelease);
 
       await scannerService.scan();
@@ -70,7 +69,6 @@ describe('ScannerService', () => {
       };
 
       repoMock.findAllConfirmedSubscriptions.mockResolvedValue([sub]);
-      repoMock.findSubscriptionById.mockResolvedValue(sub);
       githubClientMock.getLatestRelease.mockRejectedValueOnce(
         new GithubRateLimitError(),
       );
@@ -100,10 +98,9 @@ describe('ScannerService', () => {
         publishedAt: new Date().toISOString(),
       };
 
-      repoMock.findSubscriptionById.mockResolvedValue(sub);
       githubClientMock.getLatestRelease.mockResolvedValue(latestRelease);
 
-      await scannerService.scanSubscription(1);
+      await scannerService.scanSubscription(sub);
 
       expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith(
         sub,
@@ -122,34 +119,15 @@ describe('ScannerService', () => {
         createdAt: new Date(),
       };
 
-      repoMock.findSubscriptionById.mockResolvedValue(sub);
       githubClientMock.getLatestRelease.mockResolvedValue({
         tag: 'v1.0.0',
         name: 'Same Release',
         publishedAt: new Date().toISOString(),
       });
 
-      await scannerService.scanSubscription(1);
+      await scannerService.scanSubscription(sub);
 
       expect(notificationServiceMock.notifyNewRelease).not.toHaveBeenCalled();
-    });
-
-    it('should do nothing if subscription is not confirmed', async () => {
-      const sub: Subscription = {
-        id: 1,
-        email: 'test@example.com',
-        repo: 'owner/repo',
-        confirmed: false,
-        lastSeenTag: null,
-        createdAt: new Date(),
-      };
-
-      repoMock.findSubscriptionById.mockResolvedValue(sub);
-
-      await scannerService.scanSubscription(1);
-
-      expect(githubClientMock.getLatestRelease).not.toHaveBeenCalled();
-      expect(loggerMock.warn).toHaveBeenCalled();
     });
 
     it('should throw if rate limit is exceeded', async () => {
@@ -162,12 +140,11 @@ describe('ScannerService', () => {
         createdAt: new Date(),
       };
 
-      repoMock.findSubscriptionById.mockResolvedValue(sub);
       githubClientMock.getLatestRelease.mockRejectedValue(
         new GithubRateLimitError(),
       );
 
-      await expect(scannerService.scanSubscription(1)).rejects.toThrow(
+      await expect(scannerService.scanSubscription(sub)).rejects.toThrow(
         GithubRateLimitError,
       );
     });
