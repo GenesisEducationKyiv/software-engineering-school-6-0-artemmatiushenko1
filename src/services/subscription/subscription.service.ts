@@ -1,6 +1,6 @@
 import type { GithubClient } from '../../domain/github.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
-import type { NotificationService } from '../notification/notification.service.js';
+import type { NotificationService } from '../../domain/notification.js';
 import type { Subscription } from '../../domain/subscription.js';
 import { RepoPathSchema } from '../../domain/subscription.js';
 import type { SubscriptionToken } from '../../domain/subscription.js';

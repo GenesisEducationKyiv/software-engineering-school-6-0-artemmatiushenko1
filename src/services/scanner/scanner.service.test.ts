@@ -3,7 +3,7 @@ import { ScannerService } from './scanner.service.js';
 import type { SubscriptionService } from '../subscription/subscription.service.js';
 import type { GithubClient } from '../../domain/github.js';
 import type { Subscription } from '../../domain/subscription.js';
-import { NotificationService } from '../notification/notification.service.js';
+import type { NotificationService } from '../../domain/notification.js';
 import type { Logger } from '../../domain/logger.js';
 import {
   GithubRateLimitError,

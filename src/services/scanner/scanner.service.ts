@@ -1,6 +1,6 @@
 import type { GithubClient } from '../../domain/github.js';
 import { parseRepoPath } from '../../utils/repo.utils.js';
-import { NotificationService } from '../notification/notification.service.js';
+import type { NotificationService } from '../../domain/notification.js';
 import type { SubscriptionService } from '../subscription/subscription.service.js';
 import type { Logger } from '../../domain/logger.js';
 import {

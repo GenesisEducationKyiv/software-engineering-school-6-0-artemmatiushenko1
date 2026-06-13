@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SubscriptionService } from './subscription.service.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
 import type { GithubClient } from '../../domain/github.js';
-import type { NotificationService } from '../notification/notification.service.js';
+import type { NotificationService } from '../../domain/notification.js';
 import type { SubscriptionTokenManager } from '../../domain/subscription-token-manager.js';
 import type {
   Subscription,

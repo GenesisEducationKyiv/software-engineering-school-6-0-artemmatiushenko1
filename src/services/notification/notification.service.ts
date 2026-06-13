@@ -1,4 +1,10 @@
 import type { EmailClient } from '../../domain/email.js';
+import type {
+  NotificationService as INotificationService,
+  NewReleaseNotificationContext,
+  SubscriptionConfirmationContext,
+  SubscriptionConfirmedContext,
+} from '../../domain/notification.js';
 import {
   newReleaseNotificationTemplate,
   subscriptionConfirmationTemplate,
@@ -7,27 +13,7 @@ import {
 import { buildConfirmUrl, buildUnsubscribeUrl } from './links.js';
 import type { Metrics } from '../../domain/metrics.js';
 
-export type NewReleaseNotificationContext = {
-  email: string;
-  repo: string;
-  tag: string;
-  releaseName: string | null;
-  unsubscribeToken: string;
-};
-
-export type SubscriptionConfirmationContext = {
-  email: string;
-  repo: string;
-  confirmToken: string;
-};
-
-export type SubscriptionConfirmedContext = {
-  email: string;
-  repo: string;
-  unsubscribeToken: string;
-};
-
-export class NotificationService {
+export class NotificationService implements INotificationService {
   constructor(
     private emailClient: EmailClient,
     private appUrl: string,
