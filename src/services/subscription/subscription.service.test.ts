@@ -3,7 +3,7 @@ import { SubscriptionService } from './subscription.service.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
 import type { GithubClient } from '../../domain/github.js';
 import type { NotificationService } from '../../domain/notification.js';
-import type { SubscriptionTokenManager } from '../../domain/subscription-token-manager.js';
+import type { DbSubscriptionTokenManager } from './db-subscription-token-manager.js';
 import type {
   Subscription,
   SubscriptionToken,
@@ -30,7 +30,7 @@ describe('SubscriptionService', () => {
   const repoMock = mock<SubscriptionRepository>();
   const githubClientMock = mock<GithubClient>();
   const notificationServiceMock = mock<NotificationService>();
-  const tokenManagerMock = mock<SubscriptionTokenManager>();
+  const tokenManagerMock = mock<DbSubscriptionTokenManager>();
   const loggerMock = mock<Logger>();
   const transactionManagerMock = mock<TransactionManager>();
   const metricsMock = mock<Metrics>();

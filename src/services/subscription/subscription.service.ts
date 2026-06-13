@@ -4,7 +4,7 @@ import type { NotificationService } from '../../domain/notification.js';
 import type { Subscription } from '../../domain/subscription.js';
 import { RepoPathSchema } from '../../domain/subscription.js';
 import type { SubscriptionToken } from '../../domain/subscription.js';
-import type { SubscriptionTokenManager } from '../../domain/subscription-token-manager.js';
+import type { DbSubscriptionTokenManager } from './db-subscription-token-manager.js';
 import {
   InvalidRepoFormatError,
   InvalidEmailError,
@@ -25,7 +25,7 @@ export class SubscriptionService {
     private subscriptionRepo: SubscriptionRepository,
     private githubClient: GithubClient,
     private notificationService: NotificationService,
-    private tokenManager: SubscriptionTokenManager,
+    private tokenManager: DbSubscriptionTokenManager,
     private transactionManager: TransactionManager,
     private logger: Logger,
     private metrics?: Metrics,
