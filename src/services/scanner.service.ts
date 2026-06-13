@@ -34,7 +34,7 @@ export class ScannerService {
     this.recordScanDuration(durationSeconds);
   }
 
-  async safeScanSubscription(sub: Subscription): Promise<void> {
+  private async safeScanSubscription(sub: Subscription): Promise<void> {
     try {
       await this.scanSubscription(sub);
     } catch (error) {
@@ -53,7 +53,7 @@ export class ScannerService {
     }
   }
 
-  async scanSubscription(sub: Subscription): Promise<void> {
+  private async scanSubscription(sub: Subscription): Promise<void> {
     this.logger.info(`Processing subscription for ${sub.repo} (${sub.email})`);
     const { owner, repo } = parseRepoPath(sub.repo);
 
