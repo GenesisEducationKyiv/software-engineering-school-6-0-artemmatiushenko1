@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SubscriptionService } from './subscription.service.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
 import type { GithubClient } from '../../domain/github.js';
-import type { EmailService } from '../../domain/email.js';
+import type { EmailClient } from '../../domain/email.js';
 import type { SubscriptionTokenManager } from '../../domain/subscription-token-manager.js';
 import type {
   Subscription,
@@ -29,7 +29,7 @@ describe('SubscriptionService', () => {
   let subscriptionService: SubscriptionService;
   const repoMock = mock<SubscriptionRepository>();
   const githubClientMock = mock<GithubClient>();
-  const emailServiceMock = mock<EmailService>();
+  const emailClientMock = mock<EmailClient>();
   const tokenManagerMock = mock<SubscriptionTokenManager>();
   const loggerMock = mock<Logger>();
   const transactionManagerMock = mock<TransactionManager>();
@@ -45,7 +45,7 @@ describe('SubscriptionService', () => {
     subscriptionService = new SubscriptionService(
       repoMock,
       githubClientMock,
-      emailServiceMock,
+      emailClientMock,
       tokenManagerMock,
       transactionManagerMock,
       loggerMock,
@@ -91,7 +91,7 @@ describe('SubscriptionService', () => {
       'unsubscribe',
       expect.anything(),
     );
-    expect(emailServiceMock.sendEmail).toHaveBeenCalledWith(
+    expect(emailClientMock.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: email,
         text: expect.stringContaining(confirmToken),
@@ -236,7 +236,7 @@ describe('SubscriptionService', () => {
         tokenValue,
         expect.anything(),
       );
-      expect(emailServiceMock.sendEmail).toHaveBeenCalledWith(
+      expect(emailClientMock.sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: sub.email,
           subject: expect.stringContaining(sub.repo),

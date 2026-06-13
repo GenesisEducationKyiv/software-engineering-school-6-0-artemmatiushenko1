@@ -1,6 +1,6 @@
 import type { GithubClient } from '../../domain/github.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
-import type { EmailService } from '../../domain/email.js';
+import type { EmailClient } from '../../domain/email.js';
 import type { Subscription } from '../../domain/subscription.js';
 import { RepoPathSchema } from '../../domain/subscription.js';
 import type { SubscriptionToken } from '../../domain/subscription.js';
@@ -28,7 +28,7 @@ export class SubscriptionService {
   constructor(
     private subscriptionRepo: SubscriptionRepository,
     private githubClient: GithubClient,
-    private emailService: EmailService,
+    private emailClient: EmailClient,
     private tokenManager: SubscriptionTokenManager,
     private transactionManager: TransactionManager,
     private logger: Logger,
@@ -94,7 +94,7 @@ export class SubscriptionService {
       validatedRepo,
       confirmUrl,
     );
-    await this.emailService.sendEmail({
+    await this.emailClient.sendEmail({
       to: validatedEmail,
       ...template,
     });
@@ -183,7 +183,7 @@ export class SubscriptionService {
 
     const unsubscribeUrl = `${this.appUrl}/unsubscribe/${unsubscribeToken.token}`;
     const template = subscriptionConfirmedTemplate(sub.repo, unsubscribeUrl);
-    await this.emailService.sendEmail({
+    await this.emailClient.sendEmail({
       to: sub.email,
       ...template,
     });

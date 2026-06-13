@@ -28,7 +28,7 @@ import { parseResponse } from '../../src/utils/test.utils.js';
 import { SubscriptionsResponseDtoSchema } from '../../src/dtos/subscription.dto.js';
 import { AppContainer } from '../../src/dependencies.js';
 import type { GithubClient } from '../../src/domain/github.js';
-import type { EmailService } from '../../src/domain/email.js';
+import type { EmailClient } from '../../src/domain/email.js';
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
 import { TEST_APP_CONFIG } from './constants.js';
@@ -39,7 +39,7 @@ describe('Subscription Routes Integration with PGlite', () => {
   let db: Database;
 
   const githubMock = mock<GithubClient>();
-  const emailMock = mock<EmailService>();
+  const emailMock = mock<EmailClient>();
   const redisMock = mock<Redis>();
 
   beforeAll(async () => {
@@ -63,7 +63,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
     const container = new AppContainer(TEST_APP_CONFIG, fastify.log, db);
     container.githubClient = githubMock;
-    container.emailService = emailMock;
+    container.emailClient = emailMock;
     container.redis = redisMock;
 
     const deps = container.build();

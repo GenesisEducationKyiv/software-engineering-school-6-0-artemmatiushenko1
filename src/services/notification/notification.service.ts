@@ -1,4 +1,4 @@
-import type { EmailService } from '../../domain/email.js';
+import type { EmailClient } from '../../domain/email.js';
 import { newReleaseNotificationTemplate } from '../../infrastructure/email/templates.js';
 import type { Metrics } from '../../domain/metrics.js';
 
@@ -12,7 +12,7 @@ export type NewReleaseNotificationContext = {
 
 export class NotificationService {
   constructor(
-    private emailService: EmailService,
+    private emailClient: EmailClient,
     private appUrl: string,
     private metrics?: Metrics,
   ) {}
@@ -29,7 +29,7 @@ export class NotificationService {
       unsubscribeUrl,
     );
 
-    await this.emailService.sendEmail({
+    await this.emailClient.sendEmail({
       to: context.email,
       ...template,
     });

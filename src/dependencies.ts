@@ -3,7 +3,7 @@ import { type Database } from './db/types.js';
 import { type AppConfig } from './config.js';
 import { OctokitGithubClient } from './infrastructure/github/octokit.client.js';
 import { CachedOctokitGithubClient } from './infrastructure/github/cached-octokit.client.js';
-import { NodemailerEmailService } from './infrastructure/email/nodemailer.service.js';
+import { NodemailerEmailClient } from './infrastructure/email/nodemailer.client.js';
 import { DrizzleSubscriptionRepository } from './repositories/subscription.repository.js';
 import { DbSubscriptionTokenManager } from './services/subscription/db-subscription-token-manager.js';
 import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
@@ -14,7 +14,7 @@ import { PrometheusMetrics } from './infrastructure/metrics/prometheus-metrics.j
 import { FastifyLogger } from './infrastructure/logger/fastify-logger.js';
 import type { FastifyBaseLogger } from 'fastify';
 import type { GithubClient } from './domain/github.js';
-import type { EmailService } from './domain/email.js';
+import type { EmailClient } from './domain/email.js';
 import type { Logger } from './domain/logger.js';
 
 export interface AppDependencies {
@@ -31,7 +31,7 @@ export class AppContainer {
   private metricsInstance?: PrometheusMetrics;
   private redisInstance?: Redis;
   private githubClientInstance?: GithubClient;
-  private emailServiceInstance?: EmailService;
+  private emailClientInstance?: EmailClient;
   private subscriptionRepoInstance?: DrizzleSubscriptionRepository;
   private tokenManagerInstance?: DbSubscriptionTokenManager;
   private transactionManagerInstance?: DrizzleTransactionManager;
@@ -93,14 +93,14 @@ export class AppContainer {
     this.githubClientInstance = value;
   }
 
-  get emailService(): EmailService {
-    return (this.emailServiceInstance ??= new NodemailerEmailService(
+  get emailClient(): EmailClient {
+    return (this.emailClientInstance ??= new NodemailerEmailClient(
       this.config.email,
     ));
   }
 
-  set emailService(value: EmailService) {
-    this.emailServiceInstance = value;
+  set emailClient(value: EmailClient) {
+    this.emailClientInstance = value;
   }
 
   get subscriptionRepo(): DrizzleSubscriptionRepository {
@@ -135,7 +135,7 @@ export class AppContainer {
 
   get notificationService(): NotificationService {
     return (this.notificationServiceInstance ??= new NotificationService(
-      this.emailService,
+      this.emailClient,
       this.config.appUrl,
       this.metrics,
     ));
@@ -163,7 +163,7 @@ export class AppContainer {
     return (this.subscriptionServiceInstance ??= new SubscriptionService(
       this.subscriptionRepo,
       this.githubClient,
-      this.emailService,
+      this.emailClient,
       this.tokenManager,
       this.transactionManager,
       this.logger,

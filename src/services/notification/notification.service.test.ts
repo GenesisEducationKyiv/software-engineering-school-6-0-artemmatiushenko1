@@ -3,13 +3,13 @@ import {
   NotificationService,
   type NewReleaseNotificationContext,
 } from './notification.service.js';
-import type { EmailService } from '../../domain/email.js';
+import type { EmailClient } from '../../domain/email.js';
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../../domain/metrics.js';
 
 describe('NotificationService', () => {
   let notificationService: NotificationService;
-  const emailServiceMock = mock<EmailService>();
+  const emailClientMock = mock<EmailClient>();
   const appUrl = 'http://localhost:3000';
   const metricsMock = mock<Metrics>();
 
@@ -17,7 +17,7 @@ describe('NotificationService', () => {
     vi.resetAllMocks();
 
     notificationService = new NotificationService(
-      emailServiceMock,
+      emailClientMock,
       appUrl,
       metricsMock,
     );
@@ -34,7 +34,7 @@ describe('NotificationService', () => {
 
     await notificationService.notifyNewRelease(context);
 
-    expect(emailServiceMock.sendEmail).toHaveBeenCalledWith(
+    expect(emailClientMock.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: context.email,
         subject: expect.stringContaining(context.repo),
