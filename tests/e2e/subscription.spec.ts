@@ -72,6 +72,10 @@ test.describe('Subscription Flow', () => {
     await page.click('button:has-text("Subscribe to Notifications")');
     await expect(page).toHaveURL(/\/sent/);
 
+    const confirmLink = await getLinkFromEmail(page, 'Confirm Subscription');
+    await page.goto(confirmLink);
+    await expect(page.locator('text=Subscription Confirmed!')).toBeVisible();
+
     await page.goto('/');
     await page.fill('#repo', EXISTING_REPO_FULL_NAME);
     await page.fill('#email', TEST_EMAIL);

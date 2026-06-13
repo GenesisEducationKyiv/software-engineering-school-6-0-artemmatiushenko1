@@ -62,7 +62,7 @@ export class SubscriptionService {
       validatedEmail,
       validatedRepo,
     );
-    if (existing) {
+    if (existing?.confirmed) {
       throw new AlreadySubscribedError(validatedEmail, validatedRepo);
     }
 

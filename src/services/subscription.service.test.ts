@@ -120,7 +120,7 @@ describe('SubscriptionService', () => {
     ).rejects.toThrow(RepoNotFoundError);
   });
 
-  it('should throw AlreadySubscribedError if already subscribed', async () => {
+  it('should throw AlreadySubscribedError if already confirmed', async () => {
     const subscription: Subscription = {
       id: 1,
       email: 'test@example.com',
