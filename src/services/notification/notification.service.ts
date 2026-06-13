@@ -4,6 +4,7 @@ import {
   subscriptionConfirmationTemplate,
   subscriptionConfirmedTemplate,
 } from './templates.js';
+import { buildConfirmUrl, buildUnsubscribeUrl } from './links.js';
 import type { Metrics } from '../../domain/metrics.js';
 
 export type NewReleaseNotificationContext = {
@@ -36,7 +37,7 @@ export class NotificationService {
   async notifySubscriptionConfirmation(
     context: SubscriptionConfirmationContext,
   ): Promise<void> {
-    const confirmUrl = `${this.appUrl}/confirm/${context.confirmToken}`;
+    const confirmUrl = buildConfirmUrl(this.appUrl, context.confirmToken);
     const template = subscriptionConfirmationTemplate(context.repo, confirmUrl);
 
     await this.emailClient.sendEmail({
@@ -48,7 +49,10 @@ export class NotificationService {
   async notifySubscriptionConfirmed(
     context: SubscriptionConfirmedContext,
   ): Promise<void> {
-    const unsubscribeUrl = `${this.appUrl}/unsubscribe/${context.unsubscribeToken}`;
+    const unsubscribeUrl = buildUnsubscribeUrl(
+      this.appUrl,
+      context.unsubscribeToken,
+    );
     const template = subscriptionConfirmedTemplate(
       context.repo,
       unsubscribeUrl,
@@ -63,7 +67,10 @@ export class NotificationService {
   async notifyNewRelease(
     context: NewReleaseNotificationContext,
   ): Promise<void> {
-    const unsubscribeUrl = `${this.appUrl}/unsubscribe/${context.unsubscribeToken}`;
+    const unsubscribeUrl = buildUnsubscribeUrl(
+      this.appUrl,
+      context.unsubscribeToken,
+    );
 
     const template = newReleaseNotificationTemplate(
       context.repo,
