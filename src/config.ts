@@ -20,18 +20,8 @@ const EmailConfigSchema = z.discriminatedUnion('type', [
   }),
 ]);
 
-const LogLevelSchema = z.enum([
-  'fatal',
-  'error',
-  'warn',
-  'info',
-  'debug',
-  'trace',
-]);
-
 const AppConfigSchema = z.object({
   mode: z.enum(['development', 'production', 'test']),
-  logLevel: LogLevelSchema.default('info'),
   databaseUrl: z.url().default('postgres://user:pass@localhost:5432/db'),
   redisUrl: z.string().default('redis://localhost:6379'),
   githubToken: z.string().optional(),
@@ -78,7 +68,6 @@ const getEmailConfig = () => {
 export const createConfig = () =>
   AppConfigSchema.parse({
     mode: process.env.NODE_ENV,
-    logLevel: process.env.LOG_LEVEL,
     databaseUrl: process.env.DATABASE_URL,
     redisUrl: process.env.REDIS_URL,
     githubToken: process.env.GITHUB_TOKEN,

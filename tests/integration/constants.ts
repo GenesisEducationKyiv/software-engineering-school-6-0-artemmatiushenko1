@@ -2,7 +2,6 @@ import type { AppConfig } from '../../src/config.js';
 
 export const TEST_APP_CONFIG: AppConfig = {
   mode: 'test',
-  logLevel: 'info',
   databaseUrl: '',
   redisUrl: '',
   port: 3000,

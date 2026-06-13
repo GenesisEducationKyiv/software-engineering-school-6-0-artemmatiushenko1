@@ -5,7 +5,7 @@ export function createFastifyLoggerOptions(
   config: AppConfig,
 ): pino.LoggerOptions {
   const options: pino.LoggerOptions = {
-    level: config.logLevel,
+    level: 'info',
     timestamp: pino.stdTimeFunctions.isoTime,
   };
 
