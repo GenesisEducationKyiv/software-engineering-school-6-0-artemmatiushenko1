@@ -65,12 +65,54 @@ test.describe('Subscription Flow', () => {
     ).toBeVisible();
   });
 
+  test('should resend confirmation when re-subscribing before confirmation', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
+    await page.fill('#email', TEST_EMAIL);
+    await page.click('button:has-text("Subscribe to Notifications")');
+    await expect(page).toHaveURL(/\/sent/);
+
+    const firstConfirmLink = await getLinkFromEmail(
+      page,
+      'Confirm Subscription',
+    );
+
+    await page.goto('/');
+    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
+    await page.fill('#email', TEST_EMAIL);
+    await page.click('button:has-text("Subscribe to Notifications")');
+    await expect(page).toHaveURL(/\/sent/);
+
+    const secondConfirmLink = await getLinkFromEmail(
+      page,
+      'Confirm Subscription',
+    );
+    expect(secondConfirmLink).not.toBe(firstConfirmLink);
+
+    await page.goto(firstConfirmLink);
+    await expect(page.locator('[data-slot="card-title"]')).toContainText(
+      'Confirmation Failed',
+    );
+    await expect(page.locator('text=Token not found')).toBeVisible();
+
+    await page.goto(secondConfirmLink);
+    await expect(page.locator('[data-slot="card-title"]')).toContainText(
+      'Subscription Confirmed!',
+    );
+  });
+
   test('should not allow duplicate subscriptions', async ({ page }) => {
     await page.goto('/');
     await page.fill('#repo', EXISTING_REPO_FULL_NAME);
     await page.fill('#email', TEST_EMAIL);
     await page.click('button:has-text("Subscribe to Notifications")');
     await expect(page).toHaveURL(/\/sent/);
+
+    const confirmLink = await getLinkFromEmail(page, 'Confirm Subscription');
+    await page.goto(confirmLink);
+    await expect(page.locator('text=Subscription Confirmed!')).toBeVisible();
 
     await page.goto('/');
     await page.fill('#repo', EXISTING_REPO_FULL_NAME);

@@ -1,4 +1,5 @@
 import type { GithubClient } from '../domain/github.js';
+import type { Subscription } from '../domain/subscription.js';
 import type { SubscriptionRepository } from '../domain/subscription.repository.js';
 import { parseRepoPath } from '../utils/repo.utils.js';
 import { NotificationService } from './notification.service.js';
@@ -28,65 +29,20 @@ export class ScannerService {
       });
 
       for (const sub of activeSubscriptions) {
-        await this.scanSubscription(sub.id);
+        await this.safeScanSubscription(sub);
       }
-    } catch (error) {
-      this.metrics?.incrementScanFailures();
-      throw error;
     } finally {
       const durationSeconds = (Date.now() - startTime) / 1000;
       this.recordScanDuration(durationSeconds);
     }
   }
 
-  async scanSubscription(subscriptionId: number): Promise<void> {
-    const sub =
-      await this.subscriptionRepo.findSubscriptionById(subscriptionId);
-    if (!sub || !sub.confirmed) {
-      this.logger.warn('Skipped scan for invalid subscription', {
-        subscriptionId,
-      });
-      return;
-    }
-
-    this.logger.info('Processing subscription', {
-      subscriptionId: sub.id,
-      repo: sub.repo,
-      email: sub.email,
-    });
-    const { owner, repo } = parseRepoPath(sub.repo);
-
+  private async safeScanSubscription(sub: Subscription): Promise<void> {
     try {
-      const latestRelease = await this.githubClient.getLatestRelease(
-        owner,
-        repo,
-      );
-
-      if (!latestRelease) {
-        this.logger.info('No releases found', { repo: sub.repo });
-        return;
-      }
-
-      if (latestRelease.tag !== sub.lastSeenTag) {
-        this.logger.info('New release detected', {
-          repo: sub.repo,
-          tag: latestRelease.tag,
-          previousTag: sub.lastSeenTag ?? null,
-        });
-
-        await this.notificationService.notifyNewRelease(sub, latestRelease);
-
-        await this.subscriptionRepo.updateLastSeenTag(
-          sub.id,
-          latestRelease.tag,
-        );
-      } else {
-        this.logger.info('No new releases', {
-          repo: sub.repo,
-          currentTag: sub.lastSeenTag,
-        });
-      }
+      await this.scanSubscription(sub);
     } catch (error) {
+      this.metrics?.incrementScanFailures();
+
       if (error instanceof GithubRateLimitError) {
         this.logger.warn(
           'GitHub API rate limit exceeded while scanning single subscription.',
@@ -98,7 +54,39 @@ export class ScannerService {
         error instanceof Error ? error : new Error(String(error)),
         { repo: sub.repo, subscriptionId: sub.id },
       );
-      throw error;
+    }
+  }
+
+  private async scanSubscription(sub: Subscription): Promise<void> {
+    this.logger.info('Processing subscription', {
+      subscriptionId: sub.id,
+      repo: sub.repo,
+      email: sub.email,
+    });
+    const { owner, repo } = parseRepoPath(sub.repo);
+
+    const latestRelease = await this.githubClient.getLatestRelease(owner, repo);
+
+    if (!latestRelease) {
+      this.logger.info('No releases found', { repo: sub.repo });
+      return;
+    }
+
+    if (latestRelease.tag !== sub.lastSeenTag) {
+      this.logger.info('New release detected', {
+        repo: sub.repo,
+        tag: latestRelease.tag,
+        previousTag: sub.lastSeenTag ?? null,
+      });
+
+      await this.notificationService.notifyNewRelease(sub, latestRelease);
+
+      await this.subscriptionRepo.updateLastSeenTag(sub.id, latestRelease.tag);
+    } else {
+      this.logger.info('No new releases', {
+        repo: sub.repo,
+        currentTag: sub.lastSeenTag,
+      });
     }
   }
 
