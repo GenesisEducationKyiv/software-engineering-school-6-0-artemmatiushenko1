@@ -9,7 +9,7 @@ export function createFastifyLoggerOptions(
     timestamp: pino.stdTimeFunctions.isoTime,
   };
 
-  if (config.mode === 'development' && config.logPretty) {
+  if (config.mode === 'development') {
     return {
       ...options,
       transport: {

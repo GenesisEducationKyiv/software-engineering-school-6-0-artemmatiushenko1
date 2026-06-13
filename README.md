@@ -119,7 +119,7 @@ The API emits **structured JSON logs** (Pino) to stdout and exposes **Prometheus
 
 Start the optional monitoring stack together with the app (see [monitoring/README.md](./monitoring/README.md)) to scrape metrics into Grafana and ship logs to Kibana.
 
-For local development without Docker, set `LOG_PRETTY=true` for human-readable logs.
+When running locally with `npm run dev` (`NODE_ENV=development`), logs are automatically formatted for readability. Docker/production output stays JSON for Filebeat.
 
 ## Testing
 
