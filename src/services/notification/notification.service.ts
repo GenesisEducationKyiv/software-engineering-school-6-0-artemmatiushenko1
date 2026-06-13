@@ -3,7 +3,7 @@ import {
   newReleaseNotificationTemplate,
   subscriptionConfirmationTemplate,
   subscriptionConfirmedTemplate,
-} from '../../infrastructure/email/templates.js';
+} from './templates.js';
 import type { Metrics } from '../../domain/metrics.js';
 
 export type NewReleaseNotificationContext = {

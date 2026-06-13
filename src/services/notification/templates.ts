@@ -1,8 +1,8 @@
-interface BaseTemplate {
+type BaseTemplate = {
   subject: string;
   text: string;
   html: string;
-}
+};
 
 const styles = {
   container: `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1a1a1a; line-height: 1.6;`,
