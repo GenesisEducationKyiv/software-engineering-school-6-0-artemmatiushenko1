@@ -1,18 +1,24 @@
-export class InvalidRepoFormatError extends Error {
-  readonly code = 'INVALID_REPO_FORMAT' as const;
+import {
+  InvalidEmailError,
+  InvalidRepoFormatError,
+  InvalidTokenError,
+  TokenAlreadyUsedError,
+  TokenExpiredError,
+  InvalidReleaseTagError,
+  IllegalStateTransitionError,
+  WrongTokenScopeError,
+} from './subscription/errors.js';
 
-  constructor(repoPath: string) {
-    super(`Invalid repository format: ${repoPath}. Expected 'owner/repo'`);
-  }
-}
-
-export class InvalidEmailError extends Error {
-  readonly code = 'INVALID_EMAIL' as const;
-
-  constructor(email: string) {
-    super(`Invalid email format: ${email}`);
-  }
-}
+export {
+  InvalidEmailError,
+  InvalidRepoFormatError,
+  InvalidTokenError,
+  TokenAlreadyUsedError,
+  TokenExpiredError,
+  InvalidReleaseTagError,
+  IllegalStateTransitionError,
+  WrongTokenScopeError,
+};
 
 export class RepoNotFoundError extends Error {
   readonly code = 'REPO_NOT_FOUND' as const;
@@ -46,14 +52,6 @@ export class TokenNotFoundError extends Error {
   }
 }
 
-export class InvalidTokenError extends Error {
-  readonly code = 'INVALID_TOKEN' as const;
-
-  constructor(reason: string = 'Invalid token') {
-    super(reason);
-  }
-}
-
 export class GithubRateLimitError extends Error {
   readonly code = 'GITHUB_RATE_LIMIT' as const;
 
@@ -63,13 +61,18 @@ export class GithubRateLimitError extends Error {
 }
 
 export const domainErrorTypes = [
-  InvalidRepoFormatError,
   InvalidEmailError,
+  InvalidRepoFormatError,
   RepoNotFoundError,
   AlreadySubscribedError,
   SubscriptionNotFoundError,
   TokenNotFoundError,
   InvalidTokenError,
+  WrongTokenScopeError,
+  IllegalStateTransitionError,
+  TokenExpiredError,
+  TokenAlreadyUsedError,
+  InvalidReleaseTagError,
   GithubRateLimitError,
 ] as const;
 

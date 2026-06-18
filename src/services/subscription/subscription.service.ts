@@ -6,27 +6,27 @@ import type {
   SubscriptionService,
   SubscriptionToken,
 } from '../../domain/subscription.js';
-import { RepoPathSchema } from '../../domain/subscription.js';
 import type { SubscriptionTokenManager } from './db-subscription-token-manager.js';
 import {
-  InvalidRepoFormatError,
-  InvalidEmailError,
   RepoNotFoundError,
   AlreadySubscribedError,
   TokenNotFoundError,
   InvalidTokenError,
   SubscriptionNotFoundError,
 } from '../../domain/errors.js';
-import { z } from 'zod';
-import { parseRepoPath } from '../../utils/repo.utils.js';
+import { Email } from '../../domain/subscription/email.js';
+import { RepoPath } from '../../domain/subscription/repo-path.js';
+import { ReleaseTag } from '../../domain/subscription/release-tag.js';
 import type { Logger } from '../../domain/logger.js';
 import type {
   TransactionManager,
   DomainTransaction,
 } from '../../domain/transaction-manager.js';
-import type { Metrics } from '../../domain/metrics.js';
+import { SubscriptionMapper } from './subscription.mapper.js';
 
 export class SubscriptionServiceImpl implements SubscriptionService {
+  private readonly mapper = new SubscriptionMapper();
+
   constructor(
     private subscriptionRepo: SubscriptionRepository,
     private githubClient: GithubClient,
@@ -34,36 +34,29 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     private tokenManager: SubscriptionTokenManager,
     private transactionManager: TransactionManager,
     private logger: Logger,
-    private metrics?: Metrics,
   ) {}
 
   async subscribe(email: string, repoPath: string): Promise<Subscription> {
-    const repoResult = RepoPathSchema.safeParse(repoPath);
-    if (!repoResult.success) {
-      throw new InvalidRepoFormatError(repoPath);
-    }
+    const validatedEmail = Email.fromString(email);
+    const validatedRepo = RepoPath.fromString(repoPath);
 
-    const emailResult = z.email().safeParse(email);
-    if (!emailResult.success) {
-      throw new InvalidEmailError(email);
-    }
-
-    const validatedRepo = repoResult.data;
-    const validatedEmail = emailResult.data;
-
-    const { owner, repo } = parseRepoPath(validatedRepo);
-
-    const exists = await this.githubClient.repositoryExists(owner, repo);
+    const exists = await this.githubClient.repositoryExists(
+      validatedRepo.owner,
+      validatedRepo.repo,
+    );
     if (!exists) {
-      throw new RepoNotFoundError(validatedRepo);
+      throw new RepoNotFoundError(validatedRepo.toString());
     }
 
     const existing = await this.subscriptionRepo.findByEmailAndRepo(
-      validatedEmail,
-      validatedRepo,
+      validatedEmail.email,
+      validatedRepo.toString(),
     );
     if (existing?.confirmed) {
-      throw new AlreadySubscribedError(validatedEmail, validatedRepo);
+      throw new AlreadySubscribedError(
+        validatedEmail.email,
+        validatedRepo.toString(),
+      );
     }
 
     const { subscription, confirmToken } = await this.transactionManager.run(
@@ -80,8 +73,8 @@ export class SubscriptionServiceImpl implements SubscriptionService {
 
         const subscription = await this.subscriptionRepo.createSubscription(
           {
-            email: validatedEmail,
-            repo: validatedRepo,
+            email: validatedEmail.email,
+            repo: validatedRepo.toString(),
           },
           tx,
         );
@@ -99,14 +92,14 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     );
 
     await this.notificationService.notifySubscriptionConfirmation({
-      email: validatedEmail,
-      repo: validatedRepo,
+      email: validatedEmail.email,
+      repo: validatedRepo.toString(),
       confirmToken,
     });
 
     this.logger.info('User subscribed', {
-      email: validatedEmail,
-      repoPath: validatedRepo,
+      email: validatedEmail.email,
+      repoPath: validatedRepo.toString(),
     });
 
     return subscription;
@@ -143,13 +136,10 @@ export class SubscriptionServiceImpl implements SubscriptionService {
   }
 
   async getSubscriptionsByEmail(email: string): Promise<Subscription[]> {
-    const emailResult = z.email().safeParse(email);
-    if (!emailResult.success) {
-      throw new InvalidEmailError(email);
-    }
+    const validatedEmail = Email.fromString(email);
 
     return this.subscriptionRepo.findConfirmedSubscriptionsByEmail(
-      emailResult.data,
+      validatedEmail.email,
     );
   }
 
@@ -162,7 +152,8 @@ export class SubscriptionServiceImpl implements SubscriptionService {
   }
 
   async updateLastSeenTag(id: number, tag: string): Promise<void> {
-    await this.subscriptionRepo.updateLastSeenTag(id, tag);
+    const releaseTag = ReleaseTag.fromString(tag);
+    await this.subscriptionRepo.updateLastSeenTag(id, releaseTag.value);
   }
 
   async getUnsubscribeToken(
@@ -186,11 +177,6 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       throw new InvalidTokenError();
     }
 
-    await this.transactionManager.run(async (tx) => {
-      await this.subscriptionRepo.confirmSubscription(token.subscriptionId, tx);
-      await this.tokenManager.invalidateToken(tokenValue, tx);
-    });
-
     const sub = await this.subscriptionRepo.findSubscriptionById(
       token.subscriptionId,
     );
@@ -209,6 +195,20 @@ export class SubscriptionServiceImpl implements SubscriptionService {
         `Unsubscribe token not found for subscription ${sub.id}`,
       );
     }
+
+    const domainSubscription = this.mapper.toDomain(sub, { subscribe: token });
+    const now = new Date();
+
+    domainSubscription.confirm(
+      tokenValue,
+      now,
+      this.mapper.toDomainToken(unsubscribeToken),
+    );
+
+    await this.transactionManager.run(async (tx) => {
+      await this.subscriptionRepo.confirmSubscription(token.subscriptionId, tx);
+      await this.tokenManager.invalidateToken(tokenValue, tx);
+    });
 
     await this.notificationService.notifySubscriptionConfirmed({
       email: sub.email,
@@ -232,6 +232,21 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     if (!isValid) {
       throw new InvalidTokenError();
     }
+
+    const sub = await this.subscriptionRepo.findSubscriptionById(
+      token.subscriptionId,
+    );
+
+    if (!sub) {
+      throw new SubscriptionNotFoundError(token.subscriptionId);
+    }
+
+    const domainSubscription = this.mapper.toDomain(sub, {
+      unsubscribe: token,
+    });
+    const now = new Date();
+
+    domainSubscription.unsubscribe(tokenValue, now);
 
     await this.transactionManager.run(async (tx) => {
       await this.subscriptionRepo.deleteSubscription(token.subscriptionId, tx);

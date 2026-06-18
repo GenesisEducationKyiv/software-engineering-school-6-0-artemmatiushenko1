@@ -1,4 +1,4 @@
-import { InvalidRepoFormatError } from '../errors.js';
+import { InvalidRepoFormatError } from './errors.js';
 
 export class RepoPath {
   private constructor(

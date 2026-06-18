@@ -17,6 +17,26 @@ export class Subscription {
     private unsubscribeToken: ConfirmationToken | null,
   ) {}
 
+  static hydrate(params: {
+    id: string;
+    email: Email;
+    repoPath: RepoPath;
+    status: SubscriptionStatus;
+    lastSeenTag: ReleaseTag | null;
+    confirmationToken: ConfirmationToken;
+    unsubscribeToken: ConfirmationToken | null;
+  }): Subscription {
+    return new Subscription(
+      params.id,
+      params.email,
+      params.repoPath,
+      params.status,
+      params.lastSeenTag,
+      params.confirmationToken,
+      params.unsubscribeToken,
+    );
+  }
+
   static request(
     id: string,
     email: Email,

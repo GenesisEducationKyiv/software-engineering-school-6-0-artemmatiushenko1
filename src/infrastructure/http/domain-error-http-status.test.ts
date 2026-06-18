@@ -8,6 +8,11 @@ import {
   SubscriptionNotFoundError,
   TokenNotFoundError,
   InvalidTokenError,
+  WrongTokenScopeError,
+  IllegalStateTransitionError,
+  TokenExpiredError,
+  TokenAlreadyUsedError,
+  InvalidReleaseTagError,
   GithubRateLimitError,
 } from '../../domain/errors.js';
 import {
@@ -25,6 +30,11 @@ describe('resolveDomainErrorHttpStatus', () => {
     [new SubscriptionNotFoundError(1), 404],
     [new TokenNotFoundError(), 404],
     [new InvalidTokenError(), 400],
+    [new WrongTokenScopeError('subscribe', 'unsubscribe'), 400],
+    [new IllegalStateTransitionError('pending', 'confirmed'), 400],
+    [new TokenExpiredError('token'), 400],
+    [new TokenAlreadyUsedError('token'), 400],
+    [new InvalidReleaseTagError(''), 400],
     [new GithubRateLimitError(), 429],
   ])('should map %s to HTTP %i', (error, status) => {
     expect(resolveDomainErrorHttpStatus(error)).toBe(status);

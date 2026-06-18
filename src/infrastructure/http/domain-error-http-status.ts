@@ -8,19 +8,29 @@ import {
   SubscriptionNotFoundError,
   TokenNotFoundError,
   InvalidTokenError,
+  WrongTokenScopeError,
+  IllegalStateTransitionError,
+  TokenExpiredError,
+  TokenAlreadyUsedError,
+  InvalidReleaseTagError,
   GithubRateLimitError,
 } from '../../domain/errors.js';
 
 type DomainErrorConstructor = (typeof domainErrorTypes)[number];
 
 const domainErrorHttpStatusEntries = [
-  [InvalidRepoFormatError, 400],
   [InvalidEmailError, 400],
+  [InvalidRepoFormatError, 400],
   [RepoNotFoundError, 404],
   [AlreadySubscribedError, 409],
   [SubscriptionNotFoundError, 404],
   [TokenNotFoundError, 404],
   [InvalidTokenError, 400],
+  [WrongTokenScopeError, 400],
+  [IllegalStateTransitionError, 400],
+  [TokenExpiredError, 400],
+  [TokenAlreadyUsedError, 400],
+  [InvalidReleaseTagError, 400],
   [GithubRateLimitError, 429],
 ] as const satisfies ReadonlyArray<readonly [DomainErrorConstructor, number]>;
 

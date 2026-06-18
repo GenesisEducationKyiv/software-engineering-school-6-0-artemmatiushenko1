@@ -21,6 +21,20 @@ export class ConfirmationToken {
     Object.freeze(this);
   }
 
+  static hydrate(params: {
+    value: string;
+    scope: ConfirmationTokenScope;
+    expiresAt: Date;
+    consumedAt?: Date | null;
+  }): ConfirmationToken {
+    return new ConfirmationToken(
+      params.value,
+      params.expiresAt,
+      params.scope,
+      params.consumedAt ?? null,
+    );
+  }
+
   static issue(params: {
     value: string;
     scope: ConfirmationTokenScope;

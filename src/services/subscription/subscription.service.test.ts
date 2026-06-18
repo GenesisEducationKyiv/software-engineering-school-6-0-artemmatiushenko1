@@ -23,7 +23,6 @@ import type {
   DomainTransaction,
 } from '../../domain/transaction-manager.js';
 import { mock } from 'vitest-mock-extended';
-import type { Metrics } from '../../domain/metrics.js';
 
 describe('SubscriptionServiceImpl', () => {
   let subscriptionService: SubscriptionServiceImpl;
@@ -33,7 +32,6 @@ describe('SubscriptionServiceImpl', () => {
   const tokenManagerMock = mock<SubscriptionTokenManager>();
   const loggerMock = mock<Logger>();
   const transactionManagerMock = mock<TransactionManager>();
-  const metricsMock = mock<Metrics>();
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -49,7 +47,6 @@ describe('SubscriptionServiceImpl', () => {
       tokenManagerMock,
       transactionManagerMock,
       loggerMock,
-      metricsMock,
     );
   });
 
@@ -375,14 +372,14 @@ describe('SubscriptionServiceImpl', () => {
         token: tokenValue,
         subscriptionId: subscriptionId,
         scope: 'subscribe',
-        expiresAt: new Date(),
+        expiresAt: new Date(Date.now() + 60_000),
         createdAt: new Date(),
       };
       const sub: Subscription = {
         id: subscriptionId,
         email: 'test@example.com',
         repo: 'owner/repo',
-        confirmed: true,
+        confirmed: false,
         lastSeenTag: null,
         createdAt: new Date(),
       };
@@ -392,7 +389,7 @@ describe('SubscriptionServiceImpl', () => {
         token: 'unsub-token',
         subscriptionId,
         scope: 'unsubscribe',
-        expiresAt: new Date(),
+        expiresAt: new Date(Date.now() + 60_000),
         createdAt: new Date(),
       };
 
@@ -514,12 +511,21 @@ describe('SubscriptionServiceImpl', () => {
         token: tokenValue,
         subscriptionId: 10,
         scope: 'unsubscribe',
-        expiresAt: new Date(),
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+      };
+      const sub: Subscription = {
+        id: 10,
+        email: 'test@example.com',
+        repo: 'owner/repo',
+        confirmed: true,
+        lastSeenTag: null,
         createdAt: new Date(),
       };
 
       tokenManagerMock.getTokenByValue.mockResolvedValue(token);
       tokenManagerMock.validateToken.mockResolvedValue(true);
+      repoMock.findSubscriptionById.mockResolvedValue(sub);
 
       await subscriptionService.unsubscribe(tokenValue);
 
