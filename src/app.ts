@@ -4,7 +4,8 @@ import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import YAML from 'yaml';
 import type { OpenAPIV2 } from 'openapi-types';
-import { DomainError } from './domain/errors.js';
+import { isDomainError } from './domain/errors.js';
+import { resolveDomainErrorHttpResponse } from './infrastructure/http/domain-error-http-status.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -95,13 +96,12 @@ export class App {
     this.fastify.setErrorHandler((error, _, reply) => {
       this.deps.logger.error('Request error', error as Error);
 
-      if (error instanceof DomainError) {
-        return reply.status(error.status).send(
-          CommonErrorResponseDtoSchema.parse({
-            error: error.message,
-            code: error.code,
-          }),
-        );
+      if (isDomainError(error)) {
+        const { status, body } = resolveDomainErrorHttpResponse(error);
+
+        return reply
+          .status(status)
+          .send(CommonErrorResponseDtoSchema.parse(body));
       }
 
       reply.status(500).send(
