@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import type { SubscriptionRow } from '../services/subscription/subscription-row.mapper.js';
+import type { SubscriptionRow } from '../repositories/subscription-row.mapper.js';
 import type {
   SubscriptionTokenRow,
   SubscriptionTokenScope,
-} from '../services/subscription/subscription-token-row.mapper.js';
+} from '../repositories/subscription-token-row.mapper.js';
 import type { Subscription as DomainSubscription } from './subscription/subscription.js';
 
 export const RepoPathSchema = z

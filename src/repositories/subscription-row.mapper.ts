@@ -1,13 +1,9 @@
 import { z } from 'zod';
-import { Subscription } from '../../domain/subscription/subscription.js';
-import { Email } from '../../domain/subscription/email.js';
-import { RepoPath } from '../../domain/subscription/repo-path.js';
-import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
-import { ReleaseTag } from '../../domain/subscription/release-tag.js';
-import {
-  SubscriptionTokenRowMapper,
-  type SubscriptionTokenRow,
-} from './subscription-token-row.mapper.js';
+import { Subscription } from '../domain/subscription/subscription.js';
+import { Email } from '../domain/subscription/email.js';
+import { RepoPath } from '../domain/subscription/repo-path.js';
+import { ConfirmationToken } from '../domain/subscription/confirmation-token.js';
+import { ReleaseTag } from '../domain/subscription/release-tag.js';
 
 export const SubscriptionRowSchema = z.object({
   id: z.string(),
@@ -20,14 +16,7 @@ export const SubscriptionRowSchema = z.object({
 
 export type SubscriptionRow = z.infer<typeof SubscriptionRowSchema>;
 
-export type SubscriptionMapperTokens = {
-  subscribe: SubscriptionTokenRow;
-  unsubscribe: SubscriptionTokenRow | null;
-};
-
 export class SubscriptionRowMapper {
-  readonly tokenMapper = new SubscriptionTokenRowMapper();
-
   toDomain(
     row: SubscriptionRow,
     confirmationToken: ConfirmationToken,

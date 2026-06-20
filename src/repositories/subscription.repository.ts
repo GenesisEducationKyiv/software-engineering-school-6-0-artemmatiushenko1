@@ -18,11 +18,11 @@ import {
   SubscriptionRowMapper,
   SubscriptionRowSchema,
   type SubscriptionRow,
-} from '../services/subscription/subscription-row.mapper.js';
+} from './subscription-row.mapper.js';
 import {
   SubscriptionTokenRowMapper,
   SubscriptionTokenRowSchema,
-} from '../services/subscription/subscription-token-row.mapper.js';
+} from './subscription-token-row.mapper.js';
 import type { SubscriptionRepository } from '../domain/subscription.repository.js';
 import type { DomainTransaction } from '../domain/transaction-manager.js';
 

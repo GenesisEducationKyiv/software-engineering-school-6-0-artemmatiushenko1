@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
+import { ConfirmationToken } from '../domain/subscription/confirmation-token.js';
 
 export const SubscriptionTokenScopeSchema = z.enum([
   'subscribe',
@@ -35,6 +35,7 @@ export class SubscriptionTokenRowMapper {
     createdAt: Date,
   ): SubscriptionTokenRow {
     return {
+      // TODO: remove id field, potentially inline it into subscriptions table
       id: 0,
       token: token.value,
       subscriptionId,
