@@ -64,6 +64,22 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     }
   }
 
+  async findBySubscribeToken(
+    tokenValue: string,
+  ): Promise<DomainSubscription | null> {
+    const tokenRow = await this.findToken(tokenValue, 'subscribe');
+    if (!tokenRow) {
+      return null;
+    }
+
+    const row = await this.findSubscriptionById(tokenRow.subscriptionId);
+    if (!row) {
+      return null;
+    }
+
+    return this.hydrateSubscription(row);
+  }
+
   async findByEmailAndRepo(
     email: Email,
     repoPath: RepoPath,

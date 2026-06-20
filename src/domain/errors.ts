@@ -7,6 +7,8 @@ import {
   InvalidReleaseTagError,
   IllegalStateTransitionError,
   WrongTokenScopeError,
+  SubscriptionAlreadyDeactivatedError,
+  SubscriptionAlreadyConfirmedError,
 } from './subscription/errors.js';
 
 export {
@@ -74,6 +76,8 @@ export const domainErrorTypes = [
   TokenAlreadyUsedError,
   InvalidReleaseTagError,
   GithubRateLimitError,
+  SubscriptionAlreadyConfirmedError,
+  SubscriptionAlreadyDeactivatedError,
 ] as const;
 
 export type DomainError = InstanceType<(typeof domainErrorTypes)[number]>;

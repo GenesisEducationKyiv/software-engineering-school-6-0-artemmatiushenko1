@@ -113,58 +113,36 @@ export class SubscriptionServiceImpl implements SubscriptionService {
   }
 
   async confirmSubscription(tokenValue: string): Promise<void> {
-    const token = await this.tokenManager.getTokenByValue(tokenValue);
+    const subscription =
+      await this.subscriptionRepo.findBySubscribeToken(tokenValue);
 
-    if (!token) {
-      throw new TokenNotFoundError();
+    if (!subscription) {
+      throw new SubscriptionNotFoundError(tokenValue);
     }
 
-    const isValid = await this.tokenManager.validateToken(token, 'subscribe');
-    if (!isValid) {
-      throw new InvalidTokenError();
-    }
+    // TODO: use Clock
+    const now = new Date();
+    const unsubscribeToken = ConfirmationToken.issue({
+      value: this.tokenGenerator.generate(),
+      scope: 'unsubscribe',
+      issuedAt: now,
+      ttlMs: 24 * 60 * 60 * 1000,
+    });
 
-    const sub = await this.subscriptionRepo.findSubscriptionById(
-      token.subscriptionId,
-    );
-
-    if (!sub) {
-      throw new SubscriptionNotFoundError(token.subscriptionId);
-    }
-
-    const unsubscribeToken =
-      await this.tokenManager.getTokenBySubscriptionIdAndScope(
-        sub.id,
-        'unsubscribe',
-      );
-    if (!unsubscribeToken) {
-      throw new TokenNotFoundError(
-        `Unsubscribe token not found for subscription ${sub.id}`,
-      );
-    }
-
-    // const domainSubscription = this.mapper.toDomain(sub, { subscribe: token });
-    // const now = new Date();
-
-    // domainSubscription.confirm(
-    //   tokenValue,
-    //   now,
-    //   this.mapper.tokenMapper.toDomain(unsubscribeToken),
-    // );
+    subscription.confirm(tokenValue, now, unsubscribeToken);
 
     await this.transactionManager.run(async (tx) => {
-      await this.subscriptionRepo.confirmSubscription(token.subscriptionId, tx);
-      await this.tokenManager.invalidateToken(tokenValue, tx);
+      await this.subscriptionRepo.save(subscription, tx);
     });
 
     await this.notificationService.notifySubscriptionConfirmed({
-      email: sub.email,
-      repo: sub.repo,
-      unsubscribeToken: unsubscribeToken.token,
+      email: subscription.email.email,
+      repo: subscription.repoPath.toString(),
+      unsubscribeToken: unsubscribeToken.value,
     });
 
     this.logger.info('Subscription confirmed', {
-      subscriptionId: token.subscriptionId,
+      subscriptionId: subscription.id,
     });
   }
 

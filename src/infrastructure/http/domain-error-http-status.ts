@@ -15,6 +15,10 @@ import {
   InvalidReleaseTagError,
   GithubRateLimitError,
 } from '../../domain/errors.js';
+import {
+  SubscriptionAlreadyConfirmedError,
+  SubscriptionAlreadyDeactivatedError,
+} from '../../domain/subscription/errors.js';
 
 type DomainErrorConstructor = (typeof domainErrorTypes)[number];
 
@@ -32,6 +36,8 @@ const domainErrorHttpStatusEntries = [
   [TokenAlreadyUsedError, 400],
   [InvalidReleaseTagError, 400],
   [GithubRateLimitError, 429],
+  [SubscriptionAlreadyConfirmedError, 409],
+  [SubscriptionAlreadyDeactivatedError, 409],
 ] as const satisfies ReadonlyArray<readonly [DomainErrorConstructor, number]>;
 
 export type DomainErrorHttpResponse = {

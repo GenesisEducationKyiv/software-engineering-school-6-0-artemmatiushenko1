@@ -401,14 +401,9 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
       assert(updatedSubscription);
       expect(updatedSubscription.confirmed).toBe(true);
-
-      const subscribeTokenExists = await db.query.subscriptionTokens.findFirst({
-        where: (tokens, { eq }) => eq(tokens.token, subscribeTokenValue),
-      });
-      expect(subscribeTokenExists).toBeUndefined();
     });
 
-    it('should return 404 and TOKEN_NOT_FOUND when reusing an already consumed token', async () => {
+    it('should return 404 and SUBSCRIPTION_ALREADY_CONFIRMED when reusing an already consumed token', async () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
@@ -454,15 +449,15 @@ describe('Subscription Routes Integration with PGlite', () => {
         url: `/api/confirm/${tokenValue}`,
       });
 
-      expect(secondResponse.statusCode).toBe(404);
+      expect(secondResponse.statusCode).toBe(409);
       const body = parseResponse(
         secondResponse.body,
         CommonErrorResponseDtoSchema,
       );
-      expect(body.code).toBe('TOKEN_NOT_FOUND');
+      expect(body.code).toBe('SUBSCRIPTION_ALREADY_CONFIRMED');
     });
 
-    it('should return 404 and TOKEN_NOT_FOUND when token does not exist', async () => {
+    it('should return 404 and SUBSCRIPTION_NOT_FOUND when token does not exist', async () => {
       const response = await app.fastify.inject({
         method: 'GET',
         url: '/api/confirm/nonexistent-token',
@@ -470,10 +465,10 @@ describe('Subscription Routes Integration with PGlite', () => {
 
       expect(response.statusCode).toBe(404);
       const body = parseResponse(response.body, CommonErrorResponseDtoSchema);
-      expect(body.code).toBe('TOKEN_NOT_FOUND');
+      expect(body.code).toBe('SUBSCRIPTION_NOT_FOUND');
     });
 
-    it('should return 400 and INVALID_TOKEN when token is expired', async () => {
+    it('should return 400 and TOKEN_EXPIRED when token is expired', async () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
@@ -501,7 +496,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
       expect(response.statusCode).toBe(400);
       const body = parseResponse(response.body, CommonErrorResponseDtoSchema);
-      expect(body.code).toBe('INVALID_TOKEN');
+      expect(body.code).toBe('TOKEN_EXPIRED');
 
       const updatedSubscription = await db.query.subscriptions.findFirst({
         where: (subs, { eq }) => eq(subs.id, subscription.id),
@@ -509,7 +504,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       expect(updatedSubscription?.confirmed).toBe(false);
     });
 
-    it('should return 400 and INVALID_TOKEN when token has wrong scope', async () => {
+    it('should return 404 and SUBSCRIPTION_NOT_FOUND when token has wrong scope', async () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
@@ -535,9 +530,9 @@ describe('Subscription Routes Integration with PGlite', () => {
         url: `/api/confirm/${tokenValue}`,
       });
 
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(404);
       const body = parseResponse(response.body, CommonErrorResponseDtoSchema);
-      expect(body.code).toBe('INVALID_TOKEN');
+      expect(body.code).toBe('SUBSCRIPTION_NOT_FOUND');
     });
   });
 

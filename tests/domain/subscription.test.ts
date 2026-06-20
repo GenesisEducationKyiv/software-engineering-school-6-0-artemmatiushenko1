@@ -168,10 +168,10 @@ describe('Subscription', () => {
 
       expect(() =>
         subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueUnsubscribeToken()),
-      ).toThrow(IllegalStateTransitionError);
+      ).toThrow(SubscriptionAlreadyConfirmedError);
       expect(() =>
         subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueUnsubscribeToken()),
-      ).toThrow('Illegal state transition from confirmed to confirmed');
+      ).toThrow('Subscription already confirmed');
     });
 
     it('should throw WrongTokenScopeError when unsubscribe token has wrong scope', () => {

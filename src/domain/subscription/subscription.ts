@@ -89,7 +89,7 @@ export class Subscription {
     }
 
     if (this.status !== 'pending') {
-      throw new IllegalStateTransitionError(this.status, 'confirmed');
+      throw new SubscriptionAlreadyConfirmedError();
     }
 
     if (unsubscribeToken.scope !== 'unsubscribe') {
