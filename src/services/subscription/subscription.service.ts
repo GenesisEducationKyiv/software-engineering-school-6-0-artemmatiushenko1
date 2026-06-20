@@ -108,10 +108,6 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     return this.subscriptionRepo.findAllConfirmedSubscriptions();
   }
 
-  async findSubscriptionById(id: string): Promise<Subscription | null> {
-    return this.subscriptionRepo.findSubscriptionById(id);
-  }
-
   async updateLastSeenTag(id: string, tag: string): Promise<void> {
     const releaseTag = ReleaseTag.fromString(tag);
     await this.subscriptionRepo.updateLastSeenTag(id, releaseTag.value);

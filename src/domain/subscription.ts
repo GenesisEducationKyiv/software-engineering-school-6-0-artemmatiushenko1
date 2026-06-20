@@ -23,8 +23,6 @@ export interface SubscriptionService {
 
   findAllConfirmedSubscriptions(): Promise<DomainSubscription[]>;
 
-  findSubscriptionById(id: string): Promise<Subscription | null>;
-
   updateLastSeenTag(id: string, tag: string): Promise<void>;
 
   getUnsubscribeToken(
