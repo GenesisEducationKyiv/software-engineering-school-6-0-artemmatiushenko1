@@ -43,6 +43,6 @@ export default defineConfig(
     },
   },
   {
-    ignores: ['node_modules/', 'client/'],
+    ignores: ['node_modules/', 'client/', 'coverage/'],
   },
 );
