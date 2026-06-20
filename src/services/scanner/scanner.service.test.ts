@@ -2,15 +2,50 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ScannerService } from './scanner.service.js';
 import type { SubscriptionService } from '../../domain/subscription.js';
 import type { GithubClient } from '../../domain/github.js';
-import type { Subscription } from '../../domain/subscription.js';
 import type { NotificationService } from '../../domain/notification.js';
 import type { Logger } from '../../domain/logger.js';
-import {
-  GithubRateLimitError,
-  TokenNotFoundError,
-} from '../../domain/errors.js';
+import { GithubRateLimitError } from '../../domain/errors.js';
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../../domain/metrics.js';
+import { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
+import { Email } from '../../domain/subscription/email.js';
+import { RepoPath } from '../../domain/subscription/repo-path.js';
+import { ReleaseTag } from '../../domain/subscription/release-tag.js';
+import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
+
+const createConfirmedDomainSubscription = (overrides: {
+  id?: string;
+  email?: string;
+  repo?: string;
+  lastSeenTag?: string | null;
+}) => {
+  const subscription = DomainSubscription.request(
+    overrides.id ?? '1',
+    Email.fromString(overrides.email ?? 'test@example.com'),
+    RepoPath.fromString(overrides.repo ?? 'owner/repo'),
+    ConfirmationToken.hydrate({
+      value: '550e8400-e29b-41d4-a716-446655440000',
+      scope: 'subscribe',
+      expiresAt: new Date(Date.now() + 60_000),
+    }),
+  );
+
+  subscription.confirm(
+    '550e8400-e29b-41d4-a716-446655440000',
+    new Date(),
+    ConfirmationToken.hydrate({
+      value: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+      scope: 'unsubscribe',
+      expiresAt: new Date(Date.now() + 60_000),
+    }),
+  );
+
+  if (overrides.lastSeenTag) {
+    subscription.observeRelease(ReleaseTag.fromString(overrides.lastSeenTag));
+  }
+
+  return subscription;
+};
 
 describe('ScannerService', () => {
   let scannerService: ScannerService;
@@ -43,14 +78,9 @@ describe('ScannerService', () => {
 
   describe('scan', () => {
     it('should notify and update tag when a new release is found', async () => {
-      const sub: Subscription = {
-        id: '1',
-        email: 'test@example.com',
-        repo: 'owner/repo',
-        confirmed: true,
+      const sub = createConfirmedDomainSubscription({
         lastSeenTag: 'v1.0.0',
-        createdAt: new Date(),
-      };
+      });
 
       const latestRelease = {
         tag: 'v1.1.0',
@@ -66,8 +96,8 @@ describe('ScannerService', () => {
       await scannerService.scan();
 
       expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
-        email: sub.email,
-        repo: sub.repo,
+        email: sub.email.email,
+        repo: sub.repoPath.toString(),
         tag: latestRelease.tag,
         releaseName: latestRelease.name,
         unsubscribeToken: 'unsub-token',
@@ -79,22 +109,16 @@ describe('ScannerService', () => {
     });
 
     it('should continue scanning other subscriptions when one fails', async () => {
-      const sub1: Subscription = {
+      const sub1 = createConfirmedDomainSubscription({
         id: '1',
         email: 'fail@example.com',
         repo: 'owner/fail',
-        confirmed: true,
-        lastSeenTag: null,
-        createdAt: new Date(),
-      };
-      const sub2: Subscription = {
+      });
+      const sub2 = createConfirmedDomainSubscription({
         id: '2',
         email: 'ok@example.com',
         repo: 'owner/ok',
-        confirmed: true,
-        lastSeenTag: null,
-        createdAt: new Date(),
-      };
+      });
 
       const latestRelease = {
         tag: 'v1.0.0',
@@ -118,8 +142,8 @@ describe('ScannerService', () => {
         { repo: 'owner/fail', subscriptionId: '1' },
       );
       expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
-        email: sub2.email,
-        repo: sub2.repo,
+        email: sub2.email.email,
+        repo: sub2.repoPath.toString(),
         tag: latestRelease.tag,
         releaseName: latestRelease.name,
         unsubscribeToken: 'unsub-token',
@@ -127,14 +151,9 @@ describe('ScannerService', () => {
     });
 
     it('should not notify when the latest release tag is unchanged', async () => {
-      const sub: Subscription = {
-        id: '1',
-        email: 'test@example.com',
-        repo: 'owner/repo',
-        confirmed: true,
+      const sub = createConfirmedDomainSubscription({
         lastSeenTag: 'v1.0.0',
-        createdAt: new Date(),
-      };
+      });
 
       subscriptionServiceMock.findAllConfirmedSubscriptions.mockResolvedValue([
         sub,
@@ -152,14 +171,12 @@ describe('ScannerService', () => {
     });
 
     it('should stop scanning if rate limit is exceeded', async () => {
-      const sub: Subscription = {
+      const sub = createConfirmedDomainSubscription({
         id: '1',
         email: 'user1@example.com',
         repo: 'owner/repo1',
-        confirmed: true,
         lastSeenTag: 'v1.0.0',
-        createdAt: new Date(),
-      };
+      });
 
       subscriptionServiceMock.findAllConfirmedSubscriptions.mockResolvedValue([
         sub,
@@ -172,127 +189,6 @@ describe('ScannerService', () => {
 
       expect(loggerMock.warn).toHaveBeenCalledWith(
         expect.stringContaining('rate limit exceeded'),
-      );
-    });
-  });
-
-  describe('scanSubscription', () => {
-    it('should scan a single subscription and notify if new release', async () => {
-      const sub: Subscription = {
-        id: '1',
-        email: 'test@example.com',
-        repo: 'owner/repo',
-        confirmed: true,
-        lastSeenTag: null,
-        createdAt: new Date(),
-      };
-
-      const latestRelease = {
-        tag: 'v1.0.0',
-        name: 'First Release',
-        publishedAt: new Date().toISOString(),
-      };
-
-      subscriptionServiceMock.findSubscriptionById.mockResolvedValue(sub);
-      githubClientMock.getLatestRelease.mockResolvedValue(latestRelease);
-
-      await scannerService.scanSubscription('1');
-
-      expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
-        email: sub.email,
-        repo: sub.repo,
-        tag: latestRelease.tag,
-        releaseName: latestRelease.name,
-        unsubscribeToken: 'unsub-token',
-      });
-      expect(subscriptionServiceMock.updateLastSeenTag).toHaveBeenCalledWith(
-        '1',
-        'v1.0.0',
-      );
-    });
-
-    it('should not notify if tag is the same', async () => {
-      const sub: Subscription = {
-        id: '1',
-        email: 'test@example.com',
-        repo: 'owner/repo',
-        confirmed: true,
-        lastSeenTag: 'v1.0.0',
-        createdAt: new Date(),
-      };
-
-      subscriptionServiceMock.findSubscriptionById.mockResolvedValue(sub);
-      githubClientMock.getLatestRelease.mockResolvedValue({
-        tag: 'v1.0.0',
-        name: 'Same Release',
-        publishedAt: new Date().toISOString(),
-      });
-
-      await scannerService.scanSubscription('1');
-
-      expect(notificationServiceMock.notifyNewRelease).not.toHaveBeenCalled();
-    });
-
-    it('should do nothing if subscription is not confirmed', async () => {
-      const sub: Subscription = {
-        id: '1',
-        email: 'test@example.com',
-        repo: 'owner/repo',
-        confirmed: false,
-        lastSeenTag: null,
-        createdAt: new Date(),
-      };
-
-      subscriptionServiceMock.findSubscriptionById.mockResolvedValue(sub);
-
-      await scannerService.scanSubscription('1');
-
-      expect(githubClientMock.getLatestRelease).not.toHaveBeenCalled();
-      expect(loggerMock.warn).toHaveBeenCalled();
-    });
-
-    it('should throw if unsubscribe token is missing', async () => {
-      const sub: Subscription = {
-        id: '1',
-        email: 'test@example.com',
-        repo: 'owner/repo',
-        confirmed: true,
-        lastSeenTag: 'v1.0.0',
-        createdAt: new Date(),
-      };
-
-      subscriptionServiceMock.findSubscriptionById.mockResolvedValue(sub);
-      githubClientMock.getLatestRelease.mockResolvedValue({
-        tag: 'v1.1.0',
-        name: 'New Release',
-        publishedAt: new Date().toISOString(),
-      });
-      subscriptionServiceMock.getUnsubscribeToken.mockResolvedValue(null);
-
-      await expect(scannerService.scanSubscription('1')).rejects.toThrow(
-        TokenNotFoundError,
-      );
-
-      expect(notificationServiceMock.notifyNewRelease).not.toHaveBeenCalled();
-    });
-
-    it('should throw if rate limit is exceeded', async () => {
-      const sub: Subscription = {
-        id: '1',
-        email: 'test@example.com',
-        repo: 'owner/repo',
-        confirmed: true,
-        lastSeenTag: null,
-        createdAt: new Date(),
-      };
-
-      subscriptionServiceMock.findSubscriptionById.mockResolvedValue(sub);
-      githubClientMock.getLatestRelease.mockRejectedValue(
-        new GithubRateLimitError(),
-      );
-
-      await expect(scannerService.scanSubscription('1')).rejects.toThrow(
-        GithubRateLimitError,
       );
     });
   });

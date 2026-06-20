@@ -104,7 +104,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     );
   }
 
-  async findAllConfirmedSubscriptions(): Promise<Subscription[]> {
+  async findAllConfirmedSubscriptions(): Promise<DomainSubscription[]> {
     return this.subscriptionRepo.findAllConfirmedSubscriptions();
   }
 

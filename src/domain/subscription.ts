@@ -4,6 +4,7 @@ import type {
   SubscriptionTokenRow,
   SubscriptionTokenScope,
 } from '../services/subscription/subscription-token-row.mapper.js';
+import type { Subscription as DomainSubscription } from './subscription/subscription.js';
 
 export const RepoPathSchema = z
   .string()
@@ -20,7 +21,7 @@ export interface SubscriptionService {
 
   getSubscriptionsByEmail(email: string): Promise<Subscription[]>;
 
-  findAllConfirmedSubscriptions(): Promise<Subscription[]>;
+  findAllConfirmedSubscriptions(): Promise<DomainSubscription[]>;
 
   findSubscriptionById(id: string): Promise<Subscription | null>;
 

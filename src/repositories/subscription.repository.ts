@@ -175,13 +175,17 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     return results.map((r) => SubscriptionRowSchema.parse(r));
   }
 
-  async findAllConfirmedSubscriptions(): Promise<SubscriptionRow[]> {
+  async findAllConfirmedSubscriptions(): Promise<DomainSubscription[]> {
     const results = await this.getDb()
       .select()
       .from(subscriptions)
       .where(eq(subscriptions.confirmed, true));
 
-    return results.map((r) => SubscriptionRowSchema.parse(r));
+    return Promise.all(
+      results.map((row) =>
+        this.hydrateSubscription(SubscriptionRowSchema.parse(row)),
+      ),
+    );
   }
 
   async findSubscriptionsByEmail(email: string): Promise<SubscriptionRow[]> {

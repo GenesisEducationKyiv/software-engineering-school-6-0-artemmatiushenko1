@@ -20,7 +20,7 @@ export interface SubscriptionRepository {
 
   findConfirmedSubscriptionsByEmail(email: string): Promise<SubscriptionRow[]>;
 
-  findAllConfirmedSubscriptions(): Promise<SubscriptionRow[]>;
+  findAllConfirmedSubscriptions(): Promise<Subscription[]>;
 
   findSubscriptionsByEmail(email: string): Promise<SubscriptionRow[]>;
 

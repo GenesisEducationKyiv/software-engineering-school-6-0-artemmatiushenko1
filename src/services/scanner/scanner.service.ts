@@ -1,8 +1,8 @@
 import type { GithubClient } from '../../domain/github.js';
-import type { Subscription } from '../../domain/subscription.js';
+import type { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
+import type { SubscriptionService } from '../../domain/subscription.js';
 import { parseRepoPath } from '../../utils/repo.utils.js';
 import type { NotificationService } from '../../domain/notification.js';
-import type { SubscriptionService } from '../../domain/subscription.js';
 import type { Logger } from '../../domain/logger.js';
 import {
   GithubRateLimitError,
@@ -10,6 +10,13 @@ import {
 } from '../../domain/errors.js';
 import type { Metrics } from '../../domain/metrics.js';
 import { msToSeconds } from '../../utils/time.utils.js';
+
+type ScannableSubscription = {
+  id: string;
+  email: string;
+  repo: string;
+  lastSeenTag: string | null;
+};
 
 export class ScannerService {
   constructor(
@@ -40,37 +47,9 @@ export class ScannerService {
     }
   }
 
-  async scanSubscription(subscriptionId: string): Promise<void> {
-    const sub =
-      await this.subscriptionService.findSubscriptionById(subscriptionId);
-    if (!sub || !sub.confirmed) {
-      this.logger.warn('Skipped scan for invalid subscription', {
-        subscriptionId,
-      });
-      return;
-    }
-
+  private async safeScanSubscription(sub: DomainSubscription): Promise<void> {
     try {
-      await this.processSubscription(sub);
-    } catch (error) {
-      if (error instanceof GithubRateLimitError) {
-        this.logger.warn(
-          'GitHub API rate limit exceeded while scanning single subscription.',
-        );
-        throw error;
-      }
-      this.logger.error(
-        'Error scanning subscription',
-        error instanceof Error ? error : new Error(String(error)),
-        { repo: sub.repo, subscriptionId: sub.id },
-      );
-      throw error;
-    }
-  }
-
-  private async safeScanSubscription(sub: Subscription): Promise<void> {
-    try {
-      await this.processSubscription(sub);
+      await this.processSubscription(this.toScannableFromDomain(sub));
     } catch (error) {
       this.metrics?.incrementScanFailures();
 
@@ -83,12 +62,15 @@ export class ScannerService {
       this.logger.error(
         'Error scanning subscription',
         error instanceof Error ? error : new Error(String(error)),
-        { repo: sub.repo, subscriptionId: sub.id },
+        {
+          repo: sub.repoPath.toString(),
+          subscriptionId: sub.id,
+        },
       );
     }
   }
 
-  private async processSubscription(sub: Subscription): Promise<void> {
+  private async processSubscription(sub: ScannableSubscription): Promise<void> {
     this.logger.info('Processing subscription', {
       subscriptionId: sub.id,
       repo: sub.repo,
@@ -107,7 +89,7 @@ export class ScannerService {
       this.logger.info('New release detected', {
         repo: sub.repo,
         tag: latestRelease.tag,
-        previousTag: sub.lastSeenTag ?? null,
+        previousTag: sub.lastSeenTag,
       });
 
       await this.notificationService.notifyNewRelease({
@@ -128,6 +110,17 @@ export class ScannerService {
         currentTag: sub.lastSeenTag,
       });
     }
+  }
+
+  private toScannableFromDomain(
+    sub: DomainSubscription,
+  ): ScannableSubscription {
+    return {
+      id: sub.id,
+      email: sub.email.email,
+      repo: sub.repoPath.toString(),
+      lastSeenTag: sub.lastSeenTag?.value ?? null,
+    };
   }
 
   private async resolveUnsubscribeToken(
