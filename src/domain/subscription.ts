@@ -19,7 +19,7 @@ export type { SubscriptionTokenScope };
 export interface SubscriptionService {
   subscribe(email: string, repoPath: string): Promise<void>;
 
-  getSubscriptionsByEmail(email: string): Promise<Subscription[]>;
+  getSubscriptionsByEmail(email: string): Promise<DomainSubscription[]>;
 
   findAllConfirmedSubscriptions(): Promise<DomainSubscription[]>;
 

@@ -1,10 +1,7 @@
 import type { GithubClient } from '../../domain/github.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
 import type { NotificationService } from '../../domain/notification.js';
-import type {
-  Subscription,
-  SubscriptionService,
-} from '../../domain/subscription.js';
+import type { SubscriptionService } from '../../domain/subscription.js';
 import { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
 import {
   RepoNotFoundError,
@@ -91,11 +88,9 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     });
   }
 
-  async getSubscriptionsByEmail(email: string): Promise<Subscription[]> {
-    const validatedEmail = Email.fromString(email);
-
+  async getSubscriptionsByEmail(email: string): Promise<DomainSubscription[]> {
     return this.subscriptionRepo.findConfirmedSubscriptionsByEmail(
-      validatedEmail.email,
+      Email.fromString(email),
     );
   }
 

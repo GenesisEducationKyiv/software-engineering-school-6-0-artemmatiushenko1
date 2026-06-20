@@ -3,7 +3,6 @@ import { SubscriptionServiceImpl } from './subscription.service.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
 import type { GithubClient } from '../../domain/github.js';
 import type { NotificationService } from '../../domain/notification.js';
-import type { Subscription } from '../../domain/subscription.js';
 import {
   InvalidRepoFormatError,
   InvalidEmailError,
@@ -241,15 +240,8 @@ describe('SubscriptionServiceImpl', () => {
   describe('getSubscriptionsByEmail', () => {
     it('should return confirmed subscriptions for a valid email', async () => {
       const email = 'test@example.com';
-      const subscriptions: Subscription[] = [
-        {
-          id: '1',
-          email,
-          repo: 'owner/repo',
-          confirmed: true,
-          lastSeenTag: 'v1.0.0',
-          createdAt: new Date(),
-        },
+      const subscriptions = [
+        createConfirmedDomainSubscription({ id: '1', email }),
       ];
 
       repoMock.findConfirmedSubscriptionsByEmail.mockResolvedValue(
@@ -260,7 +252,7 @@ describe('SubscriptionServiceImpl', () => {
 
       expect(result).toEqual(subscriptions);
       expect(repoMock.findConfirmedSubscriptionsByEmail).toHaveBeenCalledWith(
-        email,
+        Email.fromString(email),
       );
     });
 
@@ -273,7 +265,7 @@ describe('SubscriptionServiceImpl', () => {
 
       expect(result).toEqual([]);
       expect(repoMock.findConfirmedSubscriptionsByEmail).toHaveBeenCalledWith(
-        email,
+        Email.fromString(email),
       );
     });
 

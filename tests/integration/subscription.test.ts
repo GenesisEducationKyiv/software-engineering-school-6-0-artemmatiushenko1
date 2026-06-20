@@ -41,6 +41,43 @@ describe('Subscription Routes Integration with PGlite', () => {
   let app: App;
   let db: Database;
 
+  const seedConfirmedSubscription = async (values: {
+    email: string;
+    repo: string;
+    lastSeenTag?: string | null;
+  }) => {
+    const id = subscriptionId();
+
+    const [subscription] = await db
+      .insert(schema.subscriptions)
+      .values({
+        id,
+        email: values.email,
+        repo: values.repo,
+        confirmed: true,
+        lastSeenTag: values.lastSeenTag ?? null,
+      })
+      .returning();
+
+    assert(subscription);
+
+    await db.insert(schema.subscriptionTokens).values({
+      token: `subscribe-token-${id}`,
+      subscriptionId: subscription.id,
+      scope: 'subscribe',
+      expiresAt: new Date('2026-01-01T13:00:00Z'),
+    });
+
+    await db.insert(schema.subscriptionTokens).values({
+      token: `unsubscribe-token-${id}`,
+      subscriptionId: subscription.id,
+      scope: 'unsubscribe',
+      expiresAt: new Date('2026-01-01T13:00:00Z'),
+    });
+
+    return subscription;
+  };
+
   const githubMock = mock<GithubClient>();
   const emailMock = mock<EmailClient>();
   const redisMock = mock<Redis>();
@@ -241,12 +278,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     it('should return 200 and a list of confirmed subscriptions for a valid email', async () => {
       const email = 'test@example.com';
 
-      await db.insert(schema.subscriptions).values({
-        id: subscriptionId(),
-        email,
-        repo: 'owner/repo1',
-        confirmed: true,
-      });
+      await seedConfirmedSubscription({ email, repo: 'owner/repo1' });
 
       await db.insert(schema.subscriptions).values({
         id: subscriptionId(),
@@ -276,18 +308,14 @@ describe('Subscription Routes Integration with PGlite', () => {
       const targetEmail = 'target@example.com';
       const otherEmail = 'other@example.com';
 
-      await db.insert(schema.subscriptions).values({
-        id: subscriptionId(),
+      await seedConfirmedSubscription({
         email: targetEmail,
         repo: 'owner/repo-target',
-        confirmed: true,
       });
 
-      await db.insert(schema.subscriptions).values({
-        id: subscriptionId(),
+      await seedConfirmedSubscription({
         email: otherEmail,
         repo: 'owner/repo-other',
-        confirmed: true,
       });
 
       const response = await app.fastify.inject({
