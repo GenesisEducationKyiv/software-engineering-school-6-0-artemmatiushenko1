@@ -35,6 +35,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check domain purity
+        run: npm run check:domain-purity
+
       - name: Type check
         run: npm run type-check
 
