@@ -2,7 +2,7 @@ import type { GithubClient } from '../../domain/github.js';
 import type { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
 import type { SubscriptionService } from '../../domain/subscription.js';
 import type { NotificationService } from '../../domain/notification.js';
-import type { Logger } from '../../domain/logger.js';
+import type { Logger } from '../../domain/shared/index.js';
 import { GithubRateLimitError } from '../../domain/errors.js';
 import type { Metrics } from '../../domain/metrics.js';
 import { msToSeconds } from '../../utils/time.utils.js';

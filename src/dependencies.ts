@@ -16,10 +16,12 @@ import type { GithubClient } from './domain/github.js';
 import type { EmailClient } from './domain/email.js';
 import type { NotificationService } from './domain/notification.js';
 import type { SubscriptionService } from './domain/subscription.js';
-import type { Logger } from './domain/logger.js';
-import type { IdGenerator } from './domain/id-generator.js';
-import type { TokenGenerator } from './domain/token-generator.js';
-import type { Clock } from './domain/clock.js';
+import type {
+  Logger,
+  IdGenerator,
+  TokenGenerator,
+  Clock,
+} from './domain/shared/index.js';
 import { CryptoIdGenerator } from './infrastructure/id/crypto-id-generator.js';
 import { CryptoTokenGenerator } from './infrastructure/token/crypto-token-generator.js';
 import { SystemClock } from './infrastructure/clock/system-clock.js';

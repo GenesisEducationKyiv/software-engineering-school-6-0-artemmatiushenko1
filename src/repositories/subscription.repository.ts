@@ -21,7 +21,7 @@ import {
   type SubscriptionTokenRow,
 } from './subscription-token-row.mapper.js';
 import type { SubscriptionRepository } from '../domain/subscription.repository.js';
-import type { DomainTransaction } from '../domain/transaction-manager.js';
+import type { DomainTransaction } from '../domain/shared/index.js';
 import type { ConfirmationTokenScope } from '../domain/subscription/confirmation-token.js';
 
 export class DrizzleSubscriptionRepository implements SubscriptionRepository {

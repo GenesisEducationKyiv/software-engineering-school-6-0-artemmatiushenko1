@@ -2,7 +2,7 @@ import type { Database } from '../../db/types.js';
 import type {
   TransactionManager,
   DomainTransaction,
-} from '../../domain/transaction-manager.js';
+} from '../../domain/shared/index.js';
 
 export class DrizzleTransactionManager implements TransactionManager {
   constructor(private db: Database) {}

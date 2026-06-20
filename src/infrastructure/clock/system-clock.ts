@@ -1,4 +1,4 @@
-import type { Clock } from '../../domain/clock.js';
+import type { Clock } from '../../domain/shared/index.js';
 
 export class SystemClock implements Clock {
   now(): Date {

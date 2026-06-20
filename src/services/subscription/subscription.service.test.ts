@@ -12,14 +12,14 @@ import {
   TokenExpiredError,
   InvalidReleaseTagError,
 } from '../../domain/errors.js';
-import type { Logger } from '../../domain/logger.js';
-import type { IdGenerator } from '../../domain/id-generator.js';
-import type { TokenGenerator } from '../../domain/token-generator.js';
-import type { Clock } from '../../domain/clock.js';
+import type { Logger } from '../../domain/shared/index.js';
 import type {
+  IdGenerator,
+  TokenGenerator,
+  Clock,
   TransactionManager,
   DomainTransaction,
-} from '../../domain/transaction-manager.js';
+} from '../../domain/shared/index.js';
 import { mock } from 'vitest-mock-extended';
 import { Email } from '../../domain/subscription/email.js';
 import { RepoPath } from '../../domain/subscription/repo-path.js';
