@@ -25,12 +25,12 @@ import { Email } from '../../domain/subscription/email.js';
 import { RepoPath } from '../../domain/subscription/repo-path.js';
 import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
 import { ReleaseTag } from '../../domain/subscription/release-tag.js';
-import { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
+import { Subscription } from '../../domain/subscription/index.js';
 
 const createPendingDomainSubscription = (
   overrides: { id?: string; email?: string; repo?: string } = {},
 ) =>
-  DomainSubscription.request(
+  Subscription.request(
     overrides.id ?? '1',
     Email.fromString(overrides.email ?? 'test@example.com'),
     RepoPath.fromString(overrides.repo ?? 'owner/repo'),
@@ -404,7 +404,7 @@ describe('SubscriptionServiceImpl', () => {
 
     it('should throw TokenExpiredError if token is expired', async () => {
       const tokenValue = '550e8400-e29b-41d4-a716-446655440000';
-      const subscription = DomainSubscription.request(
+      const subscription = Subscription.request(
         '10',
         Email.fromString('test@example.com'),
         RepoPath.fromString('owner/repo'),

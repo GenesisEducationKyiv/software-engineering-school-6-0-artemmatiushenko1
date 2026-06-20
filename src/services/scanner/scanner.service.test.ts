@@ -7,7 +7,7 @@ import type { Logger } from '../../domain/shared/logger.js';
 import { GithubRateLimitError } from '../../domain/errors.js';
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../../domain/metrics.js';
-import { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
+import { Subscription } from '../../domain/subscription/index.js';
 import { Email } from '../../domain/subscription/email.js';
 import { RepoPath } from '../../domain/subscription/repo-path.js';
 import { ReleaseTag } from '../../domain/subscription/release-tag.js';
@@ -21,7 +21,7 @@ const createConfirmedDomainSubscription = (overrides: {
   repo?: string;
   lastSeenTag?: string | null;
 }) => {
-  const subscription = DomainSubscription.request(
+  const subscription = Subscription.request(
     overrides.id ?? '1',
     Email.fromString(overrides.email ?? 'test@example.com'),
     RepoPath.fromString(overrides.repo ?? 'owner/repo'),

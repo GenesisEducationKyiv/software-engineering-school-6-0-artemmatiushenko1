@@ -4,10 +4,7 @@ import type {
 } from '../db/types.js';
 import { subscriptions, subscriptionTokens } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
-import {
-  Subscription as DomainSubscription,
-  Subscription,
-} from '../domain/subscription/subscription.js';
+import { Subscription } from '../domain/subscription/subscription.js';
 import { Email } from '../domain/subscription/email.js';
 import { RepoPath } from '../domain/subscription/repo-path.js';
 import {
@@ -36,7 +33,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
 
   private async hydrateSubscription(
     row: SubscriptionRow,
-  ): Promise<DomainSubscription> {
+  ): Promise<Subscription> {
     const subscribeTokenRow = await this.findTokenBySubscriptionIdAndScope(
       row.id,
       'subscribe',
@@ -68,7 +65,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
   async findByToken(
     tokenValue: string,
     scope: ConfirmationTokenScope,
-  ): Promise<DomainSubscription | null> {
+  ): Promise<Subscription | null> {
     const tokenRow = await this.findToken(tokenValue, scope);
     if (!tokenRow) {
       return null;
@@ -80,7 +77,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
   async findByEmailAndRepo(
     email: Email,
     repoPath: RepoPath,
-  ): Promise<DomainSubscription | null> {
+  ): Promise<Subscription | null> {
     const [result] = await this.getDb()
       .select()
       .from(subscriptions)
@@ -98,7 +95,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
   }
 
   async save(
-    subscription: DomainSubscription,
+    subscription: Subscription,
     tx?: DomainTransaction,
   ): Promise<void> {
     await this.upsertSubscriptionRow(subscription, tx);
@@ -106,7 +103,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
   }
 
   private async upsertSubscriptionRow(
-    subscription: DomainSubscription,
+    subscription: Subscription,
     tx?: DomainTransaction,
   ): Promise<void> {
     const rowValues = {
@@ -132,7 +129,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
   }
 
   private async replaceTokens(
-    subscription: DomainSubscription,
+    subscription: Subscription,
     tx?: DomainTransaction,
   ): Promise<void> {
     await this.getDb(tx)
@@ -179,7 +176,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
 
   async findConfirmedSubscriptionsByEmail(
     email: Email,
-  ): Promise<DomainSubscription[]> {
+  ): Promise<Subscription[]> {
     const results = await this.getDb()
       .select()
       .from(subscriptions)
@@ -197,7 +194,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     );
   }
 
-  async findAllConfirmedSubscriptions(): Promise<DomainSubscription[]> {
+  async findAllConfirmedSubscriptions(): Promise<Subscription[]> {
     const results = await this.getDb()
       .select()
       .from(subscriptions)

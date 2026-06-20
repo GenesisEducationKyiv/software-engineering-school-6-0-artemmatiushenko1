@@ -1,5 +1,5 @@
 import type { GithubClient } from '../../domain/github.js';
-import type { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
+import type { Subscription } from '../../domain/subscription/index.js';
 import type { SubscriptionService } from '../../domain/subscription.js';
 import type { NotificationService } from '../../domain/notification.js';
 import type { Logger } from '../../domain/shared/index.js';
@@ -45,7 +45,7 @@ export class ScannerService {
     }
   }
 
-  private async safeScanSubscription(sub: DomainSubscription): Promise<void> {
+  private async safeScanSubscription(sub: Subscription): Promise<void> {
     try {
       await this.processSubscription(this.toScannableFromDomain(sub));
     } catch (error) {
@@ -113,9 +113,7 @@ export class ScannerService {
     }
   }
 
-  private toScannableFromDomain(
-    sub: DomainSubscription,
-  ): ScannableSubscription {
+  private toScannableFromDomain(sub: Subscription): ScannableSubscription {
     if (!sub.unsubscribeToken) {
       throw new Error('Unsubscribe token not found');
     }

@@ -2,7 +2,7 @@ import type { GithubClient } from '../../domain/github.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
 import type { NotificationService } from '../../domain/notification.js';
 import type { SubscriptionService } from '../../domain/subscription.js';
-import { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
+import { Subscription } from '../../domain/subscription/index.js';
 import {
   RepoNotFoundError,
   AlreadySubscribedError,
@@ -66,12 +66,12 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       ttlMs: SubscriptionServiceImpl.SUBSCRIPTION_CONFIRMATION_TTL_MS,
     });
 
-    let subscription: DomainSubscription;
+    let subscription: Subscription;
     if (existingSubscription) {
       existingSubscription.renewConfirmation(confirmToken);
       subscription = existingSubscription;
     } else {
-      subscription = DomainSubscription.request(
+      subscription = Subscription.request(
         this.idGenerator.next(),
         validatedEmail,
         validatedRepo,
@@ -95,13 +95,13 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     });
   }
 
-  async getSubscriptionsByEmail(email: string): Promise<DomainSubscription[]> {
+  async getSubscriptionsByEmail(email: string): Promise<Subscription[]> {
     return this.subscriptionRepo.findConfirmedSubscriptionsByEmail(
       Email.fromString(email),
     );
   }
 
-  async findAllConfirmedSubscriptions(): Promise<DomainSubscription[]> {
+  async findAllConfirmedSubscriptions(): Promise<Subscription[]> {
     return this.subscriptionRepo.findAllConfirmedSubscriptions();
   }
 
