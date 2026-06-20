@@ -5,7 +5,6 @@ import { OctokitGithubClient } from './infrastructure/github/octokit.client.js';
 import { CachedOctokitGithubClient } from './infrastructure/github/cached-octokit.client.js';
 import { NodemailerEmailClient } from './infrastructure/email/nodemailer.client.js';
 import { DrizzleSubscriptionRepository } from './repositories/subscription.repository.js';
-import { SubscriptionTokenManager } from './services/subscription/db-subscription-token-manager.js';
 import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
 import { NotificationServiceImpl } from './services/notification/notification.service.js';
 import { ScannerService } from './services/scanner/scanner.service.js';
@@ -39,7 +38,6 @@ export class AppContainer {
   private githubClientInstance?: GithubClient;
   private emailClientInstance?: EmailClient;
   private subscriptionRepoInstance?: DrizzleSubscriptionRepository;
-  private tokenManagerInstance?: SubscriptionTokenManager;
   private transactionManagerInstance?: DrizzleTransactionManager;
   private notificationServiceInstance?: NotificationService;
   private scannerServiceInstance?: ScannerService;
@@ -121,16 +119,6 @@ export class AppContainer {
     this.subscriptionRepoInstance = value;
   }
 
-  get tokenManager(): SubscriptionTokenManager {
-    return (this.tokenManagerInstance ??= new SubscriptionTokenManager(
-      this.subscriptionRepo,
-    ));
-  }
-
-  set tokenManager(value: SubscriptionTokenManager) {
-    this.tokenManagerInstance = value;
-  }
-
   get transactionManager(): DrizzleTransactionManager {
     return (this.transactionManagerInstance ??= new DrizzleTransactionManager(
       this.db,
@@ -172,7 +160,6 @@ export class AppContainer {
       this.subscriptionRepo,
       this.githubClient,
       this.notificationService,
-      this.tokenManager,
       this.transactionManager,
       this.logger,
       this.idGenerator,

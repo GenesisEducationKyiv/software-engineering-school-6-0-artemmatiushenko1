@@ -3,7 +3,6 @@ import { SubscriptionServiceImpl } from './subscription.service.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
 import type { GithubClient } from '../../domain/github.js';
 import type { NotificationService } from '../../domain/notification.js';
-import type { SubscriptionTokenManager } from './db-subscription-token-manager.js';
 import type { Subscription } from '../../domain/subscription.js';
 import {
   InvalidRepoFormatError,
@@ -62,7 +61,6 @@ describe('SubscriptionServiceImpl', () => {
   const repoMock = mock<SubscriptionRepository>();
   const githubClientMock = mock<GithubClient>();
   const notificationServiceMock = mock<NotificationService>();
-  const tokenManagerMock = mock<SubscriptionTokenManager>();
   const loggerMock = mock<Logger>();
   const transactionManagerMock = mock<TransactionManager>();
   const idGeneratorMock = mock<IdGenerator>();
@@ -79,7 +77,6 @@ describe('SubscriptionServiceImpl', () => {
       repoMock,
       githubClientMock,
       notificationServiceMock,
-      tokenManagerMock,
       transactionManagerMock,
       loggerMock,
       idGeneratorMock,

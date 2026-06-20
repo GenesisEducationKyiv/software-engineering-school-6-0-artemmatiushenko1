@@ -6,7 +6,6 @@ import type {
   SubscriptionService,
 } from '../../domain/subscription.js';
 import { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
-import type { SubscriptionTokenManager } from './db-subscription-token-manager.js';
 import {
   RepoNotFoundError,
   AlreadySubscribedError,
@@ -26,7 +25,6 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     private subscriptionRepo: SubscriptionRepository,
     private githubClient: GithubClient,
     private notificationService: NotificationService,
-    private tokenManager: SubscriptionTokenManager,
     private transactionManager: TransactionManager,
     private logger: Logger,
     private idGenerator: IdGenerator,
