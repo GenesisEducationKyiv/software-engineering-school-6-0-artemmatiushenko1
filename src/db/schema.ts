@@ -5,7 +5,6 @@ import {
   timestamp,
   boolean,
   pgEnum,
-  integer,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
@@ -14,7 +13,7 @@ export const scopeEnum = pgEnum('scope', ['subscribe', 'unsubscribe']);
 export const subscriptions = pgTable(
   'subscriptions',
   {
-    id: serial('id').primaryKey(),
+    id: text('id').primaryKey(),
     email: text('email').notNull(),
     repo: text('repo').notNull(),
     confirmed: boolean('confirmed').default(false).notNull(),
@@ -27,7 +26,7 @@ export const subscriptions = pgTable(
 export const subscriptionTokens = pgTable('subscription_tokens', {
   id: serial('id').primaryKey(),
   token: text('token').notNull(),
-  subscriptionId: integer('subscription_id')
+  subscriptionId: text('subscription_id')
     .notNull()
     .references(() => subscriptions.id, { onDelete: 'cascade' }),
   scope: scopeEnum('scope').notNull(),

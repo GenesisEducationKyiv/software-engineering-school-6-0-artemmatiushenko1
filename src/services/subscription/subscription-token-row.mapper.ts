@@ -12,7 +12,7 @@ export type SubscriptionTokenScope = z.infer<
 export const SubscriptionTokenRowSchema = z.object({
   id: z.number().int(),
   token: z.string(),
-  subscriptionId: z.number().int(),
+  subscriptionId: z.string(),
   scope: SubscriptionTokenScopeSchema,
   expiresAt: z.date(),
   createdAt: z.date(),
@@ -31,7 +31,7 @@ export class SubscriptionTokenRowMapper {
 
   toRow(
     token: ConfirmationToken,
-    subscriptionId: number,
+    subscriptionId: string,
     createdAt: Date,
   ): SubscriptionTokenRow {
     return {

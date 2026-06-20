@@ -6,6 +6,7 @@ import type {
   SubscriptionService,
   SubscriptionToken,
 } from '../../domain/subscription.js';
+import { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
 import type { SubscriptionTokenManager } from './db-subscription-token-manager.js';
 import {
   RepoNotFoundError,
@@ -18,15 +19,15 @@ import { Email } from '../../domain/subscription/email.js';
 import { RepoPath } from '../../domain/subscription/repo-path.js';
 import { ReleaseTag } from '../../domain/subscription/release-tag.js';
 import type { Logger } from '../../domain/logger.js';
+import type { IdGenerator } from '../../domain/id-generator.js';
+import type { TokenGenerator } from '../../domain/token-generator.js';
 import type {
   TransactionManager,
   DomainTransaction,
 } from '../../domain/transaction-manager.js';
-import { SubscriptionRowMapper } from './subscription-row.mapper.js';
+import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
 
 export class SubscriptionServiceImpl implements SubscriptionService {
-  private readonly mapper = new SubscriptionRowMapper();
-
   constructor(
     private subscriptionRepo: SubscriptionRepository,
     private githubClient: GithubClient,
@@ -34,9 +35,11 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     private tokenManager: SubscriptionTokenManager,
     private transactionManager: TransactionManager,
     private logger: Logger,
+    private idGenerator: IdGenerator,
+    private tokenGenerator: TokenGenerator,
   ) {}
 
-  async subscribe(email: string, repoPath: string): Promise<Subscription> {
+  async subscribe(email: string, repoPath: string): Promise<void> {
     const validatedEmail = Email.fromString(email);
     const validatedRepo = RepoPath.fromString(repoPath);
 
@@ -60,60 +63,49 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       );
     }
 
-    const { subscription, confirmToken } = await this.transactionManager.run(
-      async (tx) => {
-        if (existing) {
-          const confirmToken = await this.refreshPendingSubscriptionTokens(
-            Number(existing.id),
-            tx,
-          );
-          const subscription = await this.subscriptionRepo.findSubscriptionById(
-            Number(existing.id),
-          );
-
-          if (!subscription) {
-            throw new SubscriptionNotFoundError(Number(existing.id));
-          }
-
-          return { subscription, confirmToken };
-        }
-
-        const subscription = await this.subscriptionRepo.createSubscription(
-          {
-            email: validatedEmail.email,
-            repo: validatedRepo.toString(),
-          },
+    const confirmToken = await this.transactionManager.run(async (tx) => {
+      if (existing) {
+        const confirmToken = await this.refreshPendingSubscriptionTokens(
+          existing.id,
           tx,
         );
 
-        const confirmToken = await this.tokenManager.createToken(
-          subscription.id,
-          'subscribe',
-          tx,
+        return confirmToken;
+      } else {
+        const confirmToken = ConfirmationToken.issue({
+          value: this.tokenGenerator.generate(),
+          scope: 'subscribe',
+          issuedAt: new Date(),
+          ttlMs: 60_000,
+        });
+
+        const newSubscription = DomainSubscription.request(
+          this.idGenerator.next(),
+          validatedEmail,
+          validatedRepo,
+          confirmToken,
         );
 
-        await this.tokenManager.createToken(subscription.id, 'unsubscribe', tx);
+        await this.subscriptionRepo.save(newSubscription, tx);
 
-        return { subscription, confirmToken };
-      },
-    );
+        return confirmToken.value;
+      }
+    });
 
     await this.notificationService.notifySubscriptionConfirmation({
+      confirmToken,
       email: validatedEmail.email,
       repo: validatedRepo.toString(),
-      confirmToken,
     });
 
     this.logger.info('User subscribed', {
       email: validatedEmail.email,
       repoPath: validatedRepo.toString(),
     });
-
-    return subscription;
   }
 
   private async refreshPendingSubscriptionTokens(
-    subscriptionId: number,
+    subscriptionId: string,
     tx: DomainTransaction,
   ): Promise<string> {
     const existingSubscribeToken =
@@ -154,17 +146,17 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     return this.subscriptionRepo.findAllConfirmedSubscriptions();
   }
 
-  async findSubscriptionById(id: number): Promise<Subscription | null> {
+  async findSubscriptionById(id: string): Promise<Subscription | null> {
     return this.subscriptionRepo.findSubscriptionById(id);
   }
 
-  async updateLastSeenTag(id: number, tag: string): Promise<void> {
+  async updateLastSeenTag(id: string, tag: string): Promise<void> {
     const releaseTag = ReleaseTag.fromString(tag);
     await this.subscriptionRepo.updateLastSeenTag(id, releaseTag.value);
   }
 
   async getUnsubscribeToken(
-    subscriptionId: number,
+    subscriptionId: string,
   ): Promise<SubscriptionToken | null> {
     return this.tokenManager.getTokenBySubscriptionIdAndScope(
       subscriptionId,

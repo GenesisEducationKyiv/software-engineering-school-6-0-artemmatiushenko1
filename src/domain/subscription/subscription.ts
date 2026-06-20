@@ -13,8 +13,8 @@ export class Subscription {
     public readonly repoPath: RepoPath,
     private _status: SubscriptionStatus,
     private _lastSeenTag: ReleaseTag | null,
-    private confirmationToken: ConfirmationToken,
-    private unsubscribeToken: ConfirmationToken | null,
+    private _confirmationToken: ConfirmationToken,
+    private _unsubscribeToken: ConfirmationToken | null,
   ) {}
 
   static rehydrate(params: {
@@ -65,10 +65,8 @@ export class Subscription {
   }
 
   unsubscribe(unsubscribeTokenValue: string, now: Date) {
-    if (
-      this.unsubscribeToken === null ||
-      this.unsubscribeToken.value !== unsubscribeTokenValue
-    ) {
+    const token = this._unsubscribeToken;
+    if (token === null || token.value !== unsubscribeTokenValue) {
       throw new WrongTokenScopeError('unsubscribe', 'unknown');
     }
 
@@ -76,7 +74,7 @@ export class Subscription {
       throw new IllegalStateTransitionError(this.status, 'unsubscribed');
     }
 
-    this.unsubscribeToken = this.unsubscribeToken.consume(now);
+    this._unsubscribeToken = token.consume(now);
     this._status = 'unsubscribed';
   }
 
@@ -93,8 +91,8 @@ export class Subscription {
       throw new WrongTokenScopeError('unsubscribe', unsubscribeToken.scope);
     }
 
-    this.confirmationToken = this.confirmationToken.consume(now);
-    this.unsubscribeToken = unsubscribeToken;
+    this._confirmationToken = this._confirmationToken.consume(now);
+    this._unsubscribeToken = unsubscribeToken;
     this._status = 'confirmed';
   }
 
@@ -110,5 +108,11 @@ export class Subscription {
   }
   get lastSeenTag(): ReleaseTag | null {
     return this._lastSeenTag;
+  }
+  get confirmationToken(): ConfirmationToken {
+    return this._confirmationToken;
+  }
+  get unsubscribeToken(): ConfirmationToken | null {
+    return this._unsubscribeToken;
   }
 }

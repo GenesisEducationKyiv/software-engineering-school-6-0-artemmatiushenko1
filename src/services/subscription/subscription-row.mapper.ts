@@ -10,7 +10,7 @@ import {
 } from './subscription-token-row.mapper.js';
 
 export const SubscriptionRowSchema = z.object({
-  id: z.number().int(),
+  id: z.string(),
   email: z.email(),
   repo: z.string(),
   confirmed: z.boolean(),
@@ -42,7 +42,7 @@ export class SubscriptionRowMapper {
       : null;
 
     return Subscription.rehydrate({
-      id: String(row.id),
+      id: row.id,
       email,
       repoPath,
       status,
@@ -54,7 +54,7 @@ export class SubscriptionRowMapper {
 
   toRow(subscription: Subscription, createdAt: Date): SubscriptionRow {
     return {
-      id: Number(subscription.id),
+      id: subscription.id,
       email: subscription.email.email,
       repo: subscription.repoPath.toString(),
       confirmed: subscription.status === 'confirmed',

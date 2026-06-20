@@ -26,7 +26,7 @@ describe('ScannerService', () => {
     subscriptionServiceMock.getUnsubscribeToken.mockResolvedValue({
       id: 1,
       token: 'unsub-token',
-      subscriptionId: 1,
+      subscriptionId: '1',
       scope: 'unsubscribe',
       expiresAt: new Date(),
       createdAt: new Date(),
@@ -44,7 +44,7 @@ describe('ScannerService', () => {
   describe('scan', () => {
     it('should notify and update tag when a new release is found', async () => {
       const sub: Subscription = {
-        id: 1,
+        id: '1',
         email: 'test@example.com',
         repo: 'owner/repo',
         confirmed: true,
@@ -73,14 +73,14 @@ describe('ScannerService', () => {
         unsubscribeToken: 'unsub-token',
       });
       expect(subscriptionServiceMock.updateLastSeenTag).toHaveBeenCalledWith(
-        1,
+        '1',
         'v1.1.0',
       );
     });
 
     it('should continue scanning other subscriptions when one fails', async () => {
       const sub1: Subscription = {
-        id: 1,
+        id: '1',
         email: 'fail@example.com',
         repo: 'owner/fail',
         confirmed: true,
@@ -88,7 +88,7 @@ describe('ScannerService', () => {
         createdAt: new Date(),
       };
       const sub2: Subscription = {
-        id: 2,
+        id: '2',
         email: 'ok@example.com',
         repo: 'owner/ok',
         confirmed: true,
@@ -115,7 +115,7 @@ describe('ScannerService', () => {
       expect(loggerMock.error).toHaveBeenCalledWith(
         'Error scanning subscription',
         expect.any(Error),
-        { repo: 'owner/fail', subscriptionId: 1 },
+        { repo: 'owner/fail', subscriptionId: '1' },
       );
       expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
         email: sub2.email,
@@ -128,7 +128,7 @@ describe('ScannerService', () => {
 
     it('should not notify when the latest release tag is unchanged', async () => {
       const sub: Subscription = {
-        id: 1,
+        id: '1',
         email: 'test@example.com',
         repo: 'owner/repo',
         confirmed: true,
@@ -153,7 +153,7 @@ describe('ScannerService', () => {
 
     it('should stop scanning if rate limit is exceeded', async () => {
       const sub: Subscription = {
-        id: 1,
+        id: '1',
         email: 'user1@example.com',
         repo: 'owner/repo1',
         confirmed: true,
@@ -179,7 +179,7 @@ describe('ScannerService', () => {
   describe('scanSubscription', () => {
     it('should scan a single subscription and notify if new release', async () => {
       const sub: Subscription = {
-        id: 1,
+        id: '1',
         email: 'test@example.com',
         repo: 'owner/repo',
         confirmed: true,
@@ -196,7 +196,7 @@ describe('ScannerService', () => {
       subscriptionServiceMock.findSubscriptionById.mockResolvedValue(sub);
       githubClientMock.getLatestRelease.mockResolvedValue(latestRelease);
 
-      await scannerService.scanSubscription(1);
+      await scannerService.scanSubscription('1');
 
       expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
         email: sub.email,
@@ -206,14 +206,14 @@ describe('ScannerService', () => {
         unsubscribeToken: 'unsub-token',
       });
       expect(subscriptionServiceMock.updateLastSeenTag).toHaveBeenCalledWith(
-        1,
+        '1',
         'v1.0.0',
       );
     });
 
     it('should not notify if tag is the same', async () => {
       const sub: Subscription = {
-        id: 1,
+        id: '1',
         email: 'test@example.com',
         repo: 'owner/repo',
         confirmed: true,
@@ -228,14 +228,14 @@ describe('ScannerService', () => {
         publishedAt: new Date().toISOString(),
       });
 
-      await scannerService.scanSubscription(1);
+      await scannerService.scanSubscription('1');
 
       expect(notificationServiceMock.notifyNewRelease).not.toHaveBeenCalled();
     });
 
     it('should do nothing if subscription is not confirmed', async () => {
       const sub: Subscription = {
-        id: 1,
+        id: '1',
         email: 'test@example.com',
         repo: 'owner/repo',
         confirmed: false,
@@ -245,7 +245,7 @@ describe('ScannerService', () => {
 
       subscriptionServiceMock.findSubscriptionById.mockResolvedValue(sub);
 
-      await scannerService.scanSubscription(1);
+      await scannerService.scanSubscription('1');
 
       expect(githubClientMock.getLatestRelease).not.toHaveBeenCalled();
       expect(loggerMock.warn).toHaveBeenCalled();
@@ -253,7 +253,7 @@ describe('ScannerService', () => {
 
     it('should throw if unsubscribe token is missing', async () => {
       const sub: Subscription = {
-        id: 1,
+        id: '1',
         email: 'test@example.com',
         repo: 'owner/repo',
         confirmed: true,
@@ -269,7 +269,7 @@ describe('ScannerService', () => {
       });
       subscriptionServiceMock.getUnsubscribeToken.mockResolvedValue(null);
 
-      await expect(scannerService.scanSubscription(1)).rejects.toThrow(
+      await expect(scannerService.scanSubscription('1')).rejects.toThrow(
         TokenNotFoundError,
       );
 
@@ -278,7 +278,7 @@ describe('ScannerService', () => {
 
     it('should throw if rate limit is exceeded', async () => {
       const sub: Subscription = {
-        id: 1,
+        id: '1',
         email: 'test@example.com',
         repo: 'owner/repo',
         confirmed: true,
@@ -291,7 +291,7 @@ describe('ScannerService', () => {
         new GithubRateLimitError(),
       );
 
-      await expect(scannerService.scanSubscription(1)).rejects.toThrow(
+      await expect(scannerService.scanSubscription('1')).rejects.toThrow(
         GithubRateLimitError,
       );
     });

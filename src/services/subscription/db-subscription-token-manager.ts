@@ -1,5 +1,5 @@
-import { randomUUID } from 'crypto';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
+import type { TokenGenerator } from '../../domain/token-generator.js';
 import type {
   SubscriptionToken,
   SubscriptionTokenScope,
@@ -9,15 +9,16 @@ import type { DomainTransaction } from '../../domain/transaction-manager.js';
 export class SubscriptionTokenManager {
   constructor(
     private subscriptionRepo: SubscriptionRepository,
+    private tokenGenerator: TokenGenerator,
     private tokenExpiryHours: number = 24,
   ) {}
 
   async createToken(
-    subscriptionId: number,
+    subscriptionId: string,
     scope: SubscriptionTokenScope,
     tx?: DomainTransaction,
   ): Promise<string> {
-    const token = randomUUID();
+    const token = this.tokenGenerator.generate();
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + this.tokenExpiryHours);
 
@@ -39,7 +40,7 @@ export class SubscriptionTokenManager {
   }
 
   async getTokenBySubscriptionIdAndScope(
-    subscriptionId: number,
+    subscriptionId: string,
     scope: SubscriptionTokenScope,
   ): Promise<SubscriptionToken | null> {
     return this.subscriptionRepo.findTokenBySubscriptionIdAndScope(

@@ -9,17 +9,14 @@ import type {
 import type { DomainTransaction } from './transaction-manager.js';
 
 export interface SubscriptionRepository {
-  createSubscription(
-    data: { email: string; repo: string },
-    tx?: DomainTransaction,
-  ): Promise<SubscriptionRow>;
-
   findByEmailAndRepo(
     email: Email,
     repoPath: RepoPath,
   ): Promise<Subscription | null>;
 
-  findSubscriptionById(id: number): Promise<SubscriptionRow | null>;
+  save(subscription: Subscription, tx?: DomainTransaction): Promise<void>;
+
+  findSubscriptionById(id: string): Promise<SubscriptionRow | null>;
 
   findConfirmedSubscriptionsByEmail(email: string): Promise<SubscriptionRow[]>;
 
@@ -27,19 +24,19 @@ export interface SubscriptionRepository {
 
   findSubscriptionsByEmail(email: string): Promise<SubscriptionRow[]>;
 
-  confirmSubscription(id: number, tx?: DomainTransaction): Promise<void>;
+  confirmSubscription(id: string, tx?: DomainTransaction): Promise<void>;
 
   updateLastSeenTag(
-    id: number,
+    id: string,
     tag: string,
     tx?: DomainTransaction,
   ): Promise<void>;
 
-  deleteSubscription(id: number, tx?: DomainTransaction): Promise<void>;
+  deleteSubscription(id: string, tx?: DomainTransaction): Promise<void>;
 
   createToken(
     data: {
-      subscriptionId: number;
+      subscriptionId: string;
       token: string;
       scope: SubscriptionTokenScope;
       expiresAt: Date;
@@ -55,7 +52,7 @@ export interface SubscriptionRepository {
   findTokenByValue(token: string): Promise<SubscriptionToken | null>;
 
   findTokenBySubscriptionIdAndScope(
-    subscriptionId: number,
+    subscriptionId: string,
     scope: SubscriptionTokenScope,
   ): Promise<SubscriptionToken | null>;
 

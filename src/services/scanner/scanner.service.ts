@@ -40,7 +40,7 @@ export class ScannerService {
     }
   }
 
-  async scanSubscription(subscriptionId: number): Promise<void> {
+  async scanSubscription(subscriptionId: string): Promise<void> {
     const sub =
       await this.subscriptionService.findSubscriptionById(subscriptionId);
     if (!sub || !sub.confirmed) {
@@ -131,7 +131,7 @@ export class ScannerService {
   }
 
   private async resolveUnsubscribeToken(
-    subscriptionId: number,
+    subscriptionId: string,
   ): Promise<string> {
     const token =
       await this.subscriptionService.getUnsubscribeToken(subscriptionId);

@@ -33,6 +33,9 @@ import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
 import { TEST_APP_CONFIG } from './constants.js';
 import { createFastifyServerOptions } from '../../src/infrastructure/fastify/create-fastify-server-options.js';
+import { randomUUID } from 'node:crypto';
+
+const subscriptionId = () => randomUUID();
 
 describe('Subscription Routes Integration with PGlite', () => {
   let app: App;
@@ -169,6 +172,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         const [existingSubscription] = await db
           .insert(schema.subscriptions)
           .values({
+            id: subscriptionId(),
             email,
             repo,
             confirmed: true,
@@ -212,6 +216,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         const [existingSubscription] = await db
           .insert(schema.subscriptions)
           .values({
+            id: subscriptionId(),
             email,
             repo,
             confirmed: true,
@@ -237,12 +242,14 @@ describe('Subscription Routes Integration with PGlite', () => {
       const email = 'test@example.com';
 
       await db.insert(schema.subscriptions).values({
+        id: subscriptionId(),
         email,
         repo: 'owner/repo1',
         confirmed: true,
       });
 
       await db.insert(schema.subscriptions).values({
+        id: subscriptionId(),
         email,
         repo: 'owner/repo2',
         confirmed: false,
@@ -270,12 +277,14 @@ describe('Subscription Routes Integration with PGlite', () => {
       const otherEmail = 'other@example.com';
 
       await db.insert(schema.subscriptions).values({
+        id: subscriptionId(),
         email: targetEmail,
         repo: 'owner/repo-target',
         confirmed: true,
       });
 
       await db.insert(schema.subscriptions).values({
+        id: subscriptionId(),
         email: otherEmail,
         repo: 'owner/repo-other',
         confirmed: true,
@@ -302,6 +311,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       const email = 'test@example.com';
 
       await db.insert(schema.subscriptions).values({
+        id: subscriptionId(),
         email,
         repo: 'owner/repo',
         confirmed: false,
@@ -349,6 +359,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
+          id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
           confirmed: false,
@@ -401,6 +412,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
+          id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
           confirmed: false,
@@ -465,6 +477,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
+          id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
           confirmed: false,
@@ -500,6 +513,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
+          id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
           confirmed: false,
@@ -532,6 +546,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
+          id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
           confirmed: true,
@@ -573,6 +588,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
+          id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
           confirmed: true,
@@ -624,6 +640,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
+          id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
           confirmed: true,
@@ -660,6 +677,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
+          id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
           confirmed: true,

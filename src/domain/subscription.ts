@@ -16,18 +16,18 @@ export type SubscriptionToken = SubscriptionTokenRow;
 export type { SubscriptionTokenScope };
 
 export interface SubscriptionService {
-  subscribe(email: string, repoPath: string): Promise<Subscription>;
+  subscribe(email: string, repoPath: string): Promise<void>;
 
   getSubscriptionsByEmail(email: string): Promise<Subscription[]>;
 
   findAllConfirmedSubscriptions(): Promise<Subscription[]>;
 
-  findSubscriptionById(id: number): Promise<Subscription | null>;
+  findSubscriptionById(id: string): Promise<Subscription | null>;
 
-  updateLastSeenTag(id: number, tag: string): Promise<void>;
+  updateLastSeenTag(id: string, tag: string): Promise<void>;
 
   getUnsubscribeToken(
-    subscriptionId: number,
+    subscriptionId: string,
   ): Promise<SubscriptionToken | null>;
 
   confirmSubscription(tokenValue: string): Promise<void>;

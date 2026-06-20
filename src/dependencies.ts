@@ -18,6 +18,10 @@ import type { EmailClient } from './domain/email.js';
 import type { NotificationService } from './domain/notification.js';
 import type { SubscriptionService } from './domain/subscription.js';
 import type { Logger } from './domain/logger.js';
+import type { IdGenerator } from './domain/id-generator.js';
+import type { TokenGenerator } from './domain/token-generator.js';
+import { CryptoIdGenerator } from './infrastructure/id/crypto-id-generator.js';
+import { CryptoTokenGenerator } from './infrastructure/token/crypto-token-generator.js';
 
 export interface AppDependencies {
   db: Database;
@@ -40,6 +44,8 @@ export class AppContainer {
   private notificationServiceInstance?: NotificationService;
   private scannerServiceInstance?: ScannerService;
   private subscriptionServiceInstance?: SubscriptionService;
+  private idGeneratorInstance?: IdGenerator;
+  private tokenGeneratorInstance?: TokenGenerator;
 
   constructor(
     private readonly config: AppConfig,
@@ -118,6 +124,7 @@ export class AppContainer {
   get tokenManager(): SubscriptionTokenManager {
     return (this.tokenManagerInstance ??= new SubscriptionTokenManager(
       this.subscriptionRepo,
+      this.tokenGenerator,
     ));
   }
 
@@ -169,12 +176,29 @@ export class AppContainer {
       this.tokenManager,
       this.transactionManager,
       this.logger,
-      this.metrics,
+      this.idGenerator,
+      this.tokenGenerator,
     ));
   }
 
   set subscriptionService(value: SubscriptionService) {
     this.subscriptionServiceInstance = value;
+  }
+
+  get idGenerator(): IdGenerator {
+    return (this.idGeneratorInstance ??= new CryptoIdGenerator());
+  }
+
+  set idGenerator(value: IdGenerator) {
+    this.idGeneratorInstance = value;
+  }
+
+  get tokenGenerator(): TokenGenerator {
+    return (this.tokenGeneratorInstance ??= new CryptoTokenGenerator());
+  }
+
+  set tokenGenerator(value: TokenGenerator) {
+    this.tokenGeneratorInstance = value;
   }
 
   build(): AppDependencies {

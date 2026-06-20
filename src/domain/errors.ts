@@ -39,7 +39,7 @@ export class AlreadySubscribedError extends Error {
 export class SubscriptionNotFoundError extends Error {
   readonly code = 'SUBSCRIPTION_NOT_FOUND' as const;
 
-  constructor(subscriptionId: number) {
+  constructor(subscriptionId: string) {
     super(`Subscription not found: ${subscriptionId}`);
   }
 }
