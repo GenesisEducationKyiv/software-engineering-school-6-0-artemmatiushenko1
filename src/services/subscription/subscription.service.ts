@@ -18,6 +18,9 @@ import type { TransactionManager } from '../../domain/transaction-manager.js';
 import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
 
 export class SubscriptionServiceImpl implements SubscriptionService {
+  private static readonly SUBSCRIPTION_CONFIRMATION_TTL_MS = 60_000;
+  private static readonly UNSUBSCRIBE_TTL_MS = 24 * 60 * 60 * 1000;
+
   constructor(
     private subscriptionRepo: SubscriptionRepository,
     private githubClient: GithubClient,
@@ -56,7 +59,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       value: this.tokenGenerator.generate(),
       scope: 'subscribe',
       issuedAt: new Date(),
-      ttlMs: 60_000,
+      ttlMs: SubscriptionServiceImpl.SUBSCRIPTION_CONFIRMATION_TTL_MS,
     });
 
     let subscription: DomainSubscription;
@@ -134,7 +137,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       value: this.tokenGenerator.generate(),
       scope: 'unsubscribe',
       issuedAt: now,
-      ttlMs: 24 * 60 * 60 * 1000,
+      ttlMs: SubscriptionServiceImpl.UNSUBSCRIBE_TTL_MS,
     });
 
     subscription.confirm(tokenValue, now, unsubscribeToken);
