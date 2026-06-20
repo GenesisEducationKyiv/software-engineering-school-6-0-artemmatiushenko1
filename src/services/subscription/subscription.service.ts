@@ -21,10 +21,7 @@ import { ReleaseTag } from '../../domain/subscription/release-tag.js';
 import type { Logger } from '../../domain/logger.js';
 import type { IdGenerator } from '../../domain/id-generator.js';
 import type { TokenGenerator } from '../../domain/token-generator.js';
-import type {
-  TransactionManager,
-  DomainTransaction,
-} from '../../domain/transaction-manager.js';
+import type { TransactionManager } from '../../domain/transaction-manager.js';
 import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
 
 export class SubscriptionServiceImpl implements SubscriptionService {
@@ -51,12 +48,12 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       throw new RepoNotFoundError(validatedRepo.toString());
     }
 
-    const existing = await this.subscriptionRepo.findByEmailAndRepo(
+    const existingSubscription = await this.subscriptionRepo.findByEmailAndRepo(
       validatedEmail,
       validatedRepo,
     );
 
-    if (existing?.status === 'confirmed') {
+    if (existingSubscription?.status === 'confirmed') {
       throw new AlreadySubscribedError(
         validatedEmail.email,
         validatedRepo.toString(),
@@ -64,13 +61,18 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     const confirmToken = await this.transactionManager.run(async (tx) => {
-      if (existing) {
-        const confirmToken = await this.refreshPendingSubscriptionTokens(
-          existing.id,
-          tx,
-        );
+      if (existingSubscription) {
+        const newConfirmToken = ConfirmationToken.issue({
+          value: this.tokenGenerator.generate(),
+          scope: 'subscribe',
+          issuedAt: new Date(),
+          ttlMs: 60_000,
+        });
+        existingSubscription.renewConfirmation(newConfirmToken);
 
-        return confirmToken;
+        await this.subscriptionRepo.save(existingSubscription, tx);
+
+        return newConfirmToken.value;
       } else {
         const confirmToken = ConfirmationToken.issue({
           value: this.tokenGenerator.generate(),
@@ -102,36 +104,6 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       email: validatedEmail.email,
       repoPath: validatedRepo.toString(),
     });
-  }
-
-  private async refreshPendingSubscriptionTokens(
-    subscriptionId: string,
-    tx: DomainTransaction,
-  ): Promise<string> {
-    const existingSubscribeToken =
-      await this.tokenManager.getTokenBySubscriptionIdAndScope(
-        subscriptionId,
-        'subscribe',
-      );
-    if (existingSubscribeToken) {
-      await this.tokenManager.invalidateToken(existingSubscribeToken.token, tx);
-    }
-
-    const existingUnsubscribeToken =
-      await this.tokenManager.getTokenBySubscriptionIdAndScope(
-        subscriptionId,
-        'unsubscribe',
-      );
-    if (existingUnsubscribeToken) {
-      await this.tokenManager.invalidateToken(
-        existingUnsubscribeToken.token,
-        tx,
-      );
-    }
-
-    await this.tokenManager.createToken(subscriptionId, 'unsubscribe', tx);
-
-    return this.tokenManager.createToken(subscriptionId, 'subscribe', tx);
   }
 
   async getSubscriptionsByEmail(email: string): Promise<Subscription[]> {

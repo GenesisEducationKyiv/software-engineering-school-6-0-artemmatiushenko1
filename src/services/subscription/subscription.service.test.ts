@@ -164,75 +164,36 @@ describe('SubscriptionServiceImpl', () => {
   it('should refresh tokens and resend confirmation for an unconfirmed subscription', async () => {
     const email = 'test@example.com';
     const repo = 'owner/repo';
+    const newConfirmToken = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
     const existingDomainSubscription = createPendingDomainSubscription({
       email,
       repo,
     });
-    const existingSubscription: Subscription = {
-      id: '1',
-      email,
-      repo,
-      confirmed: false,
-      lastSeenTag: null,
-      createdAt: new Date(),
-    };
-    const subscribeToken: SubscriptionToken = {
-      id: 1,
-      token: 'old-confirm-token',
-      subscriptionId: '1',
-      scope: 'subscribe',
-      expiresAt: new Date(Date.now() + 60_000),
-      createdAt: new Date(),
-    };
-    const unsubscribeToken: SubscriptionToken = {
-      id: 2,
-      token: 'old-unsub-token',
-      subscriptionId: '1',
-      scope: 'unsubscribe',
-      expiresAt: new Date(Date.now() + 60_000),
-      createdAt: new Date(),
-    };
 
+    tokenGeneratorMock.generate.mockReturnValue(newConfirmToken);
     githubClientMock.repositoryExists.mockResolvedValue(true);
     repoMock.findByEmailAndRepo.mockResolvedValue(existingDomainSubscription);
-    repoMock.findSubscriptionById.mockResolvedValue(existingSubscription);
-    tokenManagerMock.getTokenBySubscriptionIdAndScope.mockImplementation(
-      async (_subscriptionId, scope) =>
-        Promise.resolve(
-          scope === 'subscribe' ? subscribeToken : unsubscribeToken,
-        ),
-    );
-    tokenManagerMock.createToken
-      .mockResolvedValueOnce('new-unsub-token')
-      .mockResolvedValueOnce('new-confirm-token');
 
     await subscriptionService.subscribe(email, repo);
 
-    expect(tokenManagerMock.invalidateToken).toHaveBeenCalledWith(
-      'old-confirm-token',
-      expect.anything(),
-    );
-    expect(tokenManagerMock.invalidateToken).toHaveBeenCalledWith(
-      'old-unsub-token',
-      expect.anything(),
-    );
-    expect(tokenManagerMock.createToken).toHaveBeenCalledWith(
-      existingSubscription.id,
-      'unsubscribe',
-      expect.anything(),
-    );
-    expect(tokenManagerMock.createToken).toHaveBeenCalledWith(
-      existingSubscription.id,
-      'subscribe',
-      expect.anything(),
-    );
+    expect(repoMock.save).toHaveBeenCalledTimes(1);
+
+    const [savedSubscription, tx] = repoMock.save.mock.calls[0]!;
+
+    expect(savedSubscription.id).toBe(existingDomainSubscription.id);
+    expect(savedSubscription.status).toBe('pending');
+    expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
+    expect(tx).toEqual({});
+    expect(tokenManagerMock.createToken).not.toHaveBeenCalled();
+    expect(tokenManagerMock.invalidateToken).not.toHaveBeenCalled();
     expect(
       notificationServiceMock.notifySubscriptionConfirmation,
     ).toHaveBeenCalledWith({
       email,
       repo,
-      confirmToken: 'new-confirm-token',
+      confirmToken: newConfirmToken,
     });
+    expect(loggerMock.info).toHaveBeenCalled();
   });
 
   it('should not leave partial db state when confirmation email fails for a new subscription', async () => {
@@ -262,47 +223,15 @@ describe('SubscriptionServiceImpl', () => {
   it('should not leave partial db state when confirmation email fails for a pending resubscribe', async () => {
     const email = 'test@example.com';
     const repo = 'owner/repo';
+    const newConfirmToken = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
     const existingDomainSubscription = createPendingDomainSubscription({
       email,
       repo,
     });
-    const existingSubscription: Subscription = {
-      id: '1',
-      email,
-      repo,
-      confirmed: false,
-      lastSeenTag: null,
-      createdAt: new Date(),
-    };
-    const subscribeToken: SubscriptionToken = {
-      id: 1,
-      token: 'old-confirm-token',
-      subscriptionId: '1',
-      scope: 'subscribe',
-      expiresAt: new Date(Date.now() + 60_000),
-      createdAt: new Date(),
-    };
-    const unsubscribeToken: SubscriptionToken = {
-      id: 2,
-      token: 'old-unsub-token',
-      subscriptionId: '1',
-      scope: 'unsubscribe',
-      expiresAt: new Date(Date.now() + 60_000),
-      createdAt: new Date(),
-    };
 
+    tokenGeneratorMock.generate.mockReturnValue(newConfirmToken);
     githubClientMock.repositoryExists.mockResolvedValue(true);
     repoMock.findByEmailAndRepo.mockResolvedValue(existingDomainSubscription);
-    repoMock.findSubscriptionById.mockResolvedValue(existingSubscription);
-    tokenManagerMock.getTokenBySubscriptionIdAndScope.mockImplementation(
-      (_subscriptionId, scope) =>
-        Promise.resolve(
-          scope === 'subscribe' ? subscribeToken : unsubscribeToken,
-        ),
-    );
-    tokenManagerMock.createToken
-      .mockResolvedValueOnce('new-unsub-token')
-      .mockResolvedValueOnce('new-confirm-token');
     notificationServiceMock.notifySubscriptionConfirmation.mockRejectedValue(
       new Error('SMTP error'),
     );
@@ -311,24 +240,13 @@ describe('SubscriptionServiceImpl', () => {
       'SMTP error',
     );
 
-    expect(tokenManagerMock.invalidateToken).toHaveBeenCalledWith(
-      'old-confirm-token',
-      expect.anything(),
-    );
-    expect(tokenManagerMock.invalidateToken).toHaveBeenCalledWith(
-      'old-unsub-token',
-      expect.anything(),
-    );
-    expect(tokenManagerMock.createToken).toHaveBeenCalledWith(
-      existingSubscription.id,
-      'unsubscribe',
-      expect.anything(),
-    );
-    expect(tokenManagerMock.createToken).toHaveBeenCalledWith(
-      existingSubscription.id,
-      'subscribe',
-      expect.anything(),
-    );
+    expect(repoMock.save).toHaveBeenCalledTimes(1);
+
+    const [savedSubscription] = repoMock.save.mock.calls[0]!;
+
+    expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
+    expect(tokenManagerMock.createToken).not.toHaveBeenCalled();
+    expect(tokenManagerMock.invalidateToken).not.toHaveBeenCalled();
     expect(repoMock.deleteSubscription).not.toHaveBeenCalled();
     expect(loggerMock.info).not.toHaveBeenCalled();
   });

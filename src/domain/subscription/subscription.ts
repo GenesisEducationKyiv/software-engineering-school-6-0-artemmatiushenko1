@@ -1,6 +1,11 @@
 import type { ConfirmationToken } from './confirmation-token.js';
 import type { Email } from './email.js';
-import { IllegalStateTransitionError, WrongTokenScopeError } from './errors.js';
+import {
+  IllegalStateTransitionError,
+  SubscriptionAlreadyConfirmedError,
+  SubscriptionAlreadyDeactivatedError,
+  WrongTokenScopeError,
+} from './errors.js';
 import type { ReleaseTag } from './release-tag.js';
 import type { RepoPath } from './repo-path.js';
 
@@ -103,15 +108,34 @@ export class Subscription {
     this._lastSeenTag = tag;
   }
 
+  renewConfirmation(newToken: ConfirmationToken): void {
+    if (newToken.scope !== 'subscribe') {
+      throw new WrongTokenScopeError('subscribe', newToken.scope);
+    }
+
+    if (this._status === 'confirmed') {
+      throw new SubscriptionAlreadyConfirmedError();
+    }
+
+    if (this._status === 'unsubscribed') {
+      throw new SubscriptionAlreadyDeactivatedError();
+    }
+
+    this._confirmationToken = newToken;
+  }
+
   get status(): SubscriptionStatus {
     return this._status;
   }
+
   get lastSeenTag(): ReleaseTag | null {
     return this._lastSeenTag;
   }
+
   get confirmationToken(): ConfirmationToken {
     return this._confirmationToken;
   }
+
   get unsubscribeToken(): ConfirmationToken | null {
     return this._unsubscribeToken;
   }

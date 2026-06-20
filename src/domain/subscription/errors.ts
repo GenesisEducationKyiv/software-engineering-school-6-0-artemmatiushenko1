@@ -73,3 +73,21 @@ export class WrongTokenScopeError extends Error {
     this.name = 'WrongTokenScopeError';
   }
 }
+
+export class SubscriptionAlreadyConfirmedError extends Error {
+  readonly code = 'SUBSCRIPTION_ALREADY_CONFIRMED' as const;
+
+  constructor() {
+    super('Subscription already confirmed');
+    this.name = 'SubscriptionAlreadyConfirmedError';
+  }
+}
+
+export class SubscriptionAlreadyDeactivatedError extends Error {
+  readonly code = 'SUBSCRIPTION_ALREADY_DEACTIVATED' as const;
+
+  constructor() {
+    super('Subscription already deactivated');
+    this.name = 'SubscriptionAlreadyDeactivatedError';
+  }
+}

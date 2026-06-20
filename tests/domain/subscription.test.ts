@@ -6,6 +6,8 @@ import { ReleaseTag } from '../../src/domain/subscription/release-tag.js';
 import { Subscription } from '../../src/domain/subscription/subscription.js';
 import {
   IllegalStateTransitionError,
+  SubscriptionAlreadyConfirmedError,
+  SubscriptionAlreadyDeactivatedError,
   WrongTokenScopeError,
 } from '../../src/domain/subscription/errors.js';
 
@@ -13,6 +15,7 @@ const SUBSCRIPTION_ID = 'sub-1';
 const EMAIL = Email.fromString('test@example.com');
 const REPO_PATH = RepoPath.fromString('owner/repo');
 const CONFIRM_TOKEN_UUID = '550e8400-e29b-41d4-a716-446655440000';
+const RENEWED_CONFIRM_TOKEN_UUID = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
 const UNSUBSCRIBE_TOKEN_UUID = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 const ISSUED_AT = new Date('2026-01-01T12:00:00Z');
 const NOW = new Date('2026-01-01T12:30:00Z');
@@ -180,6 +183,66 @@ describe('Subscription', () => {
       expect(() =>
         subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueConfirmToken()),
       ).toThrow('Wrong token scope: expected unsubscribe, got subscribe');
+    });
+  });
+
+  describe('renewConfirmation', () => {
+    it('should replace the confirmation token for a pending subscription', () => {
+      const subscription = requestSubscription();
+      const renewedToken = issueConfirmToken({
+        value: RENEWED_CONFIRM_TOKEN_UUID,
+      });
+
+      subscription.renewConfirmation(renewedToken);
+
+      expect(subscription.status).toBe('pending');
+      expect(subscription.confirmationToken).toBe(renewedToken);
+      expect(subscription.confirmationToken.value).toBe(
+        RENEWED_CONFIRM_TOKEN_UUID,
+      );
+      expect(subscription.unsubscribeToken).toBeNull();
+    });
+
+    it('should throw WrongTokenScopeError when new token has wrong scope', () => {
+      const subscription = requestSubscription();
+
+      expect(() =>
+        subscription.renewConfirmation(issueUnsubscribeToken()),
+      ).toThrow(WrongTokenScopeError);
+      expect(() =>
+        subscription.renewConfirmation(issueUnsubscribeToken()),
+      ).toThrow('Wrong token scope: expected subscribe, got unsubscribe');
+    });
+
+    it('should throw SubscriptionAlreadyConfirmedError when already confirmed', () => {
+      const subscription = confirmSubscription();
+
+      expect(() =>
+        subscription.renewConfirmation(
+          issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+        ),
+      ).toThrow(SubscriptionAlreadyConfirmedError);
+      expect(() =>
+        subscription.renewConfirmation(
+          issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+        ),
+      ).toThrow('Subscription already confirmed');
+    });
+
+    it('should throw SubscriptionAlreadyDeactivatedError when unsubscribed', () => {
+      const subscription = confirmSubscription();
+      subscription.unsubscribe(UNSUBSCRIBE_TOKEN_UUID, NOW);
+
+      expect(() =>
+        subscription.renewConfirmation(
+          issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+        ),
+      ).toThrow(SubscriptionAlreadyDeactivatedError);
+      expect(() =>
+        subscription.renewConfirmation(
+          issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+        ),
+      ).toThrow('Subscription already deactivated');
     });
   });
 
