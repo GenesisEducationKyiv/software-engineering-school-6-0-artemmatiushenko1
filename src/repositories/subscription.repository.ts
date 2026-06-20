@@ -4,10 +4,6 @@ import type {
 } from '../db/types.js';
 import { subscriptions, subscriptionTokens } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
-import type {
-  SubscriptionToken,
-  SubscriptionTokenScope,
-} from '../domain/subscription.js';
 import {
   Subscription as DomainSubscription,
   Subscription,
@@ -22,9 +18,11 @@ import {
 import {
   SubscriptionTokenRowMapper,
   SubscriptionTokenRowSchema,
+  type SubscriptionTokenRow,
 } from './subscription-token-row.mapper.js';
 import type { SubscriptionRepository } from '../domain/subscription.repository.js';
 import type { DomainTransaction } from '../domain/transaction-manager.js';
+import type { ConfirmationTokenScope } from '../domain/subscription/confirmation-token.js';
 
 export class DrizzleSubscriptionRepository implements SubscriptionRepository {
   private readonly subscriptionMapper = new SubscriptionRowMapper();
@@ -69,7 +67,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
 
   async findByToken(
     tokenValue: string,
-    scope: SubscriptionTokenScope,
+    scope: ConfirmationTokenScope,
   ): Promise<DomainSubscription | null> {
     const tokenRow = await this.findToken(tokenValue, scope);
     if (!tokenRow) {
@@ -216,11 +214,11 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     data: {
       subscriptionId: string;
       token: string;
-      scope: SubscriptionTokenScope;
+      scope: ConfirmationTokenScope;
       expiresAt: Date;
     },
     tx?: DomainTransaction,
-  ): Promise<SubscriptionToken> {
+  ): Promise<SubscriptionTokenRow> {
     const [result] = await this.getDb(tx)
       .insert(subscriptionTokens)
       .values({
@@ -236,8 +234,8 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
 
   private async findToken(
     token: string,
-    scope: SubscriptionTokenScope,
-  ): Promise<SubscriptionToken | null> {
+    scope: ConfirmationTokenScope,
+  ): Promise<SubscriptionTokenRow | null> {
     const [result] = await this.getDb()
       .select()
       .from(subscriptionTokens)
@@ -256,8 +254,8 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
 
   private async findTokenBySubscriptionIdAndScope(
     subscriptionId: string,
-    scope: SubscriptionTokenScope,
-  ): Promise<SubscriptionToken | null> {
+    scope: ConfirmationTokenScope,
+  ): Promise<SubscriptionTokenRow | null> {
     const [result] = await this.getDb()
       .select()
       .from(subscriptionTokens)

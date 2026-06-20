@@ -1,19 +1,14 @@
 import { z } from 'zod';
-import { ConfirmationToken } from '../domain/subscription/confirmation-token.js';
-
-export const SubscriptionTokenScopeSchema = z.enum([
-  'subscribe',
-  'unsubscribe',
-]);
-export type SubscriptionTokenScope = z.infer<
-  typeof SubscriptionTokenScopeSchema
->;
+import {
+  ConfirmationToken,
+  ConfirmationTokenScopeSchema,
+} from '../domain/subscription/confirmation-token.js';
 
 export const SubscriptionTokenRowSchema = z.object({
   id: z.number().int(),
   token: z.string(),
   subscriptionId: z.string(),
-  scope: SubscriptionTokenScopeSchema,
+  scope: ConfirmationTokenScopeSchema,
   expiresAt: z.date(),
   createdAt: z.date(),
 });

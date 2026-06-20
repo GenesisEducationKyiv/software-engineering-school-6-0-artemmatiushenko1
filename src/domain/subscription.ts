@@ -1,27 +1,11 @@
-import { z } from 'zod';
-import type { SubscriptionRow } from '../repositories/subscription-row.mapper.js';
-import type {
-  SubscriptionTokenRow,
-  SubscriptionTokenScope,
-} from '../repositories/subscription-token-row.mapper.js';
-import type { Subscription as DomainSubscription } from './subscription/subscription.js';
-
-export const RepoPathSchema = z
-  .string()
-  .regex(/^[a-zA-Z0-9-]+\/[a-zA-Z0-9._-]+$/, {
-    message: "Invalid repository format. Expected 'owner/repo'",
-  });
-
-export type Subscription = SubscriptionRow;
-export type SubscriptionToken = SubscriptionTokenRow;
-export type { SubscriptionTokenScope };
+import type { Subscription } from './subscription/subscription.js';
 
 export interface SubscriptionService {
   subscribe(email: string, repoPath: string): Promise<void>;
 
-  getSubscriptionsByEmail(email: string): Promise<DomainSubscription[]>;
+  getSubscriptionsByEmail(email: string): Promise<Subscription[]>;
 
-  findAllConfirmedSubscriptions(): Promise<DomainSubscription[]>;
+  findAllConfirmedSubscriptions(): Promise<Subscription[]>;
 
   observeNewRelease(subscriptionId: string, tag: string): Promise<void>;
 
