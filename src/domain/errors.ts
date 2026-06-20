@@ -46,14 +46,6 @@ export class SubscriptionNotFoundError extends Error {
   }
 }
 
-export class TokenNotFoundError extends Error {
-  readonly code = 'TOKEN_NOT_FOUND' as const;
-
-  constructor(message: string = 'Token not found') {
-    super(message);
-  }
-}
-
 export class GithubRateLimitError extends Error {
   readonly code = 'GITHUB_RATE_LIMIT' as const;
 
@@ -68,7 +60,6 @@ export const domainErrorTypes = [
   RepoNotFoundError,
   AlreadySubscribedError,
   SubscriptionNotFoundError,
-  TokenNotFoundError,
   InvalidTokenError,
   WrongTokenScopeError,
   IllegalStateTransitionError,

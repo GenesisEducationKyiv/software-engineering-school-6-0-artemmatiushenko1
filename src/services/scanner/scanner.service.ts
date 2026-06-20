@@ -1,12 +1,12 @@
 import type { GithubClient } from '../../domain/github.js';
 import type { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
 import type { SubscriptionService } from '../../domain/subscription.js';
-import { parseRepoPath } from '../../utils/repo.utils.js';
 import type { NotificationService } from '../../domain/notification.js';
 import type { Logger } from '../../domain/logger.js';
 import { GithubRateLimitError } from '../../domain/errors.js';
 import type { Metrics } from '../../domain/metrics.js';
 import { msToSeconds } from '../../utils/time.utils.js';
+import { RepoPath } from '../../domain/subscription/repo-path.js';
 
 type ScannableSubscription = {
   id: string;
@@ -74,9 +74,12 @@ export class ScannerService {
       repo: sub.repo,
       email: sub.email,
     });
-    const { owner, repo } = parseRepoPath(sub.repo);
+    const repoPath = RepoPath.fromString(sub.repo);
 
-    const latestRelease = await this.githubClient.getLatestRelease(owner, repo);
+    const latestRelease = await this.githubClient.getLatestRelease(
+      repoPath.owner,
+      repoPath.repo,
+    );
 
     if (!latestRelease) {
       this.logger.info('No releases found', { repo: sub.repo });

@@ -6,7 +6,6 @@ import {
   RepoNotFoundError,
   AlreadySubscribedError,
   SubscriptionNotFoundError,
-  TokenNotFoundError,
   InvalidTokenError,
   WrongTokenScopeError,
   IllegalStateTransitionError,
@@ -15,6 +14,10 @@ import {
   InvalidReleaseTagError,
   GithubRateLimitError,
 } from '../../domain/errors.js';
+import {
+  SubscriptionAlreadyConfirmedError,
+  SubscriptionAlreadyDeactivatedError,
+} from '../../domain/subscription/errors.js';
 import {
   resolveDomainErrorHttpStatus,
   resolveDomainErrorHttpResponse,
@@ -28,7 +31,6 @@ describe('resolveDomainErrorHttpStatus', () => {
     [new RepoNotFoundError('owner/repo'), 404],
     [new AlreadySubscribedError('a@b.com', 'owner/repo'), 409],
     [new SubscriptionNotFoundError(), 404],
-    [new TokenNotFoundError(), 404],
     [new InvalidTokenError(), 400],
     [new WrongTokenScopeError('subscribe', 'unsubscribe'), 400],
     [new IllegalStateTransitionError('pending', 'confirmed'), 400],
@@ -36,6 +38,8 @@ describe('resolveDomainErrorHttpStatus', () => {
     [new TokenAlreadyUsedError('token'), 400],
     [new InvalidReleaseTagError(''), 400],
     [new GithubRateLimitError(), 429],
+    [new SubscriptionAlreadyConfirmedError(), 409],
+    [new SubscriptionAlreadyDeactivatedError(), 409],
   ])('should map %s to HTTP %i', (error, status) => {
     expect(resolveDomainErrorHttpStatus(error)).toBe(status);
   });
