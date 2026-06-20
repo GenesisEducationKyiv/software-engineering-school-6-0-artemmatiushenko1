@@ -60,42 +60,32 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       );
     }
 
-    const confirmToken = await this.transactionManager.run(async (tx) => {
-      if (existingSubscription) {
-        const newConfirmToken = ConfirmationToken.issue({
-          value: this.tokenGenerator.generate(),
-          scope: 'subscribe',
-          issuedAt: new Date(),
-          ttlMs: 60_000,
-        });
-        existingSubscription.renewConfirmation(newConfirmToken);
+    const confirmToken = ConfirmationToken.issue({
+      value: this.tokenGenerator.generate(),
+      scope: 'subscribe',
+      issuedAt: new Date(),
+      ttlMs: 60_000,
+    });
 
-        await this.subscriptionRepo.save(existingSubscription, tx);
+    let subscription: DomainSubscription;
+    if (existingSubscription) {
+      existingSubscription.renewConfirmation(confirmToken);
+      subscription = existingSubscription;
+    } else {
+      subscription = DomainSubscription.request(
+        this.idGenerator.next(),
+        validatedEmail,
+        validatedRepo,
+        confirmToken,
+      );
+    }
 
-        return newConfirmToken.value;
-      } else {
-        const confirmToken = ConfirmationToken.issue({
-          value: this.tokenGenerator.generate(),
-          scope: 'subscribe',
-          issuedAt: new Date(),
-          ttlMs: 60_000,
-        });
-
-        const newSubscription = DomainSubscription.request(
-          this.idGenerator.next(),
-          validatedEmail,
-          validatedRepo,
-          confirmToken,
-        );
-
-        await this.subscriptionRepo.save(newSubscription, tx);
-
-        return confirmToken.value;
-      }
+    await this.transactionManager.run(async (tx) => {
+      await this.subscriptionRepo.save(subscription, tx);
     });
 
     await this.notificationService.notifySubscriptionConfirmation({
-      confirmToken,
+      confirmToken: subscription.confirmationToken.value,
       email: validatedEmail.email,
       repo: validatedRepo.toString(),
     });
