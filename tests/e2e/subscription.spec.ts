@@ -95,7 +95,7 @@ test.describe('Subscription Flow', () => {
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
       'Confirmation Failed',
     );
-    await expect(page.locator('text=Token not found')).toBeVisible();
+    await expect(page.locator('text=Subscription not found')).toBeVisible();
 
     await page.goto(secondConfirmLink);
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
@@ -192,7 +192,7 @@ test.describe('Subscription Flow', () => {
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
       'Confirmation Failed',
     );
-    await expect(page.locator('text=Token not found')).toBeVisible();
+    await expect(page.locator('text=Subscription not found')).toBeVisible();
   });
 
   test('should show an error for an invalid unsubscribe token', async ({
@@ -202,6 +202,6 @@ test.describe('Subscription Flow', () => {
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
       'Unsubscribe Failed',
     );
-    await expect(page.locator('text=Token not found')).toBeVisible();
+    await expect(page.locator('text=Subscription not found')).toBeVisible();
   });
 });
