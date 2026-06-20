@@ -27,7 +27,7 @@ describe('resolveDomainErrorHttpStatus', () => {
     [new InvalidEmailError('bad'), 400],
     [new RepoNotFoundError('owner/repo'), 404],
     [new AlreadySubscribedError('a@b.com', 'owner/repo'), 409],
-    [new SubscriptionNotFoundError(1), 404],
+    [new SubscriptionNotFoundError(), 404],
     [new TokenNotFoundError(), 404],
     [new InvalidTokenError(), 400],
     [new WrongTokenScopeError('subscribe', 'unsubscribe'), 400],

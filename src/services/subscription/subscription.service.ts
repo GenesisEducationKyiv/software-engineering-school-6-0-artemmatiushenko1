@@ -102,7 +102,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     const subscription = await this.subscriptionRepo.findById(subscriptionId);
 
     if (!subscription) {
-      throw new SubscriptionNotFoundError(subscriptionId);
+      throw new SubscriptionNotFoundError();
     }
 
     const newTag = ReleaseTag.fromString(tag);
@@ -125,7 +125,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     );
 
     if (!subscription) {
-      throw new SubscriptionNotFoundError(tokenValue);
+      throw new SubscriptionNotFoundError();
     }
 
     // TODO: use Clock
@@ -161,7 +161,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     );
 
     if (!subscription) {
-      throw new SubscriptionNotFoundError(tokenValue);
+      throw new SubscriptionNotFoundError();
     }
 
     const now = new Date();
