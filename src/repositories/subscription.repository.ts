@@ -64,10 +64,11 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     }
   }
 
-  async findBySubscribeToken(
+  async findByToken(
     tokenValue: string,
+    scope: SubscriptionTokenScope,
   ): Promise<DomainSubscription | null> {
-    const tokenRow = await this.findToken(tokenValue, 'subscribe');
+    const tokenRow = await this.findToken(tokenValue, scope);
     if (!tokenRow) {
       return null;
     }

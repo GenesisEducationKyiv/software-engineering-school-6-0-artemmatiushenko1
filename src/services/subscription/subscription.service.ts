@@ -10,8 +10,6 @@ import type { SubscriptionTokenManager } from './db-subscription-token-manager.j
 import {
   RepoNotFoundError,
   AlreadySubscribedError,
-  TokenNotFoundError,
-  InvalidTokenError,
   SubscriptionNotFoundError,
 } from '../../domain/errors.js';
 import { Email } from '../../domain/subscription/email.js';
@@ -113,8 +111,10 @@ export class SubscriptionServiceImpl implements SubscriptionService {
   }
 
   async confirmSubscription(tokenValue: string): Promise<void> {
-    const subscription =
-      await this.subscriptionRepo.findBySubscribeToken(tokenValue);
+    const subscription = await this.subscriptionRepo.findByToken(
+      tokenValue,
+      'subscribe',
+    );
 
     if (!subscription) {
       throw new SubscriptionNotFoundError(tokenValue);
@@ -147,39 +147,24 @@ export class SubscriptionServiceImpl implements SubscriptionService {
   }
 
   async unsubscribe(tokenValue: string): Promise<void> {
-    const token = await this.tokenManager.getTokenByValue(tokenValue);
-
-    if (!token) {
-      throw new TokenNotFoundError();
-    }
-
-    const isValid = await this.tokenManager.validateToken(token, 'unsubscribe');
-    if (!isValid) {
-      throw new InvalidTokenError();
-    }
-
-    const sub = await this.subscriptionRepo.findSubscriptionById(
-      token.subscriptionId,
+    const subscription = await this.subscriptionRepo.findByToken(
+      tokenValue,
+      'unsubscribe',
     );
 
-    if (!sub) {
-      throw new SubscriptionNotFoundError(token.subscriptionId);
+    if (!subscription) {
+      throw new SubscriptionNotFoundError(tokenValue);
     }
 
-    // const domainSubscription = this.mapper.toDomain(sub, {
-    //   unsubscribe: token,
-    // });
-    // const now = new Date();
-
-    // domainSubscription.unsubscribe(tokenValue, now);
+    const now = new Date();
+    subscription.unsubscribe(tokenValue, now);
 
     await this.transactionManager.run(async (tx) => {
-      await this.subscriptionRepo.deleteSubscription(token.subscriptionId, tx);
-      await this.tokenManager.invalidateToken(tokenValue, tx);
+      await this.subscriptionRepo.save(subscription, tx);
     });
 
     this.logger.info('User unsubscribed', {
-      subscriptionId: token.subscriptionId,
+      subscriptionId: subscription.id,
     });
   }
 }

@@ -537,7 +537,7 @@ describe('Subscription Routes Integration with PGlite', () => {
   });
 
   describe('GET /api/unsubscribe/:token', () => {
-    it('should return 200 and delete the subscription for a valid token', async () => {
+    it('should return 200 and persist unsubscribed subscription for a valid token', async () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
@@ -549,6 +549,13 @@ describe('Subscription Routes Integration with PGlite', () => {
         .returning();
 
       assert(subscription);
+
+      await db.insert(schema.subscriptionTokens).values({
+        token: 'valid-confirm-token',
+        subscriptionId: subscription.id,
+        scope: 'subscribe',
+        expiresAt: new Date('2026-01-01T13:00:00Z'),
+      });
 
       const tokenValue = 'valid-unsubscribe-token';
       await db.insert(schema.subscriptionTokens).values({
@@ -568,18 +575,14 @@ describe('Subscription Routes Integration with PGlite', () => {
         message: 'Unsubscribed successfully',
       });
 
-      const deletedSubscription = await db.query.subscriptions.findFirst({
+      const updatedSubscription = await db.query.subscriptions.findFirst({
         where: (subs, { eq }) => eq(subs.id, subscription.id),
       });
-      expect(deletedSubscription).toBeUndefined();
-
-      const tokenExists = await db.query.subscriptionTokens.findFirst({
-        where: (tokens, { eq }) => eq(tokens.token, tokenValue),
-      });
-      expect(tokenExists).toBeUndefined();
+      assert(updatedSubscription);
+      expect(updatedSubscription.confirmed).toBe(false);
     });
 
-    it('should return 404 and TOKEN_NOT_FOUND when reusing an already consumed token', async () => {
+    it('should return 400 and ILLEGAL_STATE_TRANSITION when reusing an already consumed token', async () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
@@ -591,6 +594,13 @@ describe('Subscription Routes Integration with PGlite', () => {
         .returning();
 
       assert(subscription);
+
+      await db.insert(schema.subscriptionTokens).values({
+        token: 'valid-confirm-token',
+        subscriptionId: subscription.id,
+        scope: 'subscribe',
+        expiresAt: new Date('2026-01-01T13:00:00Z'),
+      });
 
       const tokenValue = 'reused-unsubscribe-token';
       await db.insert(schema.subscriptionTokens).values({
@@ -612,15 +622,15 @@ describe('Subscription Routes Integration with PGlite', () => {
         url: `/api/unsubscribe/${tokenValue}`,
       });
 
-      expect(secondResponse.statusCode).toBe(404);
+      expect(secondResponse.statusCode).toBe(400);
       const body = parseResponse(
         secondResponse.body,
         CommonErrorResponseDtoSchema,
       );
-      expect(body.code).toBe('TOKEN_NOT_FOUND');
+      expect(body.code).toBe('ILLEGAL_STATE_TRANSITION');
     });
 
-    it('should return 404 and TOKEN_NOT_FOUND when token does not exist', async () => {
+    it('should return 404 and SUBSCRIPTION_NOT_FOUND when token does not exist', async () => {
       const response = await app.fastify.inject({
         method: 'GET',
         url: '/api/unsubscribe/nonexistent-token',
@@ -628,10 +638,10 @@ describe('Subscription Routes Integration with PGlite', () => {
 
       expect(response.statusCode).toBe(404);
       const body = parseResponse(response.body, CommonErrorResponseDtoSchema);
-      expect(body.code).toBe('TOKEN_NOT_FOUND');
+      expect(body.code).toBe('SUBSCRIPTION_NOT_FOUND');
     });
 
-    it('should return 400 and INVALID_TOKEN when token is expired', async () => {
+    it('should return 400 and TOKEN_EXPIRED when token is expired', async () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
@@ -643,6 +653,13 @@ describe('Subscription Routes Integration with PGlite', () => {
         .returning();
 
       assert(subscription);
+
+      await db.insert(schema.subscriptionTokens).values({
+        token: 'valid-confirm-token',
+        subscriptionId: subscription.id,
+        scope: 'subscribe',
+        expiresAt: new Date('2026-01-01T13:00:00Z'),
+      });
 
       const tokenValue = 'expired-unsubscribe-token';
       await db.insert(schema.subscriptionTokens).values({
@@ -659,16 +676,15 @@ describe('Subscription Routes Integration with PGlite', () => {
 
       expect(response.statusCode).toBe(400);
       const body = parseResponse(response.body, CommonErrorResponseDtoSchema);
-      expect(body.code).toBe('INVALID_TOKEN');
+      expect(body.code).toBe('TOKEN_EXPIRED');
 
-      // The subscription should still exist since the token was invalid
       const existingSubscription = await db.query.subscriptions.findFirst({
         where: (subs, { eq }) => eq(subs.id, subscription.id),
       });
-      expect(existingSubscription).toBeDefined();
+      expect(existingSubscription?.confirmed).toBe(true);
     });
 
-    it('should return 400 and INVALID_TOKEN when token has wrong scope', async () => {
+    it('should return 404 and SUBSCRIPTION_NOT_FOUND when token has wrong scope', async () => {
       const [subscription] = await db
         .insert(schema.subscriptions)
         .values({
@@ -694,9 +710,9 @@ describe('Subscription Routes Integration with PGlite', () => {
         url: `/api/unsubscribe/${tokenValue}`,
       });
 
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(404);
       const body = parseResponse(response.body, CommonErrorResponseDtoSchema);
-      expect(body.code).toBe('INVALID_TOKEN');
+      expect(body.code).toBe('SUBSCRIPTION_NOT_FOUND');
     });
   });
 });

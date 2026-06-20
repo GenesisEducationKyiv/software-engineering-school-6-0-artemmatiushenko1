@@ -4,10 +4,7 @@ import type { SubscriptionRepository } from '../../domain/subscription.repositor
 import type { GithubClient } from '../../domain/github.js';
 import type { NotificationService } from '../../domain/notification.js';
 import type { SubscriptionTokenManager } from './db-subscription-token-manager.js';
-import type {
-  Subscription,
-  SubscriptionToken,
-} from '../../domain/subscription.js';
+import type { Subscription } from '../../domain/subscription.js';
 import {
   InvalidRepoFormatError,
   InvalidEmailError,
@@ -299,11 +296,14 @@ describe('SubscriptionServiceImpl', () => {
       });
 
       tokenGeneratorMock.generate.mockReturnValue(unsubscribeTokenValue);
-      repoMock.findBySubscribeToken.mockResolvedValue(subscription);
+      repoMock.findByToken.mockResolvedValue(subscription);
 
       await subscriptionService.confirmSubscription(tokenValue);
 
-      expect(repoMock.findBySubscribeToken).toHaveBeenCalledWith(tokenValue);
+      expect(repoMock.findByToken).toHaveBeenCalledWith(
+        tokenValue,
+        'subscribe',
+      );
       expect(tokenGeneratorMock.generate).toHaveBeenCalled();
       expect(repoMock.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -323,7 +323,7 @@ describe('SubscriptionServiceImpl', () => {
     });
 
     it('should throw SubscriptionNotFoundError when token cannot be resolved', async () => {
-      repoMock.findBySubscribeToken.mockResolvedValue(null);
+      repoMock.findByToken.mockResolvedValue(null);
 
       await expect(
         subscriptionService.confirmSubscription('non-existent'),
@@ -333,7 +333,7 @@ describe('SubscriptionServiceImpl', () => {
     it('should throw SubscriptionNotFoundError when token has wrong scope', async () => {
       const tokenValue = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
-      repoMock.findBySubscribeToken.mockResolvedValue(null);
+      repoMock.findByToken.mockResolvedValue(null);
 
       await expect(
         subscriptionService.confirmSubscription(tokenValue),
@@ -356,7 +356,7 @@ describe('SubscriptionServiceImpl', () => {
       tokenGeneratorMock.generate.mockReturnValue(
         '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
       );
-      repoMock.findBySubscribeToken.mockResolvedValue(subscription);
+      repoMock.findByToken.mockResolvedValue(subscription);
 
       await expect(
         subscriptionService.confirmSubscription(tokenValue),
@@ -366,44 +366,53 @@ describe('SubscriptionServiceImpl', () => {
 
   describe('unsubscribe', () => {
     it('should successfully unsubscribe', async () => {
-      const tokenValue = 'unsub-token';
-      const token: SubscriptionToken = {
-        id: 1,
-        token: tokenValue,
-        subscriptionId: '10',
-        scope: 'unsubscribe',
-        expiresAt: new Date(Date.now() + 60_000),
-        createdAt: new Date(),
-      };
-      const sub: Subscription = {
-        id: '10',
-        email: 'test@example.com',
-        repo: 'owner/repo',
-        confirmed: true,
-        lastSeenTag: null,
-        createdAt: new Date(),
-      };
+      const tokenValue = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+      const subscription = createConfirmedDomainSubscription({ id: '10' });
 
-      tokenManagerMock.getTokenByValue.mockResolvedValue(token);
-      tokenManagerMock.validateToken.mockResolvedValue(true);
-      repoMock.findSubscriptionById.mockResolvedValue(sub);
+      repoMock.findByToken.mockResolvedValue(subscription);
 
       await subscriptionService.unsubscribe(tokenValue);
 
-      expect(tokenManagerMock.getTokenByValue).toHaveBeenCalledWith(tokenValue);
-      expect(tokenManagerMock.validateToken).toHaveBeenCalledWith(
-        token,
+      expect(repoMock.findByToken).toHaveBeenCalledWith(
+        tokenValue,
         'unsubscribe',
       );
-      expect(repoMock.deleteSubscription).toHaveBeenCalledWith(
-        '10',
-        expect.anything(),
-      );
-      expect(tokenManagerMock.invalidateToken).toHaveBeenCalledWith(
-        tokenValue,
+      expect(repoMock.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: '10',
+          status: 'unsubscribed',
+        }),
         expect.anything(),
       );
       expect(loggerMock.info).toHaveBeenCalled();
+    });
+
+    it('should throw SubscriptionNotFoundError when token cannot be resolved', async () => {
+      repoMock.findByToken.mockResolvedValue(null);
+
+      await expect(
+        subscriptionService.unsubscribe('non-existent'),
+      ).rejects.toThrow(SubscriptionNotFoundError);
+    });
+
+    it('should throw TokenExpiredError if token is expired', async () => {
+      const tokenValue = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+      const subscription = createPendingDomainSubscription({ id: '10' });
+      subscription.confirm(
+        '550e8400-e29b-41d4-a716-446655440000',
+        new Date(),
+        ConfirmationToken.hydrate({
+          value: tokenValue,
+          scope: 'unsubscribe',
+          expiresAt: new Date(Date.now() - 1_000),
+        }),
+      );
+
+      repoMock.findByToken.mockResolvedValue(subscription);
+
+      await expect(subscriptionService.unsubscribe(tokenValue)).rejects.toThrow(
+        TokenExpiredError,
+      );
     });
   });
 });

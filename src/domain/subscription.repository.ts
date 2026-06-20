@@ -14,7 +14,10 @@ export interface SubscriptionRepository {
     repoPath: RepoPath,
   ): Promise<Subscription | null>;
 
-  findBySubscribeToken(tokenValue: string): Promise<Subscription | null>;
+  findByToken(
+    tokenValue: string,
+    scope: SubscriptionTokenScope,
+  ): Promise<Subscription | null>;
 
   save(subscription: Subscription, tx?: DomainTransaction): Promise<void>;
 
