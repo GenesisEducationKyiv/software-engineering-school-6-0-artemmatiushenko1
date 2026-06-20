@@ -360,7 +360,7 @@ describe('SubscriptionServiceImpl', () => {
       tokenGeneratorMock.generate.mockReturnValue(unsubscribeTokenValue);
       repoMock.findByToken.mockResolvedValue(subscription);
 
-      await subscriptionService.confirmSubscription(tokenValue);
+      await subscriptionService.confirm(tokenValue);
 
       expect(repoMock.findByToken).toHaveBeenCalledWith(
         tokenValue,
@@ -387,9 +387,9 @@ describe('SubscriptionServiceImpl', () => {
     it('should throw SubscriptionNotFoundError when token cannot be resolved', async () => {
       repoMock.findByToken.mockResolvedValue(null);
 
-      await expect(
-        subscriptionService.confirmSubscription('non-existent'),
-      ).rejects.toThrow(SubscriptionNotFoundError);
+      await expect(subscriptionService.confirm('non-existent')).rejects.toThrow(
+        SubscriptionNotFoundError,
+      );
     });
 
     it('should throw SubscriptionNotFoundError when token has wrong scope', async () => {
@@ -397,9 +397,9 @@ describe('SubscriptionServiceImpl', () => {
 
       repoMock.findByToken.mockResolvedValue(null);
 
-      await expect(
-        subscriptionService.confirmSubscription(tokenValue),
-      ).rejects.toThrow(SubscriptionNotFoundError);
+      await expect(subscriptionService.confirm(tokenValue)).rejects.toThrow(
+        SubscriptionNotFoundError,
+      );
     });
 
     it('should throw TokenExpiredError if token is expired', async () => {
@@ -420,9 +420,9 @@ describe('SubscriptionServiceImpl', () => {
       );
       repoMock.findByToken.mockResolvedValue(subscription);
 
-      await expect(
-        subscriptionService.confirmSubscription(tokenValue),
-      ).rejects.toThrow(TokenExpiredError);
+      await expect(subscriptionService.confirm(tokenValue)).rejects.toThrow(
+        TokenExpiredError,
+      );
     });
   });
 

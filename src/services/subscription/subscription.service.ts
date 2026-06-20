@@ -123,7 +123,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     });
   }
 
-  async confirmSubscription(tokenValue: string): Promise<void> {
+  async confirm(tokenValue: string): Promise<void> {
     const subscription = await this.subscriptionRepo.findByToken(
       tokenValue,
       'subscribe',

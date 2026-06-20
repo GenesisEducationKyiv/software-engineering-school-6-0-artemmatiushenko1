@@ -9,7 +9,7 @@ export interface SubscriptionService {
 
   observeNewRelease(subscriptionId: string, tag: string): Promise<void>;
 
-  confirmSubscription(tokenValue: string): Promise<void>;
+  confirm(tokenValue: string): Promise<void>;
 
   unsubscribe(tokenValue: string): Promise<void>;
 }

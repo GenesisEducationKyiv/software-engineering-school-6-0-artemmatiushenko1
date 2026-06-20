@@ -50,7 +50,7 @@ export const subscriptionRoutes: FastifyPluginCallback<
     '/confirm/:token',
     async (request, reply) => {
       const { token = '' } = request.params;
-      await subscriptionService.confirmSubscription(token);
+      await subscriptionService.confirm(token);
 
       return reply.status(200).send(
         CommonSuccessResponseDtoSchema.parse({
