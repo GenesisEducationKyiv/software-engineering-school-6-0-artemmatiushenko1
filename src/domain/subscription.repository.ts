@@ -22,10 +22,4 @@ export interface SubscriptionRepository {
   findConfirmedSubscriptionsByEmail(email: Email): Promise<Subscription[]>;
 
   findAllConfirmedSubscriptions(): Promise<Subscription[]>;
-
-  updateLastSeenTag(
-    id: string,
-    tag: string,
-    tx?: DomainTransaction,
-  ): Promise<void>;
 }

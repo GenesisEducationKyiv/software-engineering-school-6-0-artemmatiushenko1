@@ -212,17 +212,6 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     );
   }
 
-  async updateLastSeenTag(
-    id: string,
-    tag: string,
-    tx?: DomainTransaction,
-  ): Promise<void> {
-    await this.getDb(tx)
-      .update(subscriptions)
-      .set({ lastSeenTag: tag })
-      .where(eq(subscriptions.id, id));
-  }
-
   private async createToken(
     data: {
       subscriptionId: string;
