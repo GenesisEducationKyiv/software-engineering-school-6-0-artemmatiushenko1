@@ -25,10 +25,6 @@ export interface SubscriptionService {
 
   updateLastSeenTag(id: string, tag: string): Promise<void>;
 
-  getUnsubscribeToken(
-    subscriptionId: string,
-  ): Promise<SubscriptionToken | null>;
-
   confirmSubscription(tokenValue: string): Promise<void>;
 
   unsubscribe(tokenValue: string): Promise<void>;

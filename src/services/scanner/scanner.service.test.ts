@@ -13,6 +13,8 @@ import { RepoPath } from '../../domain/subscription/repo-path.js';
 import { ReleaseTag } from '../../domain/subscription/release-tag.js';
 import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
 
+const UNSUBSCRIBE_TOKEN = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+
 const createConfirmedDomainSubscription = (overrides: {
   id?: string;
   email?: string;
@@ -34,7 +36,7 @@ const createConfirmedDomainSubscription = (overrides: {
     '550e8400-e29b-41d4-a716-446655440000',
     new Date(),
     ConfirmationToken.hydrate({
-      value: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+      value: UNSUBSCRIBE_TOKEN,
       scope: 'unsubscribe',
       expiresAt: new Date(Date.now() + 60_000),
     }),
@@ -57,15 +59,6 @@ describe('ScannerService', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-
-    subscriptionServiceMock.getUnsubscribeToken.mockResolvedValue({
-      id: 1,
-      token: 'unsub-token',
-      subscriptionId: '1',
-      scope: 'unsubscribe',
-      expiresAt: new Date(),
-      createdAt: new Date(),
-    });
 
     scannerService = new ScannerService(
       subscriptionServiceMock,
@@ -100,7 +93,7 @@ describe('ScannerService', () => {
         repo: sub.repoPath.toString(),
         tag: latestRelease.tag,
         releaseName: latestRelease.name,
-        unsubscribeToken: 'unsub-token',
+        unsubscribeToken: UNSUBSCRIBE_TOKEN,
       });
       expect(subscriptionServiceMock.updateLastSeenTag).toHaveBeenCalledWith(
         '1',
@@ -146,7 +139,7 @@ describe('ScannerService', () => {
         repo: sub2.repoPath.toString(),
         tag: latestRelease.tag,
         releaseName: latestRelease.name,
-        unsubscribeToken: 'unsub-token',
+        unsubscribeToken: UNSUBSCRIBE_TOKEN,
       });
     });
 

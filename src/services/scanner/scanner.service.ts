@@ -4,10 +4,7 @@ import type { SubscriptionService } from '../../domain/subscription.js';
 import { parseRepoPath } from '../../utils/repo.utils.js';
 import type { NotificationService } from '../../domain/notification.js';
 import type { Logger } from '../../domain/logger.js';
-import {
-  GithubRateLimitError,
-  TokenNotFoundError,
-} from '../../domain/errors.js';
+import { GithubRateLimitError } from '../../domain/errors.js';
 import type { Metrics } from '../../domain/metrics.js';
 import { msToSeconds } from '../../utils/time.utils.js';
 
@@ -16,6 +13,7 @@ type ScannableSubscription = {
   email: string;
   repo: string;
   lastSeenTag: string | null;
+  unsubscribeToken: string;
 };
 
 export class ScannerService {
@@ -97,7 +95,7 @@ export class ScannerService {
         repo: sub.repo,
         tag: latestRelease.tag,
         releaseName: latestRelease.name,
-        unsubscribeToken: await this.resolveUnsubscribeToken(sub.id),
+        unsubscribeToken: sub.unsubscribeToken,
       });
 
       await this.subscriptionService.updateLastSeenTag(
@@ -115,26 +113,16 @@ export class ScannerService {
   private toScannableFromDomain(
     sub: DomainSubscription,
   ): ScannableSubscription {
+    if (!sub.unsubscribeToken) {
+      throw new Error('Unsubscribe token not found');
+    }
+
     return {
       id: sub.id,
       email: sub.email.email,
       repo: sub.repoPath.toString(),
       lastSeenTag: sub.lastSeenTag?.value ?? null,
+      unsubscribeToken: sub.unsubscribeToken?.value,
     };
-  }
-
-  private async resolveUnsubscribeToken(
-    subscriptionId: string,
-  ): Promise<string> {
-    const token =
-      await this.subscriptionService.getUnsubscribeToken(subscriptionId);
-
-    if (!token) {
-      throw new TokenNotFoundError(
-        `No unsubscribe token found for subscription ${subscriptionId}`,
-      );
-    }
-
-    return token.token;
   }
 }

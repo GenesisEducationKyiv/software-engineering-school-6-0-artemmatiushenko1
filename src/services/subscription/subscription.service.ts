@@ -4,7 +4,6 @@ import type { NotificationService } from '../../domain/notification.js';
 import type {
   Subscription,
   SubscriptionService,
-  SubscriptionToken,
 } from '../../domain/subscription.js';
 import { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
 import type { SubscriptionTokenManager } from './db-subscription-token-manager.js';
@@ -111,15 +110,6 @@ export class SubscriptionServiceImpl implements SubscriptionService {
   async updateLastSeenTag(id: string, tag: string): Promise<void> {
     const releaseTag = ReleaseTag.fromString(tag);
     await this.subscriptionRepo.updateLastSeenTag(id, releaseTag.value);
-  }
-
-  async getUnsubscribeToken(
-    subscriptionId: string,
-  ): Promise<SubscriptionToken | null> {
-    return this.tokenManager.getTokenBySubscriptionIdAndScope(
-      subscriptionId,
-      'unsubscribe',
-    );
   }
 
   async confirmSubscription(tokenValue: string): Promise<void> {
