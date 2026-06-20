@@ -4,15 +4,13 @@ import type {
 } from '../db/types.js';
 import { subscriptions, subscriptionTokens } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
-import {
-  SubscriptionSchema,
-  SubscriptionTokenSchema,
-} from '../domain/subscription.js';
 import type {
   Subscription,
   SubscriptionToken,
   SubscriptionTokenScope,
 } from '../domain/subscription.js';
+import { SubscriptionRowSchema } from '../services/subscription/subscription-row.mapper.js';
+import { SubscriptionTokenRowSchema } from '../services/subscription/subscription-token-row.mapper.js';
 import type { SubscriptionRepository } from '../domain/subscription.repository.js';
 import type { DomainTransaction } from '../domain/transaction-manager.js';
 
@@ -36,7 +34,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       })
       .returning();
 
-    return SubscriptionSchema.parse(result);
+    return SubscriptionRowSchema.parse(result);
   }
 
   async findByEmailAndRepo(
@@ -49,7 +47,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       .where(and(eq(subscriptions.email, email), eq(subscriptions.repo, repo)))
       .limit(1);
 
-    return result ? SubscriptionSchema.parse(result) : null;
+    return result ? SubscriptionRowSchema.parse(result) : null;
   }
 
   async findSubscriptionById(id: number): Promise<Subscription | null> {
@@ -59,7 +57,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       .where(eq(subscriptions.id, id))
       .limit(1);
 
-    return result ? SubscriptionSchema.parse(result) : null;
+    return result ? SubscriptionRowSchema.parse(result) : null;
   }
 
   async findConfirmedSubscriptionsByEmail(
@@ -72,7 +70,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
         and(eq(subscriptions.email, email), eq(subscriptions.confirmed, true)),
       );
 
-    return results.map((r) => SubscriptionSchema.parse(r));
+    return results.map((r) => SubscriptionRowSchema.parse(r));
   }
 
   async findAllConfirmedSubscriptions(): Promise<Subscription[]> {
@@ -81,7 +79,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       .from(subscriptions)
       .where(eq(subscriptions.confirmed, true));
 
-    return results.map((r) => SubscriptionSchema.parse(r));
+    return results.map((r) => SubscriptionRowSchema.parse(r));
   }
 
   async findSubscriptionsByEmail(email: string): Promise<Subscription[]> {
@@ -90,7 +88,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       .from(subscriptions)
       .where(eq(subscriptions.email, email));
 
-    return results.map((r) => SubscriptionSchema.parse(r));
+    return results.map((r) => SubscriptionRowSchema.parse(r));
   }
 
   async confirmSubscription(id: number, tx?: DomainTransaction): Promise<void> {
@@ -134,7 +132,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       })
       .returning();
 
-    return SubscriptionTokenSchema.parse(result);
+    return SubscriptionTokenRowSchema.parse(result);
   }
 
   async findToken(
@@ -154,7 +152,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
 
     if (!result) return null;
 
-    return SubscriptionTokenSchema.parse(result);
+    return SubscriptionTokenRowSchema.parse(result);
   }
 
   async findTokenByValue(token: string): Promise<SubscriptionToken | null> {
@@ -166,7 +164,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
 
     if (!result) return null;
 
-    return SubscriptionTokenSchema.parse(result);
+    return SubscriptionTokenRowSchema.parse(result);
   }
 
   async findTokenBySubscriptionIdAndScope(
@@ -186,7 +184,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
 
     if (!result) return null;
 
-    return SubscriptionTokenSchema.parse(result);
+    return SubscriptionTokenRowSchema.parse(result);
   }
 
   async deleteToken(token: string, tx?: DomainTransaction): Promise<void> {

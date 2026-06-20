@@ -17,7 +17,7 @@ export class Subscription {
     private unsubscribeToken: ConfirmationToken | null,
   ) {}
 
-  static hydrate(params: {
+  static rehydrate(params: {
     id: string;
     email: Email;
     repoPath: RepoPath;

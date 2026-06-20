@@ -22,10 +22,10 @@ import type {
   TransactionManager,
   DomainTransaction,
 } from '../../domain/transaction-manager.js';
-import { SubscriptionMapper } from './subscription.mapper.js';
+import { SubscriptionRowMapper } from './subscription-row.mapper.js';
 
 export class SubscriptionServiceImpl implements SubscriptionService {
-  private readonly mapper = new SubscriptionMapper();
+  private readonly mapper = new SubscriptionRowMapper();
 
   constructor(
     private subscriptionRepo: SubscriptionRepository,
@@ -202,7 +202,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     domainSubscription.confirm(
       tokenValue,
       now,
-      this.mapper.toDomainToken(unsubscribeToken),
+      this.mapper.tokenMapper.toDomain(unsubscribeToken),
     );
 
     await this.transactionManager.run(async (tx) => {

@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import type { SubscriptionRow } from '../services/subscription/subscription-row.mapper.js';
+import type {
+  SubscriptionTokenRow,
+  SubscriptionTokenScope,
+} from '../services/subscription/subscription-token-row.mapper.js';
 
 export const RepoPathSchema = z
   .string()
@@ -6,35 +11,9 @@ export const RepoPathSchema = z
     message: "Invalid repository format. Expected 'owner/repo'",
   });
 
-export const SubscriptionSchema = z.object({
-  id: z.number().int(),
-  email: z.email(),
-  repo: z.string(),
-  confirmed: z.boolean(),
-  lastSeenTag: z.string().nullable(),
-  createdAt: z.date(),
-});
-
-export type Subscription = z.infer<typeof SubscriptionSchema>;
-
-export const SubscriptionTokenScopeSchema = z.enum([
-  'subscribe',
-  'unsubscribe',
-]);
-export type SubscriptionTokenScope = z.infer<
-  typeof SubscriptionTokenScopeSchema
->;
-
-export const SubscriptionTokenSchema = z.object({
-  id: z.number().int(),
-  token: z.string(),
-  subscriptionId: z.number().int(),
-  scope: SubscriptionTokenScopeSchema,
-  expiresAt: z.date(),
-  createdAt: z.date(),
-});
-
-export type SubscriptionToken = z.infer<typeof SubscriptionTokenSchema>;
+export type Subscription = SubscriptionRow;
+export type SubscriptionToken = SubscriptionTokenRow;
+export type { SubscriptionTokenScope };
 
 export interface SubscriptionService {
   subscribe(email: string, repoPath: string): Promise<Subscription>;

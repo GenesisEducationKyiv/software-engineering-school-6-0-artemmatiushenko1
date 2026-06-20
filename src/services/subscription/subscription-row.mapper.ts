@@ -1,19 +1,33 @@
-import type {
-  Subscription as SubscriptionRow,
-  SubscriptionToken as SubscriptionTokenRow,
-} from '../../domain/subscription.js';
+import { z } from 'zod';
 import { Subscription } from '../../domain/subscription/subscription.js';
 import { Email } from '../../domain/subscription/email.js';
 import { RepoPath } from '../../domain/subscription/repo-path.js';
 import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
 import { ReleaseTag } from '../../domain/subscription/release-tag.js';
+import {
+  SubscriptionTokenRowMapper,
+  type SubscriptionTokenRow,
+} from './subscription-token-row.mapper.js';
+
+export const SubscriptionRowSchema = z.object({
+  id: z.number().int(),
+  email: z.email(),
+  repo: z.string(),
+  confirmed: z.boolean(),
+  lastSeenTag: z.string().nullable(),
+  createdAt: z.date(),
+});
+
+export type SubscriptionRow = z.infer<typeof SubscriptionRowSchema>;
 
 export type SubscriptionMapperTokens = {
   subscribe?: SubscriptionTokenRow;
   unsubscribe?: SubscriptionTokenRow | null;
 };
 
-export class SubscriptionMapper {
+export class SubscriptionRowMapper {
+  readonly tokenMapper = new SubscriptionTokenRowMapper();
+
   toDomain(
     row: SubscriptionRow,
     tokens: SubscriptionMapperTokens = {},
@@ -28,7 +42,7 @@ export class SubscriptionMapper {
     }
 
     const confirmationToken = subscribe
-      ? this.toDomainToken(subscribe)
+      ? this.tokenMapper.toDomain(subscribe)
       : ConfirmationToken.hydrate({
           value: unsubscribe!.token,
           scope: 'subscribe',
@@ -36,7 +50,7 @@ export class SubscriptionMapper {
         });
 
     const unsubscribeToken =
-      !subscribe && unsubscribe ? this.toDomainToken(unsubscribe) : null;
+      !subscribe && unsubscribe ? this.tokenMapper.toDomain(unsubscribe) : null;
 
     const status =
       !subscribe && unsubscribe
@@ -45,14 +59,18 @@ export class SubscriptionMapper {
           ? 'confirmed'
           : 'pending';
 
-    return Subscription.hydrate({
+    const email = Email.fromString(row.email);
+    const repoPath = RepoPath.fromString(row.repo);
+    const lastSeenTag = row.lastSeenTag
+      ? ReleaseTag.fromString(row.lastSeenTag)
+      : null;
+
+    return Subscription.rehydrate({
       id: String(row.id),
-      email: Email.fromString(row.email),
-      repoPath: RepoPath.fromString(row.repo),
+      email,
+      repoPath,
       status,
-      lastSeenTag: row.lastSeenTag
-        ? ReleaseTag.fromString(row.lastSeenTag)
-        : null,
+      lastSeenTag,
       confirmationToken,
       unsubscribeToken,
     });
@@ -65,29 +83,6 @@ export class SubscriptionMapper {
       repo: subscription.repoPath.toString(),
       confirmed: subscription.status === 'confirmed',
       lastSeenTag: subscription.lastSeenTag?.value ?? null,
-      createdAt,
-    };
-  }
-
-  toDomainToken(row: SubscriptionTokenRow): ConfirmationToken {
-    return ConfirmationToken.hydrate({
-      value: row.token,
-      scope: row.scope,
-      expiresAt: row.expiresAt,
-    });
-  }
-
-  toRowToken(
-    token: ConfirmationToken,
-    subscriptionId: number,
-    createdAt: Date,
-  ): SubscriptionTokenRow {
-    return {
-      id: 0,
-      token: token.value,
-      subscriptionId,
-      scope: token.scope,
-      expiresAt: token.expiresAt,
       createdAt,
     };
   }
