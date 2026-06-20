@@ -87,6 +87,59 @@ describe('Subscription', () => {
     });
   });
 
+  describe('rehydrate', () => {
+    it('should restore a pending subscription with the expected properties', () => {
+      const confirmationToken = issueConfirmToken();
+
+      const subscription = Subscription.rehydrate({
+        id: SUBSCRIPTION_ID,
+        email: EMAIL,
+        repoPath: REPO_PATH,
+        status: 'pending',
+        lastSeenTag: null,
+        confirmationToken,
+        unsubscribeToken: null,
+      });
+
+      expect(subscription.id).toBe(SUBSCRIPTION_ID);
+      expect(subscription.email).toBe(EMAIL);
+      expect(subscription.repoPath).toBe(REPO_PATH);
+      expect(subscription.status).toBe('pending');
+      expect(subscription.lastSeenTag).toBeNull();
+    });
+
+    it('should restore a confirmed subscription with an unsubscribe token', () => {
+      const lastSeenTag = ReleaseTag.fromString('v1.0.0');
+
+      const subscription = Subscription.rehydrate({
+        id: SUBSCRIPTION_ID,
+        email: EMAIL,
+        repoPath: REPO_PATH,
+        status: 'confirmed',
+        lastSeenTag,
+        confirmationToken: issueConfirmToken(),
+        unsubscribeToken: issueUnsubscribeToken(),
+      });
+
+      expect(subscription.status).toBe('confirmed');
+      expect(subscription.lastSeenTag?.equals(lastSeenTag)).toBe(true);
+    });
+
+    it('should throw when confirmed subscription has no unsubscribe token', () => {
+      expect(() =>
+        Subscription.rehydrate({
+          id: SUBSCRIPTION_ID,
+          email: EMAIL,
+          repoPath: REPO_PATH,
+          status: 'confirmed',
+          lastSeenTag: null,
+          confirmationToken: issueConfirmToken(),
+          unsubscribeToken: null,
+        }),
+      ).toThrow('Unsubscribe token is required for confirmed subscriptions');
+    });
+  });
+
   describe('confirm', () => {
     it('should confirm a pending subscription', () => {
       const subscription = requestSubscription();

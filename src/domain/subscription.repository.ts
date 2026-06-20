@@ -1,5 +1,8 @@
+import type { Subscription } from './subscription/subscription.js';
+import type { Email } from './subscription/email.js';
+import type { RepoPath } from './subscription/repo-path.js';
 import type {
-  Subscription,
+  Subscription as SubscriptionRow,
   SubscriptionToken,
   SubscriptionTokenScope,
 } from './subscription.js';
@@ -9,17 +12,20 @@ export interface SubscriptionRepository {
   createSubscription(
     data: { email: string; repo: string },
     tx?: DomainTransaction,
-  ): Promise<Subscription>;
+  ): Promise<SubscriptionRow>;
 
-  findByEmailAndRepo(email: string, repo: string): Promise<Subscription | null>;
+  findByEmailAndRepo(
+    email: Email,
+    repoPath: RepoPath,
+  ): Promise<Subscription | null>;
 
-  findSubscriptionById(id: number): Promise<Subscription | null>;
+  findSubscriptionById(id: number): Promise<SubscriptionRow | null>;
 
-  findConfirmedSubscriptionsByEmail(email: string): Promise<Subscription[]>;
+  findConfirmedSubscriptionsByEmail(email: string): Promise<SubscriptionRow[]>;
 
-  findAllConfirmedSubscriptions(): Promise<Subscription[]>;
+  findAllConfirmedSubscriptions(): Promise<SubscriptionRow[]>;
 
-  findSubscriptionsByEmail(email: string): Promise<Subscription[]>;
+  findSubscriptionsByEmail(email: string): Promise<SubscriptionRow[]>;
 
   confirmSubscription(id: number, tx?: DomainTransaction): Promise<void>;
 

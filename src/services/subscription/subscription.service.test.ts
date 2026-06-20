@@ -23,6 +23,41 @@ import type {
   DomainTransaction,
 } from '../../domain/transaction-manager.js';
 import { mock } from 'vitest-mock-extended';
+import { Email } from '../../domain/subscription/email.js';
+import { RepoPath } from '../../domain/subscription/repo-path.js';
+import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
+import { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
+
+const createPendingDomainSubscription = (
+  overrides: { id?: string; email?: string; repo?: string } = {},
+) =>
+  DomainSubscription.request(
+    overrides.id ?? '1',
+    Email.fromString(overrides.email ?? 'test@example.com'),
+    RepoPath.fromString(overrides.repo ?? 'owner/repo'),
+    ConfirmationToken.hydrate({
+      value: '550e8400-e29b-41d4-a716-446655440000',
+      scope: 'subscribe',
+      expiresAt: new Date(Date.now() + 60_000),
+    }),
+  );
+
+const createConfirmedDomainSubscription = (
+  overrides: { id?: string; email?: string; repo?: string } = {},
+) => {
+  const subscription = createPendingDomainSubscription(overrides);
+  subscription.confirm(
+    '550e8400-e29b-41d4-a716-446655440000',
+    new Date(),
+    ConfirmationToken.hydrate({
+      value: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+      scope: 'unsubscribe',
+      expiresAt: new Date(Date.now() + 60_000),
+    }),
+  );
+
+  return subscription;
+};
 
 describe('SubscriptionServiceImpl', () => {
   let subscriptionService: SubscriptionServiceImpl;
@@ -118,14 +153,7 @@ describe('SubscriptionServiceImpl', () => {
   });
 
   it('should throw AlreadySubscribedError if already confirmed', async () => {
-    const subscription: Subscription = {
-      id: 1,
-      email: 'test@example.com',
-      repo: 'owner/repo',
-      confirmed: true,
-      lastSeenTag: null,
-      createdAt: new Date(),
-    };
+    const subscription = createConfirmedDomainSubscription();
 
     githubClientMock.repositoryExists.mockResolvedValue(true);
     repoMock.findByEmailAndRepo.mockResolvedValue(subscription);
@@ -138,6 +166,10 @@ describe('SubscriptionServiceImpl', () => {
   it('should refresh tokens and resend confirmation for an unconfirmed subscription', async () => {
     const email = 'test@example.com';
     const repo = 'owner/repo';
+    const existingDomainSubscription = createPendingDomainSubscription({
+      email,
+      repo,
+    });
     const existingSubscription: Subscription = {
       id: 1,
       email,
@@ -164,7 +196,8 @@ describe('SubscriptionServiceImpl', () => {
     };
 
     githubClientMock.repositoryExists.mockResolvedValue(true);
-    repoMock.findByEmailAndRepo.mockResolvedValue(existingSubscription);
+    repoMock.findByEmailAndRepo.mockResolvedValue(existingDomainSubscription);
+    repoMock.findSubscriptionById.mockResolvedValue(existingSubscription);
     tokenManagerMock.getTokenBySubscriptionIdAndScope.mockImplementation(
       async (_subscriptionId, scope) =>
         Promise.resolve(
@@ -250,6 +283,10 @@ describe('SubscriptionServiceImpl', () => {
   it('should not leave partial db state when confirmation email fails for a pending resubscribe', async () => {
     const email = 'test@example.com';
     const repo = 'owner/repo';
+    const existingDomainSubscription = createPendingDomainSubscription({
+      email,
+      repo,
+    });
     const existingSubscription: Subscription = {
       id: 1,
       email,
@@ -276,7 +313,8 @@ describe('SubscriptionServiceImpl', () => {
     };
 
     githubClientMock.repositoryExists.mockResolvedValue(true);
-    repoMock.findByEmailAndRepo.mockResolvedValue(existingSubscription);
+    repoMock.findByEmailAndRepo.mockResolvedValue(existingDomainSubscription);
+    repoMock.findSubscriptionById.mockResolvedValue(existingSubscription);
     tokenManagerMock.getTokenBySubscriptionIdAndScope.mockImplementation(
       (_subscriptionId, scope) =>
         Promise.resolve(

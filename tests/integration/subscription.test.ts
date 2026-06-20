@@ -177,6 +177,19 @@ describe('Subscription Routes Integration with PGlite', () => {
 
         assert(existingSubscription);
 
+        await db.insert(schema.subscriptionTokens).values({
+          token: 'valid-confirm-token',
+          subscriptionId: existingSubscription.id,
+          scope: 'subscribe',
+          expiresAt: new Date('2026-01-01T13:00:00Z'),
+        });
+        await db.insert(schema.subscriptionTokens).values({
+          token: 'valid-unsubscribe-token',
+          subscriptionId: existingSubscription.id,
+          scope: 'unsubscribe',
+          expiresAt: new Date('2026-01-01T13:00:00Z'),
+        });
+
         const response = await app.fastify.inject({
           method: 'POST',
           url: '/api/subscribe',

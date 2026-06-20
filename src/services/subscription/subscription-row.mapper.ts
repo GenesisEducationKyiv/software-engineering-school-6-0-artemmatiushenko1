@@ -21,8 +21,8 @@ export const SubscriptionRowSchema = z.object({
 export type SubscriptionRow = z.infer<typeof SubscriptionRowSchema>;
 
 export type SubscriptionMapperTokens = {
-  subscribe?: SubscriptionTokenRow;
-  unsubscribe?: SubscriptionTokenRow | null;
+  subscribe: SubscriptionTokenRow;
+  unsubscribe: SubscriptionTokenRow | null;
 };
 
 export class SubscriptionRowMapper {
@@ -30,34 +30,10 @@ export class SubscriptionRowMapper {
 
   toDomain(
     row: SubscriptionRow,
-    tokens: SubscriptionMapperTokens = {},
+    confirmationToken: ConfirmationToken,
+    unsubscribeToken: ConfirmationToken | null,
   ): Subscription {
-    const subscribe = tokens.subscribe;
-    const unsubscribe = tokens.unsubscribe ?? null;
-
-    if (!subscribe && !unsubscribe) {
-      throw new Error(
-        'At least one token is required to hydrate a subscription',
-      );
-    }
-
-    const confirmationToken = subscribe
-      ? this.tokenMapper.toDomain(subscribe)
-      : ConfirmationToken.hydrate({
-          value: unsubscribe!.token,
-          scope: 'subscribe',
-          expiresAt: unsubscribe!.expiresAt,
-        });
-
-    const unsubscribeToken =
-      !subscribe && unsubscribe ? this.tokenMapper.toDomain(unsubscribe) : null;
-
-    const status =
-      !subscribe && unsubscribe
-        ? 'confirmed'
-        : row.confirmed
-          ? 'confirmed'
-          : 'pending';
+    const status = row.confirmed ? 'confirmed' : 'pending';
 
     const email = Email.fromString(row.email);
     const repoPath = RepoPath.fromString(row.repo);

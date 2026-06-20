@@ -49,10 +49,11 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     const existing = await this.subscriptionRepo.findByEmailAndRepo(
-      validatedEmail.email,
-      validatedRepo.toString(),
+      validatedEmail,
+      validatedRepo,
     );
-    if (existing?.confirmed) {
+
+    if (existing?.status === 'confirmed') {
       throw new AlreadySubscribedError(
         validatedEmail.email,
         validatedRepo.toString(),
@@ -62,13 +63,19 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     const { subscription, confirmToken } = await this.transactionManager.run(
       async (tx) => {
         if (existing) {
-          return {
-            subscription: existing,
-            confirmToken: await this.refreshPendingSubscriptionTokens(
-              existing.id,
-              tx,
-            ),
-          };
+          const confirmToken = await this.refreshPendingSubscriptionTokens(
+            Number(existing.id),
+            tx,
+          );
+          const subscription = await this.subscriptionRepo.findSubscriptionById(
+            Number(existing.id),
+          );
+
+          if (!subscription) {
+            throw new SubscriptionNotFoundError(Number(existing.id));
+          }
+
+          return { subscription, confirmToken };
         }
 
         const subscription = await this.subscriptionRepo.createSubscription(
@@ -196,14 +203,14 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       );
     }
 
-    const domainSubscription = this.mapper.toDomain(sub, { subscribe: token });
-    const now = new Date();
+    // const domainSubscription = this.mapper.toDomain(sub, { subscribe: token });
+    // const now = new Date();
 
-    domainSubscription.confirm(
-      tokenValue,
-      now,
-      this.mapper.tokenMapper.toDomain(unsubscribeToken),
-    );
+    // domainSubscription.confirm(
+    //   tokenValue,
+    //   now,
+    //   this.mapper.tokenMapper.toDomain(unsubscribeToken),
+    // );
 
     await this.transactionManager.run(async (tx) => {
       await this.subscriptionRepo.confirmSubscription(token.subscriptionId, tx);
@@ -241,12 +248,12 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       throw new SubscriptionNotFoundError(token.subscriptionId);
     }
 
-    const domainSubscription = this.mapper.toDomain(sub, {
-      unsubscribe: token,
-    });
-    const now = new Date();
+    // const domainSubscription = this.mapper.toDomain(sub, {
+    //   unsubscribe: token,
+    // });
+    // const now = new Date();
 
-    domainSubscription.unsubscribe(tokenValue, now);
+    // domainSubscription.unsubscribe(tokenValue, now);
 
     await this.transactionManager.run(async (tx) => {
       await this.subscriptionRepo.deleteSubscription(token.subscriptionId, tx);

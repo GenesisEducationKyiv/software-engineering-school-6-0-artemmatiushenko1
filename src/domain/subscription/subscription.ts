@@ -26,6 +26,12 @@ export class Subscription {
     confirmationToken: ConfirmationToken;
     unsubscribeToken: ConfirmationToken | null;
   }): Subscription {
+    if (params.status === 'confirmed' && !params.unsubscribeToken) {
+      throw new Error(
+        'Unsubscribe token is required for confirmed subscriptions',
+      );
+    }
+
     return new Subscription(
       params.id,
       params.email,
