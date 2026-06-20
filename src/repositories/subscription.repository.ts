@@ -34,11 +34,11 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
   private async hydrateSubscription(
     row: SubscriptionRow,
   ): Promise<Subscription> {
-    const subscribeTokenRow = await this.findTokenBySubscriptionIdAndScope(
+    const subscribeTokenRow = await this.findTokenByIdAndScope(
       row.id,
       'subscribe',
     );
-    const unsubscribeTokenRow = await this.findTokenBySubscriptionIdAndScope(
+    const unsubscribeTokenRow = await this.findTokenByIdAndScope(
       row.id,
       'unsubscribe',
     );
@@ -249,7 +249,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     return SubscriptionTokenRowSchema.parse(result);
   }
 
-  private async findTokenBySubscriptionIdAndScope(
+  private async findTokenByIdAndScope(
     subscriptionId: string,
     scope: ConfirmationTokenScope,
   ): Promise<SubscriptionTokenRow | null> {
