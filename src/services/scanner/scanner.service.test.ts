@@ -95,7 +95,7 @@ describe('ScannerService', () => {
         releaseName: latestRelease.name,
         unsubscribeToken: UNSUBSCRIBE_TOKEN,
       });
-      expect(subscriptionServiceMock.updateLastSeenTag).toHaveBeenCalledWith(
+      expect(subscriptionServiceMock.observeNewRelease).toHaveBeenCalledWith(
         '1',
         'v1.1.0',
       );
@@ -160,7 +160,7 @@ describe('ScannerService', () => {
       await scannerService.scan();
 
       expect(notificationServiceMock.notifyNewRelease).not.toHaveBeenCalled();
-      expect(subscriptionServiceMock.updateLastSeenTag).not.toHaveBeenCalled();
+      expect(subscriptionServiceMock.observeNewRelease).not.toHaveBeenCalled();
     });
 
     it('should stop scanning if rate limit is exceeded', async () => {

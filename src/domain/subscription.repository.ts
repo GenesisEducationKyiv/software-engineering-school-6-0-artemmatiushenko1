@@ -5,6 +5,8 @@ import type { SubscriptionTokenScope } from './subscription.js';
 import type { DomainTransaction } from './transaction-manager.js';
 
 export interface SubscriptionRepository {
+  findById(id: string): Promise<Subscription | null>;
+
   findByEmailAndRepo(
     email: Email,
     repoPath: RepoPath,

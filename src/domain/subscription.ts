@@ -23,7 +23,7 @@ export interface SubscriptionService {
 
   findAllConfirmedSubscriptions(): Promise<DomainSubscription[]>;
 
-  updateLastSeenTag(id: string, tag: string): Promise<void>;
+  observeNewRelease(subscriptionId: string, tag: string): Promise<void>;
 
   confirmSubscription(tokenValue: string): Promise<void>;
 

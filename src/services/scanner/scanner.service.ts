@@ -98,7 +98,7 @@ export class ScannerService {
         unsubscribeToken: sub.unsubscribeToken,
       });
 
-      await this.subscriptionService.updateLastSeenTag(
+      await this.subscriptionService.observeNewRelease(
         sub.id,
         latestRelease.tag,
       );

@@ -8,7 +8,10 @@ import type {
   SubscriptionToken,
   SubscriptionTokenScope,
 } from '../domain/subscription.js';
-import { Subscription as DomainSubscription } from '../domain/subscription/subscription.js';
+import {
+  Subscription as DomainSubscription,
+  Subscription,
+} from '../domain/subscription/subscription.js';
 import { Email } from '../domain/subscription/email.js';
 import { RepoPath } from '../domain/subscription/repo-path.js';
 import {
@@ -73,12 +76,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       return null;
     }
 
-    const row = await this.findSubscriptionById(tokenRow.subscriptionId);
-    if (!row) {
-      return null;
-    }
-
-    return this.hydrateSubscription(row);
+    return await this.findById(tokenRow.subscriptionId);
   }
 
   async findByEmailAndRepo(
@@ -169,16 +167,16 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     }
   }
 
-  private async findSubscriptionById(
-    id: string,
-  ): Promise<SubscriptionRow | null> {
+  async findById(id: string): Promise<Subscription | null> {
     const [result] = await this.getDb()
       .select()
       .from(subscriptions)
       .where(eq(subscriptions.id, id))
       .limit(1);
 
-    return result ? SubscriptionRowSchema.parse(result) : null;
+    return result
+      ? this.hydrateSubscription(SubscriptionRowSchema.parse(result))
+      : null;
   }
 
   async findConfirmedSubscriptionsByEmail(

@@ -98,9 +98,24 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     return this.subscriptionRepo.findAllConfirmedSubscriptions();
   }
 
-  async updateLastSeenTag(id: string, tag: string): Promise<void> {
-    const releaseTag = ReleaseTag.fromString(tag);
-    await this.subscriptionRepo.updateLastSeenTag(id, releaseTag.value);
+  async observeNewRelease(subscriptionId: string, tag: string): Promise<void> {
+    const subscription = await this.subscriptionRepo.findById(subscriptionId);
+
+    if (!subscription) {
+      throw new SubscriptionNotFoundError(subscriptionId);
+    }
+
+    const newTag = ReleaseTag.fromString(tag);
+
+    if (subscription.lastSeenTag?.equals(newTag)) {
+      return;
+    }
+
+    subscription.observeRelease(newTag);
+
+    await this.transactionManager.run(async (tx) => {
+      await this.subscriptionRepo.save(subscription, tx);
+    });
   }
 
   async confirmSubscription(tokenValue: string): Promise<void> {

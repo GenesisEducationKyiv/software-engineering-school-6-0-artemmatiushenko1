@@ -10,6 +10,7 @@ import {
   AlreadySubscribedError,
   SubscriptionNotFoundError,
   TokenExpiredError,
+  InvalidReleaseTagError,
 } from '../../domain/errors.js';
 import type { Logger } from '../../domain/logger.js';
 import type { IdGenerator } from '../../domain/id-generator.js';
@@ -22,6 +23,7 @@ import { mock } from 'vitest-mock-extended';
 import { Email } from '../../domain/subscription/email.js';
 import { RepoPath } from '../../domain/subscription/repo-path.js';
 import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
+import { ReleaseTag } from '../../domain/subscription/release-tag.js';
 import { Subscription as DomainSubscription } from '../../domain/subscription/subscription.js';
 
 const createPendingDomainSubscription = (
@@ -271,6 +273,72 @@ describe('SubscriptionServiceImpl', () => {
       await expect(
         subscriptionService.getSubscriptionsByEmail('invalid-email'),
       ).rejects.toThrow(InvalidEmailError);
+    });
+  });
+
+  describe('observeNewRelease', () => {
+    it('should update lastSeenTag and save for a confirmed subscription', async () => {
+      const subscription = createConfirmedDomainSubscription({ id: '10' });
+
+      repoMock.findById.mockResolvedValue(subscription);
+
+      await subscriptionService.observeNewRelease('10', 'v1.0.0');
+
+      expect(repoMock.findById).toHaveBeenCalledWith('10');
+      expect(repoMock.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: '10',
+          lastSeenTag: ReleaseTag.fromString('v1.0.0'),
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('should throw SubscriptionNotFoundError when subscription is not found', async () => {
+      repoMock.findById.mockResolvedValue(null);
+
+      await expect(
+        subscriptionService.observeNewRelease('missing-id', 'v1.0.0'),
+      ).rejects.toThrow(SubscriptionNotFoundError);
+
+      expect(repoMock.save).not.toHaveBeenCalled();
+    });
+
+    it('should throw InvalidReleaseTagError for an invalid tag', async () => {
+      const subscription = createConfirmedDomainSubscription({ id: '10' });
+
+      repoMock.findById.mockResolvedValue(subscription);
+
+      await expect(
+        subscriptionService.observeNewRelease('10', ''),
+      ).rejects.toThrow(InvalidReleaseTagError);
+
+      expect(repoMock.save).not.toHaveBeenCalled();
+    });
+
+    it('should still save when subscription is not confirmed', async () => {
+      const subscription = createPendingDomainSubscription({ id: '10' });
+
+      repoMock.findById.mockResolvedValue(subscription);
+
+      await subscriptionService.observeNewRelease('10', 'v1.0.0');
+
+      expect(subscription.lastSeenTag).toBeNull();
+      expect(repoMock.save).toHaveBeenCalledWith(
+        subscription,
+        expect.anything(),
+      );
+    });
+
+    it('should not save when the release tag is unchanged', async () => {
+      const subscription = createConfirmedDomainSubscription({ id: '10' });
+      subscription.observeRelease(ReleaseTag.fromString('v1.0.0'));
+
+      repoMock.findById.mockResolvedValue(subscription);
+
+      await subscriptionService.observeNewRelease('10', 'v1.0.0');
+
+      expect(repoMock.save).not.toHaveBeenCalled();
     });
   });
 
