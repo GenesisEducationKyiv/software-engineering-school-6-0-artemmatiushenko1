@@ -19,8 +19,10 @@ import type { SubscriptionService } from './domain/subscription.js';
 import type { Logger } from './domain/logger.js';
 import type { IdGenerator } from './domain/id-generator.js';
 import type { TokenGenerator } from './domain/token-generator.js';
+import type { Clock } from './domain/clock.js';
 import { CryptoIdGenerator } from './infrastructure/id/crypto-id-generator.js';
 import { CryptoTokenGenerator } from './infrastructure/token/crypto-token-generator.js';
+import { SystemClock } from './infrastructure/clock/system-clock.js';
 
 export interface AppDependencies {
   db: Database;
@@ -44,6 +46,7 @@ export class AppContainer {
   private subscriptionServiceInstance?: SubscriptionService;
   private idGeneratorInstance?: IdGenerator;
   private tokenGeneratorInstance?: TokenGenerator;
+  private clockInstance?: Clock;
 
   constructor(
     private readonly config: AppConfig,
@@ -164,6 +167,7 @@ export class AppContainer {
       this.logger,
       this.idGenerator,
       this.tokenGenerator,
+      this.clock,
     ));
   }
 
@@ -185,6 +189,14 @@ export class AppContainer {
 
   set tokenGenerator(value: TokenGenerator) {
     this.tokenGeneratorInstance = value;
+  }
+
+  get clock(): Clock {
+    return (this.clockInstance ??= new SystemClock());
+  }
+
+  set clock(value: Clock) {
+    this.clockInstance = value;
   }
 
   build(): AppDependencies {

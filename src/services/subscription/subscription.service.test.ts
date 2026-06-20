@@ -15,6 +15,7 @@ import {
 import type { Logger } from '../../domain/logger.js';
 import type { IdGenerator } from '../../domain/id-generator.js';
 import type { TokenGenerator } from '../../domain/token-generator.js';
+import type { Clock } from '../../domain/clock.js';
 import type {
   TransactionManager,
   DomainTransaction,
@@ -57,6 +58,8 @@ const createConfirmedDomainSubscription = (
   return subscription;
 };
 
+const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
+
 describe('SubscriptionServiceImpl', () => {
   let subscriptionService: SubscriptionServiceImpl;
   const repoMock = mock<SubscriptionRepository>();
@@ -66,9 +69,12 @@ describe('SubscriptionServiceImpl', () => {
   const transactionManagerMock = mock<TransactionManager>();
   const idGeneratorMock = mock<IdGenerator>();
   const tokenGeneratorMock = mock<TokenGenerator>();
+  const clockMock = mock<Clock>();
 
   beforeEach(() => {
     vi.resetAllMocks();
+
+    clockMock.now.mockReturnValue(FIXED_NOW);
 
     transactionManagerMock.run.mockImplementation(
       async (work) => await work({} as DomainTransaction),
@@ -82,6 +88,7 @@ describe('SubscriptionServiceImpl', () => {
       loggerMock,
       idGeneratorMock,
       tokenGeneratorMock,
+      clockMock,
     );
   });
 
@@ -404,7 +411,7 @@ describe('SubscriptionServiceImpl', () => {
         ConfirmationToken.hydrate({
           value: tokenValue,
           scope: 'subscribe',
-          expiresAt: new Date(Date.now() - 1_000),
+          expiresAt: new Date('2026-01-01T11:00:00Z'),
         }),
       );
 
@@ -459,7 +466,7 @@ describe('SubscriptionServiceImpl', () => {
         ConfirmationToken.hydrate({
           value: tokenValue,
           scope: 'unsubscribe',
-          expiresAt: new Date(Date.now() - 1_000),
+          expiresAt: new Date('2026-01-01T11:00:00Z'),
         }),
       );
 

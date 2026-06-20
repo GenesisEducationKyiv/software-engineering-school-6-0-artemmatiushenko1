@@ -14,6 +14,7 @@ import { ReleaseTag } from '../../domain/subscription/release-tag.js';
 import type { Logger } from '../../domain/logger.js';
 import type { IdGenerator } from '../../domain/id-generator.js';
 import type { TokenGenerator } from '../../domain/token-generator.js';
+import type { Clock } from '../../domain/clock.js';
 import type { TransactionManager } from '../../domain/transaction-manager.js';
 import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
 
@@ -29,6 +30,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     private logger: Logger,
     private idGenerator: IdGenerator,
     private tokenGenerator: TokenGenerator,
+    private clock: Clock,
   ) {}
 
   async subscribe(email: string, repoPath: string): Promise<void> {
@@ -58,7 +60,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     const confirmToken = ConfirmationToken.issue({
       value: this.tokenGenerator.generate(),
       scope: 'subscribe',
-      issuedAt: new Date(),
+      issuedAt: this.clock.now(),
       ttlMs: SubscriptionServiceImpl.SUBSCRIPTION_CONFIRMATION_TTL_MS,
     });
 
@@ -131,8 +133,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       throw new SubscriptionNotFoundError();
     }
 
-    // TODO: use Clock
-    const now = new Date();
+    const now = this.clock.now();
     const unsubscribeToken = ConfirmationToken.issue({
       value: this.tokenGenerator.generate(),
       scope: 'unsubscribe',
@@ -167,7 +168,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       throw new SubscriptionNotFoundError();
     }
 
-    const now = new Date();
+    const now = this.clock.now();
     subscription.unsubscribe(tokenValue, now);
 
     await this.transactionManager.run(async (tx) => {
