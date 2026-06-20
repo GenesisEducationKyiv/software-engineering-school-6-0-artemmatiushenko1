@@ -1,53 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SubscriptionTokenManager } from './db-subscription-token-manager.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
-import type { TokenGenerator } from '../../domain/token-generator.js';
 import type { SubscriptionToken } from '../../domain/subscription.js';
 import { mock } from 'vitest-mock-extended';
 
 describe('DbSubscriptionTokenManager', () => {
   let tokenManager: SubscriptionTokenManager;
   const repoMock = mock<SubscriptionRepository>();
-  const tokenGeneratorMock = mock<TokenGenerator>();
 
   beforeEach(() => {
     vi.useFakeTimers();
     vi.resetAllMocks();
 
-    tokenGeneratorMock.generate.mockReturnValue('generated-token');
-    tokenManager = new SubscriptionTokenManager(
-      repoMock,
-      tokenGeneratorMock,
-      24,
-    );
+    tokenManager = new SubscriptionTokenManager(repoMock);
   });
 
   afterEach(() => {
     vi.useRealTimers();
-  });
-
-  describe('createToken', () => {
-    it('should create a token and return it', async () => {
-      const subscriptionId = '1';
-      const scope = 'subscribe';
-      const now = new Date('2026-04-11T12:00:00Z');
-      vi.setSystemTime(now);
-
-      repoMock.createToken.mockResolvedValue({} as SubscriptionToken);
-
-      const token = await tokenManager.createToken(subscriptionId, scope);
-
-      expect(token).toBe('generated-token');
-      expect(repoMock.createToken).toHaveBeenCalledWith(
-        {
-          subscriptionId,
-          token,
-          scope,
-          expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
-        },
-        undefined,
-      );
-    });
   });
 
   describe('getTokenByValue', () => {

@@ -119,7 +119,6 @@ describe('SubscriptionServiceImpl', () => {
     expect(savedSubscription.repoPath.toString()).toBe(repo);
     expect(savedSubscription.confirmationToken.value).toBe(confirmToken);
     expect(tx).toEqual({});
-    expect(tokenManagerMock.createToken).not.toHaveBeenCalled();
     expect(
       notificationServiceMock.notifySubscriptionConfirmation,
     ).toHaveBeenCalledWith({
@@ -184,8 +183,6 @@ describe('SubscriptionServiceImpl', () => {
     expect(savedSubscription.status).toBe('pending');
     expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
     expect(tx).toEqual({});
-    expect(tokenManagerMock.createToken).not.toHaveBeenCalled();
-    expect(tokenManagerMock.invalidateToken).not.toHaveBeenCalled();
     expect(
       notificationServiceMock.notifySubscriptionConfirmation,
     ).toHaveBeenCalledWith({
@@ -215,7 +212,6 @@ describe('SubscriptionServiceImpl', () => {
     );
 
     expect(repoMock.save).toHaveBeenCalledTimes(1);
-    expect(tokenManagerMock.createToken).not.toHaveBeenCalled();
     expect(repoMock.deleteSubscription).not.toHaveBeenCalled();
     expect(loggerMock.info).not.toHaveBeenCalled();
   });
@@ -245,8 +241,6 @@ describe('SubscriptionServiceImpl', () => {
     const [savedSubscription] = repoMock.save.mock.calls[0]!;
 
     expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
-    expect(tokenManagerMock.createToken).not.toHaveBeenCalled();
-    expect(tokenManagerMock.invalidateToken).not.toHaveBeenCalled();
     expect(repoMock.deleteSubscription).not.toHaveBeenCalled();
     expect(loggerMock.info).not.toHaveBeenCalled();
   });

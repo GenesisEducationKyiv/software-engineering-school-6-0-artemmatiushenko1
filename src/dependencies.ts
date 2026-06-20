@@ -124,7 +124,6 @@ export class AppContainer {
   get tokenManager(): SubscriptionTokenManager {
     return (this.tokenManagerInstance ??= new SubscriptionTokenManager(
       this.subscriptionRepo,
-      this.tokenGenerator,
     ));
   }
 

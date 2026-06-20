@@ -1,5 +1,4 @@
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
-import type { TokenGenerator } from '../../domain/token-generator.js';
 import type {
   SubscriptionToken,
   SubscriptionTokenScope,
@@ -7,33 +6,7 @@ import type {
 import type { DomainTransaction } from '../../domain/transaction-manager.js';
 
 export class SubscriptionTokenManager {
-  constructor(
-    private subscriptionRepo: SubscriptionRepository,
-    private tokenGenerator: TokenGenerator,
-    private tokenExpiryHours: number = 24,
-  ) {}
-
-  async createToken(
-    subscriptionId: string,
-    scope: SubscriptionTokenScope,
-    tx?: DomainTransaction,
-  ): Promise<string> {
-    const token = this.tokenGenerator.generate();
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + this.tokenExpiryHours);
-
-    await this.subscriptionRepo.createToken(
-      {
-        subscriptionId,
-        token,
-        scope,
-        expiresAt,
-      },
-      tx,
-    );
-
-    return token;
-  }
+  constructor(private subscriptionRepo: SubscriptionRepository) {}
 
   async getTokenByValue(token: string): Promise<SubscriptionToken | null> {
     return this.subscriptionRepo.findTokenByValue(token);
