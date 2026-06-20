@@ -204,7 +204,6 @@ describe('SubscriptionServiceImpl', () => {
     );
 
     expect(repoMock.save).toHaveBeenCalledTimes(1);
-    expect(repoMock.deleteSubscription).not.toHaveBeenCalled();
     expect(loggerMock.info).not.toHaveBeenCalled();
   });
 
@@ -233,7 +232,6 @@ describe('SubscriptionServiceImpl', () => {
     const [savedSubscription] = repoMock.save.mock.calls[0]!;
 
     expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
-    expect(repoMock.deleteSubscription).not.toHaveBeenCalled();
     expect(loggerMock.info).not.toHaveBeenCalled();
   });
 

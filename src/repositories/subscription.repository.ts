@@ -169,7 +169,9 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     }
   }
 
-  async findSubscriptionById(id: string): Promise<SubscriptionRow | null> {
+  private async findSubscriptionById(
+    id: string,
+  ): Promise<SubscriptionRow | null> {
     const [result] = await this.getDb()
       .select()
       .from(subscriptions)
@@ -212,22 +214,6 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     );
   }
 
-  async findSubscriptionsByEmail(email: string): Promise<SubscriptionRow[]> {
-    const results = await this.getDb()
-      .select()
-      .from(subscriptions)
-      .where(eq(subscriptions.email, email));
-
-    return results.map((r) => SubscriptionRowSchema.parse(r));
-  }
-
-  async confirmSubscription(id: string, tx?: DomainTransaction): Promise<void> {
-    await this.getDb(tx)
-      .update(subscriptions)
-      .set({ confirmed: true })
-      .where(eq(subscriptions.id, id));
-  }
-
   async updateLastSeenTag(
     id: string,
     tag: string,
@@ -239,11 +225,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       .where(eq(subscriptions.id, id));
   }
 
-  async deleteSubscription(id: string, tx?: DomainTransaction): Promise<void> {
-    await this.getDb(tx).delete(subscriptions).where(eq(subscriptions.id, id));
-  }
-
-  async createToken(
+  private async createToken(
     data: {
       subscriptionId: string;
       token: string;
@@ -265,7 +247,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     return SubscriptionTokenRowSchema.parse(result);
   }
 
-  async findToken(
+  private async findToken(
     token: string,
     scope: SubscriptionTokenScope,
   ): Promise<SubscriptionToken | null> {
@@ -285,19 +267,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     return SubscriptionTokenRowSchema.parse(result);
   }
 
-  async findTokenByValue(token: string): Promise<SubscriptionToken | null> {
-    const [result] = await this.getDb()
-      .select()
-      .from(subscriptionTokens)
-      .where(eq(subscriptionTokens.token, token))
-      .limit(1);
-
-    if (!result) return null;
-
-    return SubscriptionTokenRowSchema.parse(result);
-  }
-
-  async findTokenBySubscriptionIdAndScope(
+  private async findTokenBySubscriptionIdAndScope(
     subscriptionId: string,
     scope: SubscriptionTokenScope,
   ): Promise<SubscriptionToken | null> {
@@ -315,11 +285,5 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     if (!result) return null;
 
     return SubscriptionTokenRowSchema.parse(result);
-  }
-
-  async deleteToken(token: string, tx?: DomainTransaction): Promise<void> {
-    await this.getDb(tx)
-      .delete(subscriptionTokens)
-      .where(eq(subscriptionTokens.token, token));
   }
 }

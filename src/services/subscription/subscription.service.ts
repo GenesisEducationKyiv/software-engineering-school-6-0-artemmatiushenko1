@@ -153,6 +153,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     subscription.unsubscribe(tokenValue, now);
 
     await this.transactionManager.run(async (tx) => {
+      // TODO: we should add status field to subscription, and usedAt to tokens
       await this.subscriptionRepo.save(subscription, tx);
     });
 
