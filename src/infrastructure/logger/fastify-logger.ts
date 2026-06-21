@@ -1,5 +1,5 @@
 import type { FastifyBaseLogger } from 'fastify';
-import type { Logger } from '../../domain/shared/index.js';
+import type { Logger } from '../../shared-kernel/index.js';
 import { getRequestScopedLogger } from './request-log-context.js';
 
 export class FastifyLogger implements Logger {

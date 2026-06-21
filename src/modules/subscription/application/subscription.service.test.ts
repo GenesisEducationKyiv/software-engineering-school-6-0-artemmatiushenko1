@@ -12,20 +12,20 @@ import {
   TokenExpiredError,
   InvalidReleaseTagError,
 } from '../../../domain/errors.js';
-import type { Logger } from '../../../domain/shared/index.js';
-import type {
-  IdGenerator,
-  TokenGenerator,
-  Clock,
-  TransactionManager,
-  DomainTransaction,
-} from '../../../domain/shared/index.js';
 import { mock } from 'vitest-mock-extended';
 import { Email } from '../domain/email.js';
 import { RepoPath } from '../domain/repo-path.js';
 import { ConfirmationToken } from '../domain/confirmation-token.js';
 import { ReleaseTag } from '../domain/release-tag.js';
 import { Subscription } from '../domain/index.js';
+import type {
+  IdGenerator,
+  Clock,
+  TransactionManager,
+  DomainTransaction,
+  Logger,
+} from '../../../shared-kernel/index.js';
+import type { TokenGenerator } from './ports/token-generator.js';
 
 const createPendingDomainSubscription = (
   overrides: { id?: string; email?: string; repo?: string } = {},

@@ -3,7 +3,7 @@ import { ScannerService } from './scanner.service.js';
 import type { SubscriptionService } from '../subscription/api/subscription-service.interface.js';
 import type { GithubClient } from '../../domain/github.js';
 import type { NotificationService } from '../../domain/notification.js';
-import type { Logger } from '../../domain/shared/logger.js';
+import type { Logger } from '../../shared-kernel/logger.js';
 import { GithubRateLimitError } from '../../domain/errors.js';
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../../domain/metrics.js';

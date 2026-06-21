@@ -16,15 +16,13 @@ import type { GithubClient } from './domain/github.js';
 import type { EmailClient } from './domain/email.js';
 import type { NotificationService } from './domain/notification.js';
 import type { SubscriptionService } from './modules/subscription/api/subscription-service.interface.js';
-import type {
-  Logger,
-  IdGenerator,
-  TokenGenerator,
-  Clock,
-} from './domain/shared/index.js';
-import { CryptoIdGenerator } from './infrastructure/id/crypto-id-generator.js';
-import { CryptoTokenGenerator } from './infrastructure/token/crypto-token-generator.js';
-import { SystemClock } from './infrastructure/clock/system-clock.js';
+import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
+import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
+import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
+import type { IdGenerator } from './shared-kernel/id-generator.js';
+import type { TokenGenerator } from './modules/subscription/application/ports/token-generator.js';
+import type { Clock } from './shared-kernel/clock.js';
+import type { Logger } from './shared-kernel/logger.js';
 
 export interface AppDependencies {
   db: Database;

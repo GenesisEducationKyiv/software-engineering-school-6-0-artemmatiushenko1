@@ -28,12 +28,12 @@ import { SubscriptionsResponseDtoSchema } from '../../src/dtos/subscription.dto.
 import { AppContainer } from '../../src/dependencies.js';
 import type { GithubClient } from '../../src/domain/github.js';
 import type { EmailClient } from '../../src/domain/email.js';
-import type { Clock } from '../../src/domain/shared/index.js';
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
 import { TEST_APP_CONFIG } from './constants.js';
 import { createFastifyServerOptions } from '../../src/infrastructure/fastify/create-fastify-server-options.js';
 import { randomUUID } from 'node:crypto';
+import type { Clock } from '../../src/shared-kernel/clock.js';
 
 const subscriptionId = () => randomUUID();
 const MOCK_NOW = new Date('2026-01-01T12:00:00Z');

@@ -18,8 +18,8 @@ import {
   type SubscriptionTokenRow,
 } from './subscription-token-row.mapper.js';
 import type { SubscriptionRepository } from '../application/ports/subscription.repository.js';
-import type { DomainTransaction } from '../../../domain/shared/index.js';
 import type { ConfirmationTokenScope } from '../domain/confirmation-token.js';
+import type { DomainTransaction } from '../../../shared-kernel/transaction.js';
 
 export class DrizzleSubscriptionRepository implements SubscriptionRepository {
   private readonly subscriptionMapper = new SubscriptionRowMapper();

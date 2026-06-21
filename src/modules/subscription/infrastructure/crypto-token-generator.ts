@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { TokenGenerator } from '../../domain/shared/index.js';
+import type { TokenGenerator } from '../application/ports/token-generator.js';
 
 export class CryptoTokenGenerator implements TokenGenerator {
   generate(): string {

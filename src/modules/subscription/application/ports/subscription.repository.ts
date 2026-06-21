@@ -4,7 +4,7 @@ import type {
   Email,
   RepoPath,
 } from '../../domain/index.js';
-import type { DomainTransaction } from '../../../../domain/shared/transaction-manager.js';
+import type { DomainTransaction } from '../../../../shared-kernel/transaction.js';
 
 export interface SubscriptionRepository {
   findById(id: string): Promise<Subscription | null>;

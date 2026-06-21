@@ -11,14 +11,14 @@ import {
 import { Email } from '../domain/email.js';
 import { RepoPath } from '../domain/repo-path.js';
 import { ReleaseTag } from '../domain/release-tag.js';
-import type {
-  IdGenerator,
-  TokenGenerator,
-  Clock,
-  TransactionManager,
-  Logger,
-} from '../../../domain/shared/index.js';
 import { ConfirmationToken } from '../domain/index.js';
+import type { TokenGenerator } from './ports/token-generator.js';
+import type {
+  Clock,
+  IdGenerator,
+  Logger,
+  TransactionManager,
+} from '../../../shared-kernel/index.js';
 
 export class SubscriptionServiceImpl implements SubscriptionService {
   private static readonly SUBSCRIPTION_CONFIRMATION_TTL_MS = 60_000;
