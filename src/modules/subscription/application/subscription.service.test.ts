@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SubscriptionServiceImpl } from './subscription.service.js';
-import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
-import type { GithubClient } from '../../domain/github.js';
-import type { NotificationService } from '../../domain/notification.js';
+import type { SubscriptionRepository } from '../../../domain/subscription.repository.js';
+import type { GithubClient } from '../../../domain/github.js';
+import type { NotificationService } from '../../../domain/notification.js';
 import {
   InvalidRepoFormatError,
   InvalidEmailError,
@@ -11,21 +11,21 @@ import {
   SubscriptionNotFoundError,
   TokenExpiredError,
   InvalidReleaseTagError,
-} from '../../domain/errors.js';
-import type { Logger } from '../../domain/shared/index.js';
+} from '../../../domain/errors.js';
+import type { Logger } from '../../../domain/shared/index.js';
 import type {
   IdGenerator,
   TokenGenerator,
   Clock,
   TransactionManager,
   DomainTransaction,
-} from '../../domain/shared/index.js';
+} from '../../../domain/shared/index.js';
 import { mock } from 'vitest-mock-extended';
-import { Email } from './domain/email.js';
-import { RepoPath } from './domain/repo-path.js';
-import { ConfirmationToken } from './domain/confirmation-token.js';
-import { ReleaseTag } from './domain/release-tag.js';
-import { Subscription } from './domain/index.js';
+import { Email } from '../domain/email.js';
+import { RepoPath } from '../domain/repo-path.js';
+import { ConfirmationToken } from '../domain/confirmation-token.js';
+import { ReleaseTag } from '../domain/release-tag.js';
+import { Subscription } from '../domain/index.js';
 
 const createPendingDomainSubscription = (
   overrides: { id?: string; email?: string; repo?: string } = {},

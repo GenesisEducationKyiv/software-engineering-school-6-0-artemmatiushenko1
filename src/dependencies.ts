@@ -8,7 +8,7 @@ import { DrizzleSubscriptionRepository } from './repositories/subscription.repos
 import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
 import { NotificationServiceImpl } from './modules/notification/notification.service.js';
 import { ScannerService } from './modules/scanner/scanner.service.js';
-import { SubscriptionServiceImpl } from './modules/subscription/subscription.service.js';
+import { SubscriptionServiceImpl } from './modules/subscription/application/subscription.service.js';
 import { PrometheusMetrics } from './infrastructure/metrics/prometheus-metrics.js';
 import { FastifyLogger } from './infrastructure/logger/fastify-logger.js';
 import type { FastifyBaseLogger } from 'fastify';
