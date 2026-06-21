@@ -15,7 +15,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import type { GithubClient } from './domain/github.js';
 import type { EmailClient } from './domain/email.js';
 import type { NotificationService } from './domain/notification.js';
-import type { SubscriptionService } from './domain/subscription.js';
+import type { SubscriptionService } from './modules/subscription/api/subscription-service.interface.js';
 import type {
   Logger,
   IdGenerator,

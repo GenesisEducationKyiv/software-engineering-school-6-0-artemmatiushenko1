@@ -1,4 +1,4 @@
-import type { Subscription } from '../modules/subscription/domain/subscription.js';
+import type { Subscription } from '../domain/subscription.js';
 
 export interface SubscriptionService {
   subscribe(email: string, repoPath: string): Promise<void>;

@@ -1,5 +1,5 @@
 import type { FastifyPluginCallback } from 'fastify';
-import type { SubscriptionService } from '../domain/subscription.js';
+import type { SubscriptionService } from '../modules/subscription/api/subscription-service.interface.js';
 import { SubscriptionsResponseDtoSchema } from '../dtos/subscription.dto.js';
 import { CommonSuccessResponseDtoSchema } from '../dtos/response.dto.js';
 
