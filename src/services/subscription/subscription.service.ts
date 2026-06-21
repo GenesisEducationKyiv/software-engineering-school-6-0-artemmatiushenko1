@@ -129,9 +129,9 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     });
   }
 
-  async confirm(tokenValue: string): Promise<void> {
+  async confirm(token: string): Promise<void> {
     const subscription = await this.subscriptionRepo.findByToken(
-      tokenValue,
+      token,
       'subscribe',
     );
 
@@ -147,7 +147,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       ttlMs: SubscriptionServiceImpl.UNSUBSCRIBE_TTL_MS,
     });
 
-    subscription.confirm(tokenValue, now, unsubscribeToken);
+    subscription.confirm(token, now, unsubscribeToken);
 
     await this.transactionManager.run(async (tx) => {
       await this.subscriptionRepo.save(subscription, tx);
@@ -164,9 +164,9 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     });
   }
 
-  async unsubscribe(tokenValue: string): Promise<void> {
+  async unsubscribe(token: string): Promise<void> {
     const subscription = await this.subscriptionRepo.findByToken(
-      tokenValue,
+      token,
       'unsubscribe',
     );
 
@@ -175,7 +175,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     const now = this.clock.now();
-    subscription.unsubscribe(tokenValue, now);
+    subscription.unsubscribe(token, now);
 
     await this.transactionManager.run(async (tx) => {
       await this.subscriptionRepo.save(subscription, tx);

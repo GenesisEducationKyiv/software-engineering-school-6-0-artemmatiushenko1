@@ -13,7 +13,7 @@ export interface SubscriptionRepository {
   ): Promise<Subscription | null>;
 
   findByToken(
-    tokenValue: string,
+    token: string,
     scope: ConfirmationTokenScope,
   ): Promise<Subscription | null>;
 

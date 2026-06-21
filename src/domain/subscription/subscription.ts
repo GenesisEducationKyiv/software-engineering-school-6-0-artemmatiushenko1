@@ -89,8 +89,8 @@ export class Subscription {
     this._status = 'unsubscribed';
   }
 
-  confirm(tokenValue: string, now: Date, unsubscribeToken: ConfirmationToken) {
-    if (this.confirmationToken.value !== tokenValue) {
+  confirm(token: string, now: Date, unsubscribeToken: ConfirmationToken) {
+    if (this.confirmationToken.value !== token) {
       throw new WrongTokenScopeError('subscribe', 'unknown');
     }
 
