@@ -27,7 +27,7 @@ import { parseResponse } from '../../src/utils/test.utils.js';
 import { SubscriptionsResponseDtoSchema } from '../../src/dtos/subscription.dto.js';
 import { AppContainer } from '../../src/dependencies.js';
 import type { GithubClient } from '../../src/domain/github.js';
-import type { EmailClient } from '../../src/domain/email.js';
+import type { EmailClient } from '../../src/modules/notification/application/ports/email-client.js';
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
 import { TEST_APP_CONFIG } from './constants.js';

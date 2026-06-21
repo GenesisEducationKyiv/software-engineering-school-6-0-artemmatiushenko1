@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SubscriptionServiceImpl } from './subscription.service.js';
 import type { SubscriptionRepository } from '../application/ports/subscription.repository.ts';
 import type { GithubClient } from '../../../domain/github.js';
-import type { NotificationService } from '../../../domain/notification.js';
+import type { NotificationService } from '../../notification/api/notification.service.js';
 import {
   InvalidRepoFormatError,
   InvalidEmailError,

@@ -1,7 +1,7 @@
 import type { GithubClient } from '../../domain/github.js';
 import type { Subscription } from '../subscription/domain/index.js';
 import type { SubscriptionService } from '../subscription/api/subscription-service.interface.js';
-import type { NotificationService } from '../../domain/notification.js';
+import type { NotificationService } from '../notification/api/notification.service.js';
 import type { Logger } from '../../shared-kernel/index.js';
 import { GithubRateLimitError } from '../../domain/errors.js';
 import type { Metrics } from '../../domain/metrics.js';

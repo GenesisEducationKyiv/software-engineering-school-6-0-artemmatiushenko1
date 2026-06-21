@@ -1,17 +1,20 @@
-import type { EmailClient } from '../../domain/email.js';
+import type { EmailClient } from './ports/email-client.js';
 import type {
   NotificationService,
   NewReleaseNotificationContext,
   SubscriptionConfirmationContext,
   SubscriptionConfirmedContext,
-} from '../../domain/notification.js';
+} from '../api/notification.service.js';
 import {
   newReleaseNotificationTemplate,
   subscriptionConfirmationTemplate,
   subscriptionConfirmedTemplate,
-} from './templates.js';
-import { buildConfirmUrl, buildUnsubscribeUrl } from './links.js';
-import type { Metrics } from '../../domain/metrics.js';
+} from '../infrastructure/templates.js';
+import {
+  buildConfirmUrl,
+  buildUnsubscribeUrl,
+} from '../infrastructure/links.js';
+import type { Metrics } from '../../../domain/metrics.js';
 
 export class NotificationServiceImpl implements NotificationService {
   constructor(

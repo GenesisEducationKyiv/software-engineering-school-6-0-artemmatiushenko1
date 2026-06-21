@@ -1,6 +1,9 @@
 import nodemailer from 'nodemailer';
-import type { SendEmailOptions, EmailClient } from '../../domain/email.js';
-import type { EmailConfig } from '../../config.js';
+import type { EmailConfig } from '../../../config.js';
+import type {
+  EmailClient,
+  SendEmailOptions,
+} from '../application/ports/email-client.js';
 
 export class NodemailerEmailClient implements EmailClient {
   private transporter: nodemailer.Transporter;

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ScannerService } from './scanner.service.js';
 import type { SubscriptionService } from '../subscription/api/subscription-service.interface.js';
 import type { GithubClient } from '../../domain/github.js';
-import type { NotificationService } from '../../domain/notification.js';
+import type { NotificationService } from '../notification/api/notification.service.js';
 import type { Logger } from '../../shared-kernel/logger.js';
 import { GithubRateLimitError } from '../../domain/errors.js';
 import { mock } from 'vitest-mock-extended';

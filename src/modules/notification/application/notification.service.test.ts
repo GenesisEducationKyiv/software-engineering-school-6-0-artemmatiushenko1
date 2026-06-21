@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NotificationServiceImpl } from './notification.service.js';
-import type { NewReleaseNotificationContext } from '../../domain/notification.js';
-import type { EmailClient } from '../../domain/email.js';
+import type { NewReleaseNotificationContext } from '../api/notification.service.js';
+import type { EmailClient } from './ports/email-client.js';
 import { mock } from 'vitest-mock-extended';
-import type { Metrics } from '../../domain/metrics.js';
+import type { Metrics } from '../../../domain/metrics.js';
 
 describe('NotificationServiceImpl', () => {
   let notificationService: NotificationServiceImpl;
