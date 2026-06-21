@@ -10,6 +10,7 @@ export const SubscriptionTokenRowSchema = z.object({
   subscriptionId: z.string(),
   scope: ConfirmationTokenScopeSchema,
   expiresAt: z.date(),
+  usedAt: z.date().nullable(),
   createdAt: z.date(),
 });
 
@@ -21,6 +22,7 @@ export class SubscriptionTokenRowMapper {
       value: row.token,
       scope: row.scope,
       expiresAt: row.expiresAt,
+      consumedAt: row.usedAt,
     });
   }
 
@@ -36,6 +38,7 @@ export class SubscriptionTokenRowMapper {
       subscriptionId,
       scope: token.scope,
       expiresAt: token.expiresAt,
+      usedAt: token.consumedAt,
       createdAt,
     };
   }

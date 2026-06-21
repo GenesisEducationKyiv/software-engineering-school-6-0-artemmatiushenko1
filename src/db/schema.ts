@@ -31,5 +31,6 @@ export const subscriptionTokens = pgTable('subscription_tokens', {
     .references(() => subscriptions.id, { onDelete: 'cascade' }),
   scope: scopeEnum('scope').notNull(),
   expiresAt: timestamp('expires_at').notNull(),
+  usedAt: timestamp('used_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

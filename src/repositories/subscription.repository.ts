@@ -145,6 +145,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
         token: confirmation.value,
         scope: confirmation.scope,
         expiresAt: confirmation.expiresAt,
+        usedAt: confirmation.consumedAt,
       },
       tx,
     );
@@ -156,6 +157,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
           token: unsubscribe.value,
           scope: unsubscribe.scope,
           expiresAt: unsubscribe.expiresAt,
+          usedAt: unsubscribe.consumedAt,
         },
         tx,
       );
@@ -213,6 +215,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       token: string;
       scope: ConfirmationTokenScope;
       expiresAt: Date;
+      usedAt: Date | null;
     },
     tx?: DomainTransaction,
   ): Promise<SubscriptionTokenRow> {
@@ -223,6 +226,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
         token: data.token,
         scope: data.scope,
         expiresAt: data.expiresAt,
+        usedAt: data.usedAt,
       })
       .returning();
 

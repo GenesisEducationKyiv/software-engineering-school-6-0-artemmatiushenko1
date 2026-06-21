@@ -36,10 +36,30 @@ import { createFastifyServerOptions } from '../../src/infrastructure/fastify/cre
 import { randomUUID } from 'node:crypto';
 
 const subscriptionId = () => randomUUID();
+const MOCK_NOW = new Date('2026-01-01T12:00:00Z');
 
 describe('Subscription Routes Integration with PGlite', () => {
   let app: App;
   let db: Database;
+
+  const findSubscriptionToken = async (
+    targetSubscriptionId: string,
+    scope: 'subscribe' | 'unsubscribe',
+    token?: string,
+  ) =>
+    db.query.subscriptionTokens.findFirst({
+      where: (tokens, { eq, and }) =>
+        token
+          ? and(
+              eq(tokens.subscriptionId, targetSubscriptionId),
+              eq(tokens.scope, scope),
+              eq(tokens.token, token),
+            )
+          : and(
+              eq(tokens.subscriptionId, targetSubscriptionId),
+              eq(tokens.scope, scope),
+            ),
+    });
 
   const seedConfirmedSubscription = async (values: {
     email: string;
@@ -84,7 +104,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
   beforeAll(async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-01-01T12:00:00Z'));
+    vi.setSystemTime(MOCK_NOW);
     db = drizzle(new PGlite(), { schema });
     await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
   });
@@ -429,6 +449,14 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
       assert(updatedSubscription);
       expect(updatedSubscription.confirmed).toBe(true);
+
+      const consumedSubscribeToken = await findSubscriptionToken(
+        subscription.id,
+        'subscribe',
+        subscribeTokenValue,
+      );
+      assert(consumedSubscribeToken);
+      expect(consumedSubscribeToken.usedAt).toEqual(MOCK_NOW);
     });
 
     it('should return 404 and SUBSCRIPTION_ALREADY_CONFIRMED when reusing an already consumed token', async () => {
@@ -608,6 +636,14 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
       assert(updatedSubscription);
       expect(updatedSubscription.confirmed).toBe(false);
+
+      const consumedUnsubscribeToken = await findSubscriptionToken(
+        subscription.id,
+        'unsubscribe',
+        tokenValue,
+      );
+      assert(consumedUnsubscribeToken);
+      expect(consumedUnsubscribeToken.usedAt).toEqual(MOCK_NOW);
     });
 
     it('should return 400 and ILLEGAL_STATE_TRANSITION when reusing an already consumed token', async () => {
