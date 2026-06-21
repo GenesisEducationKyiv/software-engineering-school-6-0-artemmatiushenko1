@@ -9,7 +9,7 @@ import {
   WrongTokenScopeError,
   SubscriptionAlreadyDeactivatedError,
   SubscriptionAlreadyConfirmedError,
-} from './subscription/errors.js';
+} from '../modules/subscription/domain/errors.js';
 
 export {
   InvalidEmailError,

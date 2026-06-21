@@ -2,11 +2,11 @@ import { z } from 'zod';
 import {
   Subscription,
   SubscriptionStatusSchema,
-} from '../domain/subscription/subscription.js';
-import { Email } from '../domain/subscription/email.js';
-import { RepoPath } from '../domain/subscription/repo-path.js';
-import { ConfirmationToken } from '../domain/subscription/confirmation-token.js';
-import { ReleaseTag } from '../domain/subscription/release-tag.js';
+} from '../modules/subscription/domain/subscription.js';
+import { Email } from '../modules/subscription/domain/email.js';
+import { RepoPath } from '../modules/subscription/domain/repo-path.js';
+import { ConfirmationToken } from '../modules/subscription/domain/confirmation-token.js';
+import { ReleaseTag } from '../modules/subscription/domain/release-tag.js';
 
 export const SubscriptionRowSchema = z.object({
   id: z.string(),

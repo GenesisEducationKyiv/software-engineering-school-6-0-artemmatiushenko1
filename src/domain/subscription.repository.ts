@@ -1,8 +1,8 @@
-import type { Subscription } from './subscription/subscription.js';
-import type { Email } from './subscription/email.js';
-import type { RepoPath } from './subscription/repo-path.js';
+import type { Subscription } from '../modules/subscription/domain/subscription.js';
+import type { Email } from '../modules/subscription/domain/email.js';
+import type { RepoPath } from '../modules/subscription/domain/repo-path.js';
 import type { DomainTransaction } from './shared/transaction-manager.js';
-import type { ConfirmationTokenScope } from './subscription/confirmation-token.js';
+import type { ConfirmationTokenScope } from '../modules/subscription/domain/confirmation-token.js';
 
 export interface SubscriptionRepository {
   findById(id: string): Promise<Subscription | null>;

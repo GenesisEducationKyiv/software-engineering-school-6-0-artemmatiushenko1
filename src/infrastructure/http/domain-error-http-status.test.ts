@@ -17,7 +17,7 @@ import {
 import {
   SubscriptionAlreadyConfirmedError,
   SubscriptionAlreadyDeactivatedError,
-} from '../../domain/subscription/errors.js';
+} from '../../modules/subscription/domain/errors.js';
 import {
   resolveDomainErrorHttpStatus,
   resolveDomainErrorHttpResponse,

@@ -21,11 +21,11 @@ import type {
   DomainTransaction,
 } from '../../domain/shared/index.js';
 import { mock } from 'vitest-mock-extended';
-import { Email } from '../../domain/subscription/email.js';
-import { RepoPath } from '../../domain/subscription/repo-path.js';
-import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
-import { ReleaseTag } from '../../domain/subscription/release-tag.js';
-import { Subscription } from '../../domain/subscription/index.js';
+import { Email } from './domain/email.js';
+import { RepoPath } from './domain/repo-path.js';
+import { ConfirmationToken } from './domain/confirmation-token.js';
+import { ReleaseTag } from './domain/release-tag.js';
+import { Subscription } from './domain/index.js';
 
 const createPendingDomainSubscription = (
   overrides: { id?: string; email?: string; repo?: string } = {},

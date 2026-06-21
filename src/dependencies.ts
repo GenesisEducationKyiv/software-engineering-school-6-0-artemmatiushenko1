@@ -6,9 +6,9 @@ import { CachedOctokitGithubClient } from './infrastructure/github/cached-octoki
 import { NodemailerEmailClient } from './infrastructure/email/nodemailer.client.js';
 import { DrizzleSubscriptionRepository } from './repositories/subscription.repository.js';
 import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
-import { NotificationServiceImpl } from './services/notification/notification.service.js';
-import { ScannerService } from './services/scanner/scanner.service.js';
-import { SubscriptionServiceImpl } from './services/subscription/subscription.service.js';
+import { NotificationServiceImpl } from './modules/notification/notification.service.js';
+import { ScannerService } from './modules/scanner/scanner.service.js';
+import { SubscriptionServiceImpl } from './modules/subscription/subscription.service.js';
 import { PrometheusMetrics } from './infrastructure/metrics/prometheus-metrics.js';
 import { FastifyLogger } from './infrastructure/logger/fastify-logger.js';
 import type { FastifyBaseLogger } from 'fastify';

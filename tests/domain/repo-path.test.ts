@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { RepoPath } from '../../src/domain/subscription/repo-path.js';
+import { RepoPath } from '../../src/modules/subscription/domain/repo-path.js';
 import { InvalidRepoFormatError } from '../../src/domain/errors.js';
 
 describe('RepoPath', () => {

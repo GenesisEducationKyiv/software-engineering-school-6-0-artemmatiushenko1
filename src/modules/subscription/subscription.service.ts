@@ -2,15 +2,15 @@ import type { GithubClient } from '../../domain/github.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
 import type { NotificationService } from '../../domain/notification.js';
 import type { SubscriptionService } from '../../domain/subscription.js';
-import { Subscription } from '../../domain/subscription/index.js';
+import { Subscription } from './domain/index.js';
 import {
   RepoNotFoundError,
   AlreadySubscribedError,
   SubscriptionNotFoundError,
 } from '../../domain/errors.js';
-import { Email } from '../../domain/subscription/email.js';
-import { RepoPath } from '../../domain/subscription/repo-path.js';
-import { ReleaseTag } from '../../domain/subscription/release-tag.js';
+import { Email } from './domain/email.js';
+import { RepoPath } from './domain/repo-path.js';
+import { ReleaseTag } from './domain/release-tag.js';
 import type {
   IdGenerator,
   TokenGenerator,
@@ -18,7 +18,7 @@ import type {
   TransactionManager,
   Logger,
 } from '../../domain/shared/index.js';
-import { ConfirmationToken } from '../../domain/subscription/index.js';
+import { ConfirmationToken } from './domain/index.js';
 
 export class SubscriptionServiceImpl implements SubscriptionService {
   private static readonly SUBSCRIPTION_CONFIRMATION_TTL_MS = 60_000;

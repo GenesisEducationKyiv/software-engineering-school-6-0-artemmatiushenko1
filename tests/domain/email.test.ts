@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   Email,
   InvalidEmailError,
-} from '../../src/domain/subscription/index.js';
+} from '../../src/modules/subscription/domain/index.js';
 
 describe('Email', () => {
   describe('fromString', () => {

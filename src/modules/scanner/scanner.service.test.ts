@@ -7,11 +7,11 @@ import type { Logger } from '../../domain/shared/logger.js';
 import { GithubRateLimitError } from '../../domain/errors.js';
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../../domain/metrics.js';
-import { Subscription } from '../../domain/subscription/index.js';
-import { Email } from '../../domain/subscription/email.js';
-import { RepoPath } from '../../domain/subscription/repo-path.js';
-import { ReleaseTag } from '../../domain/subscription/release-tag.js';
-import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
+import { Subscription } from '../subscription/domain/index.js';
+import { Email } from '../subscription/domain/email.js';
+import { RepoPath } from '../subscription/domain/repo-path.js';
+import { ReleaseTag } from '../subscription/domain/release-tag.js';
+import { ConfirmationToken } from '../subscription/domain/confirmation-token.js';
 
 const UNSUBSCRIBE_TOKEN = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 

@@ -1,12 +1,12 @@
 import type { GithubClient } from '../../domain/github.js';
-import type { Subscription } from '../../domain/subscription/index.js';
+import type { Subscription } from '../subscription/domain/index.js';
 import type { SubscriptionService } from '../../domain/subscription.js';
 import type { NotificationService } from '../../domain/notification.js';
 import type { Logger } from '../../domain/shared/index.js';
 import { GithubRateLimitError } from '../../domain/errors.js';
 import type { Metrics } from '../../domain/metrics.js';
 import { msToSeconds } from '../../utils/time.utils.js';
-import { RepoPath } from '../../domain/subscription/repo-path.js';
+import { RepoPath } from '../subscription/domain/repo-path.js';
 
 type ScannableSubscription = {
   id: string;

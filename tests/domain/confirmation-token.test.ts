@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { ConfirmationToken } from '../../src/domain/subscription/confirmation-token.js';
+import { ConfirmationToken } from '../../src/modules/subscription/domain/confirmation-token.js';
 import {
   InvalidTokenError,
   TokenAlreadyUsedError,
   TokenExpiredError,
-} from '../../src/domain/subscription/errors.js';
+} from '../../src/modules/subscription/domain/errors.js';
 
 const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000';
 const ISSUED_AT = new Date('2026-01-01T12:00:00Z');
