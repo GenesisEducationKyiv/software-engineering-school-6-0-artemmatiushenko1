@@ -10,7 +10,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { type AppConfig } from './config.js';
-import { subscriptionRoutes } from './routes/subscription.routes.js';
+import { registerSubscribeRoute } from './modules/subscription/infrastructure/http/subscribe.controller.js';
+import { registerListSubscriptionsRoute } from './modules/subscription/infrastructure/http/list-subscriptions.controller.js';
+import { registerConfirmRoute } from './modules/subscription/infrastructure/http/confirm.controller.js';
+import { registerUnsubscribeRoute } from './modules/subscription/infrastructure/http/unsubscribe.controller.js';
 import { metricsRoutes } from './routes/metrics.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
 import cron, { type ScheduledTask } from 'node-cron';
@@ -162,10 +165,17 @@ export class App {
     await this.fastify.register(metricsRoutes, {
       metrics: this.deps.metrics,
     });
-    await this.fastify.register(subscriptionRoutes, {
-      subscriptionService: this.deps.subscriptionService,
-      prefix: this.config.apiPrefix,
-    });
+    await this.fastify.register(
+      (fastify) => {
+        const { subscriptionService } = this.deps;
+
+        registerSubscribeRoute(fastify, subscriptionService);
+        registerListSubscriptionsRoute(fastify, subscriptionService);
+        registerConfirmRoute(fastify, subscriptionService);
+        registerUnsubscribeRoute(fastify, subscriptionService);
+      },
+      { prefix: this.config.apiPrefix },
+    );
   }
 
   startScannerCron() {
