@@ -2,7 +2,7 @@ import { z } from 'zod';
 import {
   ConfirmationToken,
   ConfirmationTokenScopeSchema,
-} from '../modules/subscription/domain/confirmation-token.js';
+} from '../domain/confirmation-token.js';
 
 export const SubscriptionTokenRowSchema = z.object({
   id: z.number().int(),

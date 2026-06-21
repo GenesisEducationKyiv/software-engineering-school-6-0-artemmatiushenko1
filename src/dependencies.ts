@@ -4,7 +4,7 @@ import { type AppConfig } from './config.js';
 import { OctokitGithubClient } from './infrastructure/github/octokit.client.js';
 import { CachedOctokitGithubClient } from './infrastructure/github/cached-octokit.client.js';
 import { NodemailerEmailClient } from './infrastructure/email/nodemailer.client.js';
-import { DrizzleSubscriptionRepository } from './repositories/subscription.repository.js';
+import { DrizzleSubscriptionRepository } from './modules/subscription/infrastructure/subscription.repository.js';
 import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
 import { NotificationServiceImpl } from './modules/notification/notification.service.js';
 import { ScannerService } from './modules/scanner/scanner.service.js';

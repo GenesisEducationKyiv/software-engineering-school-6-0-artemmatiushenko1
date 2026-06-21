@@ -1,12 +1,12 @@
 import type {
   Database,
   Transaction as DrizzleTransaction,
-} from '../db/types.js';
-import { subscriptions, subscriptionTokens } from '../db/schema.js';
+} from '../../../db/types.js';
+import { subscriptions, subscriptionTokens } from '../../../db/schema.js';
 import { eq, and } from 'drizzle-orm';
-import { Subscription } from '../modules/subscription/domain/subscription.js';
-import { Email } from '../modules/subscription/domain/email.js';
-import { RepoPath } from '../modules/subscription/domain/repo-path.js';
+import { Subscription } from '../domain/subscription.js';
+import { Email } from '../domain/email.js';
+import { RepoPath } from '../domain/repo-path.js';
 import {
   SubscriptionRowMapper,
   SubscriptionRowSchema,
@@ -17,9 +17,9 @@ import {
   SubscriptionTokenRowSchema,
   type SubscriptionTokenRow,
 } from './subscription-token-row.mapper.js';
-import type { SubscriptionRepository } from '../domain/subscription.repository.js';
-import type { DomainTransaction } from '../domain/shared/index.js';
-import type { ConfirmationTokenScope } from '../modules/subscription/domain/confirmation-token.js';
+import type { SubscriptionRepository } from '../application/ports/subscription.repository.js';
+import type { DomainTransaction } from '../../../domain/shared/index.js';
+import type { ConfirmationTokenScope } from '../domain/confirmation-token.js';
 
 export class DrizzleSubscriptionRepository implements SubscriptionRepository {
   private readonly subscriptionMapper = new SubscriptionRowMapper();

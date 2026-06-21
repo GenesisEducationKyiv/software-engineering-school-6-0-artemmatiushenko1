@@ -1,5 +1,5 @@
 import type { GithubClient } from '../../../domain/github.js';
-import type { SubscriptionRepository } from '../../../domain/subscription.repository.js';
+import type { SubscriptionRepository } from '../application/ports/subscription.repository.ts';
 import type { NotificationService } from '../../../domain/notification.js';
 import type { SubscriptionService } from '../api/subscription-service.interface.js';
 import { Subscription } from '../domain/index.js';
