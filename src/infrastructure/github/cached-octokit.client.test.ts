@@ -1,32 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Mocked } from 'vitest';
 import type { Redis } from 'ioredis';
 import { CachedOctokitGithubClient } from './cached-octokit.client.js';
 import type { GithubClient, GithubRelease } from '../../domain/github.js';
 import type { Metrics } from '../../domain/metrics.js';
+import { mock } from 'vitest-mock-extended';
 
 describe('CachedOctokitGithubClient', () => {
   let cachedClient: CachedOctokitGithubClient;
-  let githubClientMock: Mocked<GithubClient>;
-  let redisMock: Mocked<Redis>;
-  let metricsMock: Mocked<Metrics>;
+  const githubClientMock = mock<GithubClient>();
+  const redisMock = mock<Redis>();
+  const metricsMock = mock<Metrics>();
   const TTL = 600;
 
   beforeEach(() => {
-    githubClientMock = {
-      repositoryExists: vi.fn(),
-      getLatestRelease: vi.fn(),
-    };
-
-    redisMock = {
-      get: vi.fn(),
-      set: vi.fn(),
-    } as unknown as Mocked<Redis>;
-
-    metricsMock = {
-      incrementCacheHit: vi.fn(),
-      incrementCacheMiss: vi.fn(),
-    } as unknown as Mocked<Metrics>;
+    vi.resetAllMocks();
 
     cachedClient = new CachedOctokitGithubClient(
       githubClientMock,

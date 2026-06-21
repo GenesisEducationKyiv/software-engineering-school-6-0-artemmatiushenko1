@@ -116,11 +116,48 @@ Once the containers are running, the application will be accessible at:
 
 ## Testing
 
-Run the test suite using Vitest:
+The project includes a comprehensive test suite covering unit, integration, and end-to-end (E2E) scenarios.
+
+### Unit & Integration Tests
+
+These tests cover individual components and their interactions using **Vitest**. They utilize **PGlite** (a WASM-based in-memory PostgreSQL) to provide a real database environment with high performance and no external dependencies.
 
 ```bash
 npm test
 ```
+
+### End-to-End (E2E) Tests
+
+E2E tests verify the complete user flow from the frontend to the backend using **Playwright**. The tests run in a fully containerized environment that includes:
+
+- **Mailpit**: For capturing and verifying outgoing emails (confirmation/unsubscription links).
+- **GitHub Mock Server**: For simulating repository states and avoiding API rate limits.
+- **PostgreSQL & Redis**: Isolated instances specifically for the E2E suite.
+
+#### Running E2E Tests (Recommended)
+
+The simplest way to run E2E tests is via Docker Compose, which handles all dependencies and environment setup:
+
+```bash
+docker compose -f docker-compose.e2e.yaml up --build --exit-code-from e2e
+```
+
+#### Running E2E Tests Locally (for Debugging)
+
+If you need to run tests locally with the Playwright UI:
+
+1.  **Build the client**:
+    ```bash
+    npm run build --prefix client
+    ```
+2.  **Start the E2E infrastructure**:
+    ```bash
+    docker compose -f docker-compose.e2e.yaml up db redis github-mock mailpit -d
+    ```
+3.  **Run Playwright**:
+    ```bash
+    npm run test:e2e
+    ```
 
 ## Project Structure
 
