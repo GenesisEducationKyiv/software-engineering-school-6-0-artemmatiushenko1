@@ -58,6 +58,15 @@ const createConfirmedDomainSubscription = (
   return subscription;
 };
 
+const createUnsubscribedDomainSubscription = (
+  overrides: { id?: string; email?: string; repo?: string } = {},
+) => {
+  const subscription = createConfirmedDomainSubscription(overrides);
+  subscription.unsubscribe('6ba7b810-9dad-11d1-80b4-00c04fd430c8', FIXED_NOW);
+
+  return subscription;
+};
+
 const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
 
 describe('SubscriptionServiceImpl', () => {
@@ -192,6 +201,38 @@ describe('SubscriptionServiceImpl', () => {
       confirmToken: newConfirmToken,
     });
     expect(loggerMock.info).toHaveBeenCalled();
+  });
+
+  it('should reactivate an unsubscribed subscription and resend confirmation', async () => {
+    const email = 'test@example.com';
+    const repo = 'owner/repo';
+    const newConfirmToken = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+    const existingDomainSubscription = createUnsubscribedDomainSubscription({
+      email,
+      repo,
+    });
+
+    tokenGeneratorMock.generate.mockReturnValue(newConfirmToken);
+    githubClientMock.repositoryExists.mockResolvedValue(true);
+    repoMock.findByEmailAndRepo.mockResolvedValue(existingDomainSubscription);
+
+    await subscriptionService.subscribe(email, repo);
+
+    expect(repoMock.save).toHaveBeenCalledTimes(1);
+
+    const [savedSubscription] = repoMock.save.mock.calls[0]!;
+
+    expect(savedSubscription.id).toBe(existingDomainSubscription.id);
+    expect(savedSubscription.status).toBe('pending');
+    expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
+    expect(savedSubscription.unsubscribeToken).toBeNull();
+    expect(
+      notificationServiceMock.notifySubscriptionConfirmation,
+    ).toHaveBeenCalledWith({
+      email,
+      repo,
+      confirmToken: newConfirmToken,
+    });
   });
 
   it('should not leave partial db state when confirmation email fails for a new subscription', async () => {

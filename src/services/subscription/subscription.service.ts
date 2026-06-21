@@ -68,7 +68,11 @@ export class SubscriptionServiceImpl implements SubscriptionService {
 
     let subscription: Subscription;
     if (existingSubscription) {
-      existingSubscription.renewConfirmation(confirmToken);
+      if (existingSubscription.status === 'unsubscribed') {
+        existingSubscription.reactivate(confirmToken);
+      } else {
+        existingSubscription.renewConfirmation(confirmToken);
+      }
       subscription = existingSubscription;
     } else {
       subscription = Subscription.request(

@@ -246,6 +246,64 @@ describe('Subscription', () => {
     });
   });
 
+  describe('reactivate', () => {
+    const unsubscribedSubscription = () => {
+      const subscription = confirmSubscription();
+      subscription.unsubscribe(UNSUBSCRIBE_TOKEN_UUID, NOW);
+
+      return subscription;
+    };
+
+    it('should move an unsubscribed subscription back to pending with a new confirmation token', () => {
+      const subscription = unsubscribedSubscription();
+      const reactivationToken = issueConfirmToken({
+        value: RENEWED_CONFIRM_TOKEN_UUID,
+      });
+
+      subscription.reactivate(reactivationToken);
+
+      expect(subscription.status).toBe('pending');
+      expect(subscription.confirmationToken).toBe(reactivationToken);
+      expect(subscription.unsubscribeToken).toBeNull();
+    });
+
+    it('should throw WrongTokenScopeError when new token has wrong scope', () => {
+      const subscription = unsubscribedSubscription();
+
+      expect(() => subscription.reactivate(issueUnsubscribeToken())).toThrow(
+        WrongTokenScopeError,
+      );
+      expect(() => subscription.reactivate(issueUnsubscribeToken())).toThrow(
+        'Wrong token scope: expected subscribe, got unsubscribe',
+      );
+    });
+
+    it('should throw SubscriptionAlreadyConfirmedError when already confirmed', () => {
+      const subscription = confirmSubscription();
+
+      expect(() =>
+        subscription.reactivate(
+          issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+        ),
+      ).toThrow(SubscriptionAlreadyConfirmedError);
+    });
+
+    it('should throw IllegalStateTransitionError when subscription is pending', () => {
+      const subscription = requestSubscription();
+
+      expect(() =>
+        subscription.reactivate(
+          issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+        ),
+      ).toThrow(IllegalStateTransitionError);
+      expect(() =>
+        subscription.reactivate(
+          issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+        ),
+      ).toThrow('Illegal state transition from pending to pending');
+    });
+  });
+
   describe('unsubscribe', () => {
     it('should unsubscribe a confirmed subscription', () => {
       const subscription = confirmSubscription();

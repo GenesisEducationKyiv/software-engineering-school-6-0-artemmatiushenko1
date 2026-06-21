@@ -267,6 +267,40 @@ describe('Subscription Routes Integration with PGlite', () => {
         const allSubscriptions = await db.select().from(schema.subscriptions);
         expect(allSubscriptions).toEqual([existingSubscription]);
       });
+
+      it('should allow re-subscribing after unsubscribing', async () => {
+        const email = 'test@example.com';
+        const repo = 'owner/repo';
+
+        const { subscription, unsubscribeToken } =
+          await seedConfirmedSubscription({ email, repo });
+
+        const unsubscribeResponse = await app.fastify.inject({
+          method: 'GET',
+          url: `/api/unsubscribe/${unsubscribeToken}`,
+        });
+        expect(unsubscribeResponse.statusCode).toBe(200);
+
+        const subscribeResponse = await app.fastify.inject({
+          method: 'POST',
+          url: '/api/subscribe',
+          payload: { email, repo },
+        });
+
+        expect(subscribeResponse.statusCode).toBe(200);
+
+        const updatedSubscription = await db.query.subscriptions.findFirst({
+          where: (subs, { eq }) => eq(subs.id, subscription.id),
+        });
+        assert(updatedSubscription);
+        expect(updatedSubscription.status).toBe('pending');
+        expect(emailMock.sendEmail).toHaveBeenCalledWith(
+          expect.objectContaining({
+            to: email,
+            subject: `Confirm subscription: ${repo}`,
+          }),
+        );
+      });
     });
   });
 

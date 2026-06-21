@@ -130,6 +130,24 @@ export class Subscription {
     this._confirmationToken = newToken;
   }
 
+  reactivate(newToken: ConfirmationToken): void {
+    if (newToken.scope !== 'subscribe') {
+      throw new WrongTokenScopeError('subscribe', newToken.scope);
+    }
+
+    if (this._status === 'confirmed') {
+      throw new SubscriptionAlreadyConfirmedError();
+    }
+
+    if (this._status !== 'unsubscribed') {
+      throw new IllegalStateTransitionError(this._status, 'pending');
+    }
+
+    this._confirmationToken = newToken;
+    this._unsubscribeToken = null;
+    this._status = 'pending';
+  }
+
   get status(): SubscriptionStatus {
     return this._status;
   }
