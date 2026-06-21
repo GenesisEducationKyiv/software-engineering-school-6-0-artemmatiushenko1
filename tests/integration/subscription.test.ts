@@ -5,7 +5,6 @@ import {
   vi,
   beforeEach,
   beforeAll,
-  afterAll,
   afterEach,
 } from 'vitest';
 import Fastify from 'fastify';
@@ -29,6 +28,7 @@ import { SubscriptionsResponseDtoSchema } from '../../src/dtos/subscription.dto.
 import { AppContainer } from '../../src/dependencies.js';
 import type { GithubClient } from '../../src/domain/github.js';
 import type { EmailClient } from '../../src/domain/email.js';
+import type { Clock } from '../../src/domain/shared/index.js';
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
 import { TEST_APP_CONFIG } from './constants.js';
@@ -101,16 +101,11 @@ describe('Subscription Routes Integration with PGlite', () => {
   const githubMock = mock<GithubClient>();
   const emailMock = mock<EmailClient>();
   const redisMock = mock<Redis>();
+  const clockMock = mock<Clock>();
 
   beforeAll(async () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(MOCK_NOW);
     db = drizzle(new PGlite(), { schema });
     await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
-  });
-
-  afterAll(() => {
-    vi.useRealTimers();
   });
 
   beforeEach(async () => {
@@ -118,6 +113,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     vi.resetAllMocks();
 
     githubMock.repositoryExists.mockResolvedValue(true);
+    clockMock.now.mockReturnValue(MOCK_NOW);
 
     const fastify = Fastify(createFastifyServerOptions(TEST_APP_CONFIG));
 
@@ -125,6 +121,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     container.githubClient = githubMock;
     container.emailClient = emailMock;
     container.redis = redisMock;
+    container.clock = clockMock;
 
     const deps = container.build();
     app = await App.create(TEST_APP_CONFIG, deps, fastify);
