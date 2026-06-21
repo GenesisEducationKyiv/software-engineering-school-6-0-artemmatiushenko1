@@ -29,6 +29,13 @@
       "when": 1782043513560,
       "tag": "0003_many_wonder_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782048000000,
+      "tag": "0004_subscription_status",
+      "breakpoints": true
     }
   ]
 }

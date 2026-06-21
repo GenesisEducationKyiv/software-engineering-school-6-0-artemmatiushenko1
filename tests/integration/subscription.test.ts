@@ -74,7 +74,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         id,
         email: values.email,
         repo: values.repo,
-        confirmed: true,
+        status: 'confirmed',
         lastSeenTag: values.lastSeenTag ?? null,
       })
       .returning();
@@ -157,7 +157,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       assert(saved);
 
       expect(saved.email).toBe(email);
-      expect(saved.confirmed).toBe(false);
+      expect(saved.status).toBe('pending');
 
       expect(emailMock.sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -229,7 +229,7 @@ describe('Subscription Routes Integration with PGlite', () => {
             id: subscriptionId(),
             email,
             repo,
-            confirmed: true,
+            status: 'confirmed',
           })
           .returning();
 
@@ -273,7 +273,7 @@ describe('Subscription Routes Integration with PGlite', () => {
             id: subscriptionId(),
             email,
             repo,
-            confirmed: true,
+            status: 'confirmed',
           })
           .returning();
 
@@ -301,7 +301,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         id: subscriptionId(),
         email,
         repo: 'owner/repo2',
-        confirmed: false,
+        status: 'pending',
       });
 
       const response = await app.fastify.inject({
@@ -359,7 +359,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         id: subscriptionId(),
         email,
         repo: 'owner/repo',
-        confirmed: false,
+        status: 'pending',
       });
 
       const response = await app.fastify.inject({
@@ -407,7 +407,7 @@ describe('Subscription Routes Integration with PGlite', () => {
           id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
-          confirmed: false,
+          status: 'pending',
         })
         .returning();
 
@@ -445,7 +445,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         where: (subs, { eq }) => eq(subs.id, subscription.id),
       });
       assert(updatedSubscription);
-      expect(updatedSubscription.confirmed).toBe(true);
+      expect(updatedSubscription.status).toBe('confirmed');
 
       const consumedSubscribeToken = await findSubscriptionToken(
         subscription.id,
@@ -463,7 +463,7 @@ describe('Subscription Routes Integration with PGlite', () => {
           id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
-          confirmed: false,
+          status: 'pending',
         })
         .returning();
 
@@ -528,7 +528,7 @@ describe('Subscription Routes Integration with PGlite', () => {
           id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
-          confirmed: false,
+          status: 'pending',
         })
         .returning();
 
@@ -554,7 +554,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       const updatedSubscription = await db.query.subscriptions.findFirst({
         where: (subs, { eq }) => eq(subs.id, subscription.id),
       });
-      expect(updatedSubscription?.confirmed).toBe(false);
+      expect(updatedSubscription?.status).toBe('pending');
     });
 
     it('should return 404 and SUBSCRIPTION_NOT_FOUND when token has wrong scope', async () => {
@@ -564,7 +564,7 @@ describe('Subscription Routes Integration with PGlite', () => {
           id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
-          confirmed: false,
+          status: 'pending',
         })
         .returning();
 
@@ -597,7 +597,7 @@ describe('Subscription Routes Integration with PGlite', () => {
           id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
-          confirmed: true,
+          status: 'confirmed',
         })
         .returning();
 
@@ -632,7 +632,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         where: (subs, { eq }) => eq(subs.id, subscription.id),
       });
       assert(updatedSubscription);
-      expect(updatedSubscription.confirmed).toBe(false);
+      expect(updatedSubscription.status).toBe('unsubscribed');
 
       const consumedUnsubscribeToken = await findSubscriptionToken(
         subscription.id,
@@ -650,7 +650,7 @@ describe('Subscription Routes Integration with PGlite', () => {
           id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
-          confirmed: true,
+          status: 'confirmed',
         })
         .returning();
 
@@ -709,7 +709,7 @@ describe('Subscription Routes Integration with PGlite', () => {
           id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
-          confirmed: true,
+          status: 'confirmed',
         })
         .returning();
 
@@ -742,7 +742,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       const existingSubscription = await db.query.subscriptions.findFirst({
         where: (subs, { eq }) => eq(subs.id, subscription.id),
       });
-      expect(existingSubscription?.confirmed).toBe(true);
+      expect(existingSubscription?.status).toBe('confirmed');
     });
 
     it('should return 404 and SUBSCRIPTION_NOT_FOUND when token has wrong scope', async () => {
@@ -752,7 +752,7 @@ describe('Subscription Routes Integration with PGlite', () => {
           id: subscriptionId(),
           email: 'test@example.com',
           repo: 'owner/repo',
-          confirmed: true,
+          status: 'confirmed',
         })
         .returning();
 

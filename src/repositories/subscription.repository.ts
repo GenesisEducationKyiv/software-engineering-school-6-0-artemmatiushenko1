@@ -110,7 +110,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       id: subscription.id,
       email: subscription.email.email,
       repo: subscription.repoPath.toString(),
-      confirmed: subscription.status === 'confirmed',
+      status: subscription.status,
       lastSeenTag: subscription.lastSeenTag?.value ?? null,
     };
 
@@ -122,7 +122,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
         set: {
           email: rowValues.email,
           repo: rowValues.repo,
-          confirmed: rowValues.confirmed,
+          status: rowValues.status,
           lastSeenTag: rowValues.lastSeenTag,
         },
       });
@@ -185,7 +185,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       .where(
         and(
           eq(subscriptions.email, email.email),
-          eq(subscriptions.confirmed, true),
+          eq(subscriptions.status, 'confirmed'),
         ),
       );
 
@@ -200,7 +200,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     const results = await this.getDb()
       .select()
       .from(subscriptions)
-      .where(eq(subscriptions.confirmed, true));
+      .where(eq(subscriptions.status, 'confirmed'));
 
     return Promise.all(
       results.map((row) =>

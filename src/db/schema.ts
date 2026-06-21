@@ -3,12 +3,17 @@ import {
   serial,
   text,
   timestamp,
-  boolean,
   pgEnum,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { SubscriptionStatusSchema } from '../domain/subscription/subscription.js';
 
 export const scopeEnum = pgEnum('scope', ['subscribe', 'unsubscribe']);
+
+export const subscriptionStatusEnum = pgEnum(
+  'subscription_status',
+  SubscriptionStatusSchema.enum,
+);
 
 export const subscriptions = pgTable(
   'subscriptions',
@@ -16,7 +21,7 @@ export const subscriptions = pgTable(
     id: text('id').primaryKey(),
     email: text('email').notNull(),
     repo: text('repo').notNull(),
-    confirmed: boolean('confirmed').default(false).notNull(),
+    status: subscriptionStatusEnum('status').default('pending').notNull(),
     lastSeenTag: text('last_seen_tag'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },

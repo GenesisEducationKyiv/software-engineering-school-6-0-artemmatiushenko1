@@ -1,3 +1,4 @@
+import z from 'zod';
 import type { ConfirmationToken } from './confirmation-token.js';
 import type { Email } from './email.js';
 import {
@@ -9,7 +10,12 @@ import {
 import type { ReleaseTag } from './release-tag.js';
 import type { RepoPath } from './repo-path.js';
 
-export type SubscriptionStatus = 'pending' | 'confirmed' | 'unsubscribed';
+export const SubscriptionStatusSchema = z.enum([
+  'pending',
+  'confirmed',
+  'unsubscribed',
+]);
+export type SubscriptionStatus = z.infer<typeof SubscriptionStatusSchema>;
 
 export class Subscription {
   private constructor(

@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { Subscription } from '../domain/subscription/subscription.js';
+import {
+  Subscription,
+  SubscriptionStatusSchema,
+} from '../domain/subscription/subscription.js';
 import { Email } from '../domain/subscription/email.js';
 import { RepoPath } from '../domain/subscription/repo-path.js';
 import { ConfirmationToken } from '../domain/subscription/confirmation-token.js';
@@ -9,7 +12,7 @@ export const SubscriptionRowSchema = z.object({
   id: z.string(),
   email: z.email(),
   repo: z.string(),
-  confirmed: z.boolean(),
+  status: SubscriptionStatusSchema,
   lastSeenTag: z.string().nullable(),
   createdAt: z.date(),
 });
@@ -22,8 +25,6 @@ export class SubscriptionRowMapper {
     confirmationToken: ConfirmationToken,
     unsubscribeToken: ConfirmationToken | null,
   ): Subscription {
-    const status = row.confirmed ? 'confirmed' : 'pending';
-
     const email = Email.fromString(row.email);
     const repoPath = RepoPath.fromString(row.repo);
     const lastSeenTag = row.lastSeenTag
@@ -34,7 +35,7 @@ export class SubscriptionRowMapper {
       id: row.id,
       email,
       repoPath,
-      status,
+      status: row.status,
       lastSeenTag,
       confirmationToken,
       unsubscribeToken,
@@ -46,7 +47,7 @@ export class SubscriptionRowMapper {
       id: subscription.id,
       email: subscription.email.email,
       repo: subscription.repoPath.toString(),
-      confirmed: subscription.status === 'confirmed',
+      status: subscription.status,
       lastSeenTag: subscription.lastSeenTag?.value ?? null,
       createdAt,
     };
