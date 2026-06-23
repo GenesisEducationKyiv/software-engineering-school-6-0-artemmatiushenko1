@@ -57,13 +57,13 @@ export class SubscriptionRowMapper {
       repoPath,
       status: row.status,
       lastSeenTag,
-      subscriptionToken,
+      confirmationToken: subscriptionToken,
       unsubscribeToken,
     });
   }
 
   toRow(subscription: Subscription) {
-    const subscriptionToken = subscription.subscriptionToken;
+    const subscriptionToken = subscription.confirmationToken;
     const unsubscribe = subscription.unsubscribeToken;
 
     return {

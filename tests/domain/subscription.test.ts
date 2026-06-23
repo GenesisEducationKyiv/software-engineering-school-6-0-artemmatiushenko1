@@ -94,7 +94,7 @@ describe('Subscription', () => {
 
   describe('rehydrate', () => {
     it('should restore a pending subscription with the expected properties', () => {
-      const subscriptionToken = issueConfirmToken();
+      const confirmationToken = issueConfirmToken();
 
       const subscription = Subscription.rehydrate({
         id: SUBSCRIPTION_ID,
@@ -102,7 +102,7 @@ describe('Subscription', () => {
         repoPath: REPO_PATH,
         status: SubscriptionStatus.Pending,
         lastSeenTag: null,
-        subscriptionToken,
+        confirmationToken,
         unsubscribeToken: null,
       });
 
@@ -122,7 +122,7 @@ describe('Subscription', () => {
         repoPath: REPO_PATH,
         status: SubscriptionStatus.Confirmed,
         lastSeenTag,
-        subscriptionToken: issueConfirmToken(),
+        confirmationToken: issueConfirmToken(),
         unsubscribeToken: issueUnsubscribeToken(),
       });
 
@@ -138,7 +138,7 @@ describe('Subscription', () => {
           repoPath: REPO_PATH,
           status: SubscriptionStatus.Confirmed,
           lastSeenTag: null,
-          subscriptionToken: issueConfirmToken(),
+          confirmationToken: issueConfirmToken(),
           unsubscribeToken: null,
         }),
       ).toThrow('Unsubscribe token is required for confirmed subscriptions');
@@ -198,8 +198,8 @@ describe('Subscription', () => {
       subscription.renewConfirmation(renewedToken);
 
       expect(subscription.status).toBe(SubscriptionStatus.Pending);
-      expect(subscription.subscriptionToken).toBe(renewedToken);
-      expect(subscription.subscriptionToken.value).toBe(
+      expect(subscription.confirmationToken).toBe(renewedToken);
+      expect(subscription.confirmationToken.value).toBe(
         RENEWED_CONFIRM_TOKEN_UUID,
       );
       expect(subscription.unsubscribeToken).toBeNull();
@@ -265,7 +265,7 @@ describe('Subscription', () => {
       subscription.reactivate(reactivationToken);
 
       expect(subscription.status).toBe(SubscriptionStatus.Pending);
-      expect(subscription.subscriptionToken).toBe(reactivationToken);
+      expect(subscription.confirmationToken).toBe(reactivationToken);
       expect(subscription.unsubscribeToken).toBeNull();
     });
 

@@ -129,7 +129,7 @@ describe('SubscriptionServiceImpl', () => {
     expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
     expect(savedSubscription.email.email).toBe(email);
     expect(savedSubscription.repoPath.toString()).toBe(repo);
-    expect(savedSubscription.subscriptionToken.value).toBe(confirmToken);
+    expect(savedSubscription.confirmationToken.value).toBe(confirmToken);
     expect(tx).toEqual({});
     expect(
       notificationServiceMock.notifySubscriptionConfirmation,
@@ -193,7 +193,7 @@ describe('SubscriptionServiceImpl', () => {
 
     expect(savedSubscription.id).toBe(existingDomainSubscription.id);
     expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
-    expect(savedSubscription.subscriptionToken.value).toBe(newConfirmToken);
+    expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
     expect(tx).toEqual({});
     expect(
       notificationServiceMock.notifySubscriptionConfirmation,
@@ -226,7 +226,7 @@ describe('SubscriptionServiceImpl', () => {
 
     expect(savedSubscription.id).toBe(existingDomainSubscription.id);
     expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
-    expect(savedSubscription.subscriptionToken.value).toBe(newConfirmToken);
+    expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
     expect(savedSubscription.unsubscribeToken).toBeNull();
     expect(
       notificationServiceMock.notifySubscriptionConfirmation,
@@ -283,7 +283,7 @@ describe('SubscriptionServiceImpl', () => {
 
     const [savedSubscription] = repoMock.save.mock.calls[0]!;
 
-    expect(savedSubscription.subscriptionToken.value).toBe(newConfirmToken);
+    expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
     expect(loggerMock.info).not.toHaveBeenCalled();
   });
 

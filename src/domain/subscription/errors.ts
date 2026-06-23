@@ -20,9 +20,7 @@ export class InvalidTokenError extends Error {
   readonly code = 'INVALID_TOKEN' as const;
 
   constructor(reason: string = 'Invalid token') {
-    super(
-      reason.startsWith('Invalid token') ? reason : `Invalid token: ${reason}`,
-    );
+    super(`Invalid token: ${reason}`);
     this.name = 'InvalidTokenError';
   }
 }

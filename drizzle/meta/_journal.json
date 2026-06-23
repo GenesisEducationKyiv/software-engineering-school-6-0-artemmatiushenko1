@@ -43,6 +43,13 @@
       "when": 1782050000000,
       "tag": "0005_inline_subscription_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782051000000,
+      "tag": "0006_rename_subscribe_token_to_confirm",
+      "breakpoints": true
     }
   ]
 }

@@ -92,7 +92,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     });
 
     await this.notificationService.notifySubscriptionConfirmation({
-      confirmToken: subscription.subscriptionToken.value,
+      confirmToken: subscription.confirmationToken.value,
       email: validatedEmail.email,
       repo: validatedRepo.toString(),
     });
