@@ -34,7 +34,7 @@ const createPendingDomainSubscription = (
     overrides.id ?? '1',
     Email.fromString(overrides.email ?? 'test@example.com'),
     RepoPath.fromString(overrides.repo ?? 'owner/repo'),
-    ConfirmationToken.hydrate({
+    ConfirmationToken.rehydrate({
       value: '550e8400-e29b-41d4-a716-446655440000',
       scope: 'subscribe',
       expiresAt: new Date(Date.now() + 60_000),
@@ -48,7 +48,7 @@ const createConfirmedDomainSubscription = (
   subscription.confirm(
     '550e8400-e29b-41d4-a716-446655440000',
     new Date(),
-    ConfirmationToken.hydrate({
+    ConfirmationToken.rehydrate({
       value: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
       scope: 'unsubscribe',
       expiresAt: new Date(Date.now() + 60_000),
@@ -449,7 +449,7 @@ describe('SubscriptionServiceImpl', () => {
         '10',
         Email.fromString('test@example.com'),
         RepoPath.fromString('owner/repo'),
-        ConfirmationToken.hydrate({
+        ConfirmationToken.rehydrate({
           value: tokenValue,
           scope: 'subscribe',
           expiresAt: new Date('2026-01-01T11:00:00Z'),
@@ -504,7 +504,7 @@ describe('SubscriptionServiceImpl', () => {
       subscription.confirm(
         '550e8400-e29b-41d4-a716-446655440000',
         new Date(),
-        ConfirmationToken.hydrate({
+        ConfirmationToken.rehydrate({
           value: tokenValue,
           scope: 'unsubscribe',
           expiresAt: new Date('2026-01-01T11:00:00Z'),

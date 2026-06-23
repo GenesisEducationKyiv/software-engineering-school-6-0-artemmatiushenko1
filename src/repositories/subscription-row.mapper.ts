@@ -33,7 +33,7 @@ export class SubscriptionRowMapper {
       ? ReleaseTag.fromString(row.lastSeenTag)
       : null;
 
-    const confirmationToken = ConfirmationToken.hydrate({
+    const confirmationToken = ConfirmationToken.rehydrate({
       value: row.confirmToken,
       scope: 'subscribe',
       expiresAt: row.confirmExpiresAt,
@@ -42,7 +42,7 @@ export class SubscriptionRowMapper {
 
     const unsubscribeToken =
       row.unsubscribeToken && row.unsubscribeExpiresAt
-        ? ConfirmationToken.hydrate({
+        ? ConfirmationToken.rehydrate({
             value: row.unsubscribeToken,
             scope: 'unsubscribe',
             expiresAt: row.unsubscribeExpiresAt,

@@ -25,7 +25,7 @@ const createConfirmedDomainSubscription = (overrides: {
     overrides.id ?? '1',
     Email.fromString(overrides.email ?? 'test@example.com'),
     RepoPath.fromString(overrides.repo ?? 'owner/repo'),
-    ConfirmationToken.hydrate({
+    ConfirmationToken.rehydrate({
       value: '550e8400-e29b-41d4-a716-446655440000',
       scope: 'subscribe',
       expiresAt: new Date(Date.now() + 60_000),
@@ -35,7 +35,7 @@ const createConfirmedDomainSubscription = (overrides: {
   subscription.confirm(
     '550e8400-e29b-41d4-a716-446655440000',
     new Date(),
-    ConfirmationToken.hydrate({
+    ConfirmationToken.rehydrate({
       value: UNSUBSCRIBE_TOKEN,
       scope: 'unsubscribe',
       expiresAt: new Date(Date.now() + 60_000),

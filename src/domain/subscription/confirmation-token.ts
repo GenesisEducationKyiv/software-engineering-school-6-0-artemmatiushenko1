@@ -26,7 +26,7 @@ export class ConfirmationToken {
     Object.freeze(this);
   }
 
-  static hydrate(params: {
+  static rehydrate(params: {
     value: string;
     scope: ConfirmationTokenScope;
     expiresAt: Date;
