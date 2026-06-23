@@ -5,7 +5,7 @@ import {
   pgEnum,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { SubscriptionStatusSchema } from '../domain/subscription/subscription.js';
+import { SubscriptionStatusSchema } from '../domain/subscription/index.js';
 
 export const subscriptionStatusEnum = pgEnum(
   'subscription_status',

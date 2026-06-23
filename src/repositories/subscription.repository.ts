@@ -4,16 +4,18 @@ import type {
 } from '../db/types.js';
 import { subscriptions } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
-import { Subscription } from '../domain/subscription/subscription.js';
-import { Email } from '../domain/subscription/email.js';
-import { RepoPath } from '../domain/subscription/repo-path.js';
+import {
+  Subscription,
+  Email,
+  RepoPath,
+  type ConfirmationTokenScope,
+} from '../domain/subscription/index.js';
 import {
   SubscriptionRowMapper,
   SubscriptionRowSchema,
 } from './subscription-row.mapper.js';
 import type { SubscriptionRepository } from '../domain/subscription.repository.js';
 import type { DomainTransaction } from '../domain/shared/index.js';
-import type { ConfirmationTokenScope } from '../domain/subscription/confirmation-token.js';
 
 export class DrizzleSubscriptionRepository implements SubscriptionRepository {
   private readonly subscriptionMapper = new SubscriptionRowMapper();

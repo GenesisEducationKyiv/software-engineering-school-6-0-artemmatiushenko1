@@ -1,5 +1,3 @@
-import type { SubscriptionStatus } from './subscription.js';
-
 export class InvalidEmailError extends Error {
   readonly code = 'INVALID_EMAIL' as const;
 
@@ -59,7 +57,7 @@ export class InvalidReleaseTagError extends Error {
 export class IllegalStateTransitionError extends Error {
   readonly code = 'ILLEGAL_STATE_TRANSITION' as const;
 
-  constructor(currentState: SubscriptionStatus, newState: SubscriptionStatus) {
+  constructor(currentState: string, newState: string) {
     super(`Illegal state transition from ${currentState} to ${newState}`);
     this.name = 'IllegalStateTransitionError';
   }

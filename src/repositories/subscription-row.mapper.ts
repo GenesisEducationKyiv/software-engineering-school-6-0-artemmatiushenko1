@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import {
   Subscription,
+  Email,
+  RepoPath,
+  ConfirmationToken,
+  ReleaseTag,
   SubscriptionStatusSchema,
-} from '../domain/subscription/subscription.js';
-import { Email } from '../domain/subscription/email.js';
-import { RepoPath } from '../domain/subscription/repo-path.js';
-import { ConfirmationToken } from '../domain/subscription/confirmation-token.js';
-import { ReleaseTag } from '../domain/subscription/release-tag.js';
+} from '../domain/subscription/index.js';
 
 export const SubscriptionRowSchema = z.object({
   id: z.string(),

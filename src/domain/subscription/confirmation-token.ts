@@ -4,17 +4,10 @@ import {
   TokenAlreadyUsedError,
   TokenExpiredError,
 } from './errors.js';
-
-export const ConfirmationTokenScopeSchema = z.enum(
-  ['subscribe', 'unsubscribe'],
-  {
-    message: "Invalid scope. Expected 'subscribe' or 'unsubscribe'.",
-  },
-);
-
-export type ConfirmationTokenScope = z.infer<
-  typeof ConfirmationTokenScopeSchema
->;
+import {
+  ConfirmationTokenScopeSchema,
+  type ConfirmationTokenScope,
+} from './confirmation-token-scope.js';
 
 export class ConfirmationToken {
   private constructor(
