@@ -1,9 +1,5 @@
-import z from 'zod';
-
-export const SubscriptionStatusSchema = z.enum([
-  'pending',
-  'confirmed',
-  'unsubscribed',
-]);
-
-export type SubscriptionStatus = z.infer<typeof SubscriptionStatusSchema>;
+export enum SubscriptionStatus {
+  Pending = 'pending',
+  Confirmed = 'confirmed',
+  Unsubscribed = 'unsubscribed',
+}

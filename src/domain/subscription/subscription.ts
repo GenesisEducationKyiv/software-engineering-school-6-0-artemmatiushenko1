@@ -1,4 +1,5 @@
 import type { ConfirmationToken } from './confirmation-token.js';
+import { ConfirmationTokenScope } from './confirmation-token-scope.js';
 import type { Email } from './email.js';
 import {
   IllegalStateTransitionError,
@@ -8,7 +9,7 @@ import {
 } from './errors.js';
 import type { ReleaseTag } from './release-tag.js';
 import type { RepoPath } from './repo-path.js';
-import type { SubscriptionStatus } from './subscription-status.js';
+import { SubscriptionStatus } from './subscription-status.js';
 
 export class Subscription {
   private constructor(
@@ -30,7 +31,10 @@ export class Subscription {
     confirmationToken: ConfirmationToken;
     unsubscribeToken: ConfirmationToken | null;
   }): Subscription {
-    if (params.status === 'confirmed' && !params.unsubscribeToken) {
+    if (
+      params.status === SubscriptionStatus.Confirmed &&
+      !params.unsubscribeToken
+    ) {
       throw new Error(
         'Unsubscribe token is required for confirmed subscriptions',
       );
@@ -53,15 +57,18 @@ export class Subscription {
     repoPath: RepoPath,
     confirmationToken: ConfirmationToken,
   ): Subscription {
-    if (confirmationToken.scope !== 'subscribe') {
-      throw new WrongTokenScopeError('subscribe', confirmationToken.scope);
+    if (confirmationToken.scope !== ConfirmationTokenScope.Subscribe) {
+      throw new WrongTokenScopeError(
+        ConfirmationTokenScope.Subscribe,
+        confirmationToken.scope,
+      );
     }
 
     return new Subscription(
       id,
       email,
       repoPath,
-      'pending',
+      SubscriptionStatus.Pending,
       null,
       confirmationToken,
       null,
@@ -71,52 +78,67 @@ export class Subscription {
   unsubscribe(unsubscribeTokenValue: string, now: Date) {
     const token = this._unsubscribeToken;
     if (token === null || token.value !== unsubscribeTokenValue) {
-      throw new WrongTokenScopeError('unsubscribe', 'unknown');
+      throw new WrongTokenScopeError(
+        ConfirmationTokenScope.Unsubscribe,
+        'unknown',
+      );
     }
 
-    if (this.status !== 'confirmed') {
-      throw new IllegalStateTransitionError(this.status, 'unsubscribed');
+    if (this.status !== SubscriptionStatus.Confirmed) {
+      throw new IllegalStateTransitionError(
+        this.status,
+        SubscriptionStatus.Unsubscribed,
+      );
     }
 
     this._unsubscribeToken = token.consume(now);
-    this._status = 'unsubscribed';
+    this._status = SubscriptionStatus.Unsubscribed;
   }
 
   confirm(token: string, now: Date, unsubscribeToken: ConfirmationToken) {
     if (this.confirmationToken.value !== token) {
-      throw new WrongTokenScopeError('subscribe', 'unknown');
+      throw new WrongTokenScopeError(
+        ConfirmationTokenScope.Subscribe,
+        'unknown',
+      );
     }
 
-    if (this.status !== 'pending') {
+    if (this.status !== SubscriptionStatus.Pending) {
       throw new SubscriptionAlreadyConfirmedError();
     }
 
-    if (unsubscribeToken.scope !== 'unsubscribe') {
-      throw new WrongTokenScopeError('unsubscribe', unsubscribeToken.scope);
+    if (unsubscribeToken.scope !== ConfirmationTokenScope.Unsubscribe) {
+      throw new WrongTokenScopeError(
+        ConfirmationTokenScope.Unsubscribe,
+        unsubscribeToken.scope,
+      );
     }
 
     this._confirmationToken = this._confirmationToken.consume(now);
     this._unsubscribeToken = unsubscribeToken;
-    this._status = 'confirmed';
+    this._status = SubscriptionStatus.Confirmed;
   }
 
   observeRelease(tag: ReleaseTag) {
-    if (this.status !== 'confirmed') return;
+    if (this.status !== SubscriptionStatus.Confirmed) return;
     if (this.lastSeenTag && this.lastSeenTag.equals(tag)) return;
 
     this._lastSeenTag = tag;
   }
 
   renewConfirmation(newToken: ConfirmationToken): void {
-    if (newToken.scope !== 'subscribe') {
-      throw new WrongTokenScopeError('subscribe', newToken.scope);
+    if (newToken.scope !== ConfirmationTokenScope.Subscribe) {
+      throw new WrongTokenScopeError(
+        ConfirmationTokenScope.Subscribe,
+        newToken.scope,
+      );
     }
 
-    if (this._status === 'confirmed') {
+    if (this._status === SubscriptionStatus.Confirmed) {
       throw new SubscriptionAlreadyConfirmedError();
     }
 
-    if (this._status === 'unsubscribed') {
+    if (this._status === SubscriptionStatus.Unsubscribed) {
       throw new SubscriptionAlreadyDeactivatedError();
     }
 
@@ -124,21 +146,27 @@ export class Subscription {
   }
 
   reactivate(newToken: ConfirmationToken): void {
-    if (newToken.scope !== 'subscribe') {
-      throw new WrongTokenScopeError('subscribe', newToken.scope);
+    if (newToken.scope !== ConfirmationTokenScope.Subscribe) {
+      throw new WrongTokenScopeError(
+        ConfirmationTokenScope.Subscribe,
+        newToken.scope,
+      );
     }
 
-    if (this._status === 'confirmed') {
+    if (this._status === SubscriptionStatus.Confirmed) {
       throw new SubscriptionAlreadyConfirmedError();
     }
 
-    if (this._status !== 'unsubscribed') {
-      throw new IllegalStateTransitionError(this._status, 'pending');
+    if (this._status !== SubscriptionStatus.Unsubscribed) {
+      throw new IllegalStateTransitionError(
+        this._status,
+        SubscriptionStatus.Pending,
+      );
     }
 
     this._confirmationToken = newToken;
     this._unsubscribeToken = null;
-    this._status = 'pending';
+    this._status = SubscriptionStatus.Pending;
   }
 
   get status(): SubscriptionStatus {

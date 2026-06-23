@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ConfirmationToken } from '../../src/domain/subscription/confirmation-token.js';
+import { ConfirmationTokenScope } from '../../src/domain/subscription/confirmation-token-scope.js';
 import {
   InvalidTokenError,
   TokenAlreadyUsedError,
@@ -15,7 +16,7 @@ const issueToken = (
 ) =>
   ConfirmationToken.issue({
     value: VALID_UUID,
-    scope: 'subscribe',
+    scope: ConfirmationTokenScope.Subscribe,
     issuedAt: ISSUED_AT,
     ttlMs: TTL_MS,
     ...overrides,
@@ -24,30 +25,21 @@ const issueToken = (
 describe('ConfirmationToken', () => {
   describe('issue', () => {
     it('should create a token with the expected properties', () => {
-      const token = issueToken({ scope: 'subscribe' });
+      const token = issueToken({ scope: ConfirmationTokenScope.Subscribe });
 
       expect(token.value).toBe(VALID_UUID);
-      expect(token.scope).toBe('subscribe');
+      expect(token.scope).toBe(ConfirmationTokenScope.Subscribe);
       expect(token.consumedAt).toBeNull();
       expect(token.expiresAt).toEqual(new Date(ISSUED_AT.getTime() + TTL_MS));
     });
 
-    it.each(['subscribe', 'unsubscribe'] as const)(
-      'should accept valid scope: %s',
-      (scope) => {
-        const token = issueToken({ scope });
+    it.each([
+      ConfirmationTokenScope.Subscribe,
+      ConfirmationTokenScope.Unsubscribe,
+    ])('should accept valid scope: %s', (scope) => {
+      const token = issueToken({ scope });
 
-        expect(token.scope).toBe(scope);
-      },
-    );
-
-    it('should throw InvalidTokenError for an invalid scope', () => {
-      expect(() => issueToken({ scope: 'invalid' as 'subscribe' })).toThrow(
-        InvalidTokenError,
-      );
-      expect(() => issueToken({ scope: 'invalid' as 'subscribe' })).toThrow(
-        "Invalid token: Invalid scope: invalid. Expected 'subscribe' or 'unsubscribe'.",
-      );
+      expect(token.scope).toBe(scope);
     });
 
     it.each(['not-a-uuid', '', '123'])(
@@ -133,8 +125,8 @@ describe('ConfirmationToken', () => {
     });
 
     it('should return false when scope differs', () => {
-      const first = issueToken({ scope: 'subscribe' });
-      const second = issueToken({ scope: 'unsubscribe' });
+      const first = issueToken({ scope: ConfirmationTokenScope.Subscribe });
+      const second = issueToken({ scope: ConfirmationTokenScope.Unsubscribe });
 
       expect(first.equals(second)).toBe(false);
     });

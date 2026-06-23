@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { Email } from '../../src/domain/subscription/email.js';
 import { RepoPath } from '../../src/domain/subscription/repo-path.js';
 import { ConfirmationToken } from '../../src/domain/subscription/confirmation-token.js';
+import { ConfirmationTokenScope } from '../../src/domain/subscription/confirmation-token-scope.js';
 import { ReleaseTag } from '../../src/domain/subscription/release-tag.js';
 import { Subscription } from '../../src/domain/subscription/subscription.js';
+import { SubscriptionStatus } from '../../src/domain/subscription/subscription-status.js';
 import {
   IllegalStateTransitionError,
   SubscriptionAlreadyConfirmedError,
@@ -26,7 +28,7 @@ const issueConfirmToken = (
 ) =>
   ConfirmationToken.issue({
     value: CONFIRM_TOKEN_UUID,
-    scope: 'subscribe',
+    scope: ConfirmationTokenScope.Subscribe,
     issuedAt: ISSUED_AT,
     ttlMs: TTL_MS,
     ...overrides,
@@ -37,7 +39,7 @@ const issueUnsubscribeToken = (
 ) =>
   ConfirmationToken.issue({
     value: UNSUBSCRIBE_TOKEN_UUID,
-    scope: 'unsubscribe',
+    scope: ConfirmationTokenScope.Unsubscribe,
     issuedAt: ISSUED_AT,
     ttlMs: TTL_MS,
     ...overrides,
@@ -66,7 +68,7 @@ describe('Subscription', () => {
       expect(subscription.id).toBe(SUBSCRIPTION_ID);
       expect(subscription.email).toBe(EMAIL);
       expect(subscription.repoPath).toBe(REPO_PATH);
-      expect(subscription.status).toBe('pending');
+      expect(subscription.status).toBe(SubscriptionStatus.Pending);
       expect(subscription.lastSeenTag).toBeNull();
     });
 
@@ -98,7 +100,7 @@ describe('Subscription', () => {
         id: SUBSCRIPTION_ID,
         email: EMAIL,
         repoPath: REPO_PATH,
-        status: 'pending',
+        status: SubscriptionStatus.Pending,
         lastSeenTag: null,
         confirmationToken,
         unsubscribeToken: null,
@@ -107,7 +109,7 @@ describe('Subscription', () => {
       expect(subscription.id).toBe(SUBSCRIPTION_ID);
       expect(subscription.email).toBe(EMAIL);
       expect(subscription.repoPath).toBe(REPO_PATH);
-      expect(subscription.status).toBe('pending');
+      expect(subscription.status).toBe(SubscriptionStatus.Pending);
       expect(subscription.lastSeenTag).toBeNull();
     });
 
@@ -118,13 +120,13 @@ describe('Subscription', () => {
         id: SUBSCRIPTION_ID,
         email: EMAIL,
         repoPath: REPO_PATH,
-        status: 'confirmed',
+        status: SubscriptionStatus.Confirmed,
         lastSeenTag,
         confirmationToken: issueConfirmToken(),
         unsubscribeToken: issueUnsubscribeToken(),
       });
 
-      expect(subscription.status).toBe('confirmed');
+      expect(subscription.status).toBe(SubscriptionStatus.Confirmed);
       expect(subscription.lastSeenTag?.equals(lastSeenTag)).toBe(true);
     });
 
@@ -134,7 +136,7 @@ describe('Subscription', () => {
           id: SUBSCRIPTION_ID,
           email: EMAIL,
           repoPath: REPO_PATH,
-          status: 'confirmed',
+          status: SubscriptionStatus.Confirmed,
           lastSeenTag: null,
           confirmationToken: issueConfirmToken(),
           unsubscribeToken: null,
@@ -149,7 +151,7 @@ describe('Subscription', () => {
 
       subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueUnsubscribeToken());
 
-      expect(subscription.status).toBe('confirmed');
+      expect(subscription.status).toBe(SubscriptionStatus.Confirmed);
     });
 
     it('should throw WrongTokenScopeError for an invalid confirmation token', () => {
@@ -195,7 +197,7 @@ describe('Subscription', () => {
 
       subscription.renewConfirmation(renewedToken);
 
-      expect(subscription.status).toBe('pending');
+      expect(subscription.status).toBe(SubscriptionStatus.Pending);
       expect(subscription.confirmationToken).toBe(renewedToken);
       expect(subscription.confirmationToken.value).toBe(
         RENEWED_CONFIRM_TOKEN_UUID,
@@ -262,7 +264,7 @@ describe('Subscription', () => {
 
       subscription.reactivate(reactivationToken);
 
-      expect(subscription.status).toBe('pending');
+      expect(subscription.status).toBe(SubscriptionStatus.Pending);
       expect(subscription.confirmationToken).toBe(reactivationToken);
       expect(subscription.unsubscribeToken).toBeNull();
     });
@@ -310,7 +312,7 @@ describe('Subscription', () => {
 
       subscription.unsubscribe(UNSUBSCRIBE_TOKEN_UUID, NOW);
 
-      expect(subscription.status).toBe('unsubscribed');
+      expect(subscription.status).toBe(SubscriptionStatus.Unsubscribed);
     });
 
     it('should throw WrongTokenScopeError for an invalid unsubscribe token', () => {

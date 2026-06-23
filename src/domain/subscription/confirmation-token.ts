@@ -1,13 +1,14 @@
-import * as z from 'zod';
 import {
   InvalidTokenError,
   TokenAlreadyUsedError,
   TokenExpiredError,
 } from './errors.js';
-import {
-  ConfirmationTokenScopeSchema,
-  type ConfirmationTokenScope,
-} from './confirmation-token-scope.js';
+import { ConfirmationTokenScope } from './confirmation-token-scope.js';
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const isUuid = (value: string): boolean => UUID_REGEX.test(value);
 
 export class ConfirmationToken {
   private constructor(
@@ -39,34 +40,22 @@ export class ConfirmationToken {
     issuedAt: Date;
     ttlMs: number;
   }): ConfirmationToken {
-    const parsedScope = ConfirmationTokenScopeSchema.safeParse(params.scope);
-
-    if (!parsedScope.success) {
-      throw new InvalidTokenError(
-        `Invalid scope: ${params.scope}. Expected 'subscribe' or 'unsubscribe'.`,
-      );
-    }
-
-    const parsedValue = z.uuid().safeParse(params.value);
-
-    if (!parsedValue.success) {
+    if (!isUuid(params.value)) {
       throw new InvalidTokenError(
         `Invalid value: ${params.value}. Expected a valid UUID.`,
       );
     }
 
-    const parsedTtlMs = z.number().positive().safeParse(params.ttlMs);
-
-    if (!parsedTtlMs.success) {
+    if (params.ttlMs <= 0) {
       throw new InvalidTokenError(
         `Invalid TTL: ${params.ttlMs}. Expected a positive number.`,
       );
     }
 
     return new ConfirmationToken(
-      parsedValue.data,
-      new Date(params.issuedAt.getTime() + parsedTtlMs.data),
-      parsedScope.data,
+      params.value,
+      new Date(params.issuedAt.getTime() + params.ttlMs),
+      params.scope,
       null,
     );
   }

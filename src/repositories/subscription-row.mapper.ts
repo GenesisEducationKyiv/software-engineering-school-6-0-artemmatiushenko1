@@ -5,14 +5,15 @@ import {
   RepoPath,
   ConfirmationToken,
   ReleaseTag,
-  SubscriptionStatusSchema,
+  ConfirmationTokenScope,
+  SubscriptionStatus,
 } from '../domain/subscription/index.js';
 
 export const SubscriptionRowSchema = z.object({
   id: z.string(),
   email: z.email(),
   repo: z.string(),
-  status: SubscriptionStatusSchema,
+  status: z.enum(SubscriptionStatus),
   lastSeenTag: z.string().nullable(),
   confirmToken: z.string(),
   confirmExpiresAt: z.date(),
@@ -35,7 +36,7 @@ export class SubscriptionRowMapper {
 
     const confirmationToken = ConfirmationToken.rehydrate({
       value: row.confirmToken,
-      scope: 'subscribe',
+      scope: ConfirmationTokenScope.Subscribe,
       expiresAt: row.confirmExpiresAt,
       consumedAt: row.confirmUsedAt,
     });
@@ -44,7 +45,7 @@ export class SubscriptionRowMapper {
       row.unsubscribeToken && row.unsubscribeExpiresAt
         ? ConfirmationToken.rehydrate({
             value: row.unsubscribeToken,
-            scope: 'unsubscribe',
+            scope: ConfirmationTokenScope.Unsubscribe,
             expiresAt: row.unsubscribeExpiresAt,
             consumedAt: row.unsubscribeUsedAt,
           })

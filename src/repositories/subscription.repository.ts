@@ -8,7 +8,8 @@ import {
   Subscription,
   Email,
   RepoPath,
-  type ConfirmationTokenScope,
+  ConfirmationTokenScope,
+  SubscriptionStatus,
 } from '../domain/subscription/index.js';
 import {
   SubscriptionRowMapper,
@@ -35,7 +36,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     scope: ConfirmationTokenScope,
   ): Promise<Subscription | null> {
     const tokenColumn =
-      scope === 'subscribe'
+      scope === ConfirmationTokenScope.Subscribe
         ? subscriptions.confirmToken
         : subscriptions.unsubscribeToken;
 
@@ -101,7 +102,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       .where(
         and(
           eq(subscriptions.email, email.email),
-          eq(subscriptions.status, 'confirmed'),
+          eq(subscriptions.status, SubscriptionStatus.Confirmed),
         ),
       );
 

@@ -2,7 +2,12 @@ import type { GithubClient } from '../../domain/github.js';
 import type { SubscriptionRepository } from '../../domain/subscription.repository.js';
 import type { NotificationService } from '../../domain/notification.js';
 import type { SubscriptionService } from '../../domain/subscription.js';
-import { Subscription } from '../../domain/subscription/index.js';
+import {
+  Subscription,
+  ConfirmationToken,
+  ConfirmationTokenScope,
+  SubscriptionStatus,
+} from '../../domain/subscription/index.js';
 import {
   RepoNotFoundError,
   AlreadySubscribedError,
@@ -18,7 +23,6 @@ import type {
   TransactionManager,
   Logger,
 } from '../../domain/shared/index.js';
-import { ConfirmationToken } from '../../domain/subscription/index.js';
 
 export class SubscriptionServiceImpl implements SubscriptionService {
   private static readonly SUBSCRIPTION_CONFIRMATION_TTL_MS = 60_000;
@@ -52,7 +56,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       validatedRepo,
     );
 
-    if (existingSubscription?.status === 'confirmed') {
+    if (existingSubscription?.status === SubscriptionStatus.Confirmed) {
       throw new AlreadySubscribedError(
         validatedEmail.email,
         validatedRepo.toString(),
@@ -61,14 +65,14 @@ export class SubscriptionServiceImpl implements SubscriptionService {
 
     const confirmToken = ConfirmationToken.issue({
       value: this.tokenGenerator.generate(),
-      scope: 'subscribe',
+      scope: ConfirmationTokenScope.Subscribe,
       issuedAt: this.clock.now(),
       ttlMs: SubscriptionServiceImpl.SUBSCRIPTION_CONFIRMATION_TTL_MS,
     });
 
     let subscription: Subscription;
     if (existingSubscription) {
-      if (existingSubscription.status === 'unsubscribed') {
+      if (existingSubscription.status === SubscriptionStatus.Unsubscribed) {
         existingSubscription.reactivate(confirmToken);
       } else {
         existingSubscription.renewConfirmation(confirmToken);
@@ -132,7 +136,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
   async confirm(token: string): Promise<void> {
     const subscription = await this.subscriptionRepo.findByToken(
       token,
-      'subscribe',
+      ConfirmationTokenScope.Subscribe,
     );
 
     if (!subscription) {
@@ -142,7 +146,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     const now = this.clock.now();
     const unsubscribeToken = ConfirmationToken.issue({
       value: this.tokenGenerator.generate(),
-      scope: 'unsubscribe',
+      scope: ConfirmationTokenScope.Unsubscribe,
       issuedAt: now,
       ttlMs: SubscriptionServiceImpl.UNSUBSCRIBE_TTL_MS,
     });
@@ -167,7 +171,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
   async unsubscribe(token: string): Promise<void> {
     const subscription = await this.subscriptionRepo.findByToken(
       token,
-      'unsubscribe',
+      ConfirmationTokenScope.Unsubscribe,
     );
 
     if (!subscription) {

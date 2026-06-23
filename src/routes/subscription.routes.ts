@@ -1,5 +1,6 @@
 import type { FastifyPluginCallback } from 'fastify';
 import type { SubscriptionService } from '../domain/subscription.js';
+import { SubscriptionStatus } from '../domain/subscription/subscription-status.js';
 import { SubscriptionsResponseDtoSchema } from '../dtos/subscription.dto.js';
 import { CommonSuccessResponseDtoSchema } from '../dtos/response.dto.js';
 
@@ -38,7 +39,7 @@ export const subscriptionRoutes: FastifyPluginCallback<
           subscriptions.map((subscription) => ({
             email: subscription.email.email,
             repo: subscription.repoPath.toString(),
-            confirmed: subscription.status === 'confirmed',
+            confirmed: subscription.status === SubscriptionStatus.Confirmed,
             lastSeenTag: subscription.lastSeenTag?.value ?? null,
           })),
         ),

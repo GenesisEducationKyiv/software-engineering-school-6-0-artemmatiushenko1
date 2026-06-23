@@ -1,4 +1,3 @@
-import z from 'zod';
 import { InvalidReleaseTagError } from './errors.js';
 
 export class ReleaseTag {
@@ -7,13 +6,11 @@ export class ReleaseTag {
   }
 
   static fromString(value: string): ReleaseTag {
-    const parsedValue = z.string().min(1).safeParse(value);
-
-    if (!parsedValue.success) {
+    if (value.length === 0) {
       throw new InvalidReleaseTagError(`Invalid release tag: ${value}`);
     }
 
-    return new ReleaseTag(parsedValue.data);
+    return new ReleaseTag(value);
   }
 
   equals(other: ReleaseTag): boolean {
