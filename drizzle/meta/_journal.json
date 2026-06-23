@@ -36,6 +36,13 @@
       "when": 1782048000000,
       "tag": "0004_subscription_status",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782050000000,
+      "tag": "0005_inline_subscription_tokens",
+      "breakpoints": true
     }
   ]
 }

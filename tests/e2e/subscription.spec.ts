@@ -9,7 +9,6 @@ const TEST_EMAIL = 'test-e2e@example.com';
 const EXISTING_REPO_FULL_NAME = `${EXISTING_REPO.owner}/${EXISTING_REPO.name}`;
 
 test.afterEach(async ({ request }) => {
-  await db.delete(schema.subscriptionTokens);
   await db.delete(schema.subscriptions);
   await clearEmails(request);
 });
