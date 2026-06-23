@@ -1,5 +1,5 @@
-import type { ConfirmationToken } from './confirmation-token.js';
-import { ConfirmationTokenScope } from './confirmation-token-scope.js';
+import type { SubscriptionToken } from './subscription-token.js';
+import { SubscriptionTokenScope } from './subscription-token-scope.js';
 import type { Email } from './email.js';
 import {
   IllegalStateTransitionError,
@@ -18,8 +18,8 @@ export class Subscription {
     public readonly repoPath: RepoPath,
     private _status: SubscriptionStatus,
     private _lastSeenTag: ReleaseTag | null,
-    private _confirmationToken: ConfirmationToken,
-    private _unsubscribeToken: ConfirmationToken | null,
+    private _subscriptionToken: SubscriptionToken,
+    private _unsubscribeToken: SubscriptionToken | null,
   ) {}
 
   static rehydrate(params: {
@@ -28,8 +28,8 @@ export class Subscription {
     repoPath: RepoPath;
     status: SubscriptionStatus;
     lastSeenTag: ReleaseTag | null;
-    confirmationToken: ConfirmationToken;
-    unsubscribeToken: ConfirmationToken | null;
+    subscriptionToken: SubscriptionToken;
+    unsubscribeToken: SubscriptionToken | null;
   }): Subscription {
     if (
       params.status === SubscriptionStatus.Confirmed &&
@@ -46,7 +46,7 @@ export class Subscription {
       params.repoPath,
       params.status,
       params.lastSeenTag,
-      params.confirmationToken,
+      params.subscriptionToken,
       params.unsubscribeToken,
     );
   }
@@ -55,12 +55,12 @@ export class Subscription {
     id: string,
     email: Email,
     repoPath: RepoPath,
-    confirmationToken: ConfirmationToken,
+    subscriptionToken: SubscriptionToken,
   ): Subscription {
-    if (confirmationToken.scope !== ConfirmationTokenScope.Subscribe) {
+    if (subscriptionToken.scope !== SubscriptionTokenScope.Confirm) {
       throw new WrongTokenScopeError(
-        ConfirmationTokenScope.Subscribe,
-        confirmationToken.scope,
+        SubscriptionTokenScope.Confirm,
+        subscriptionToken.scope,
       );
     }
 
@@ -70,7 +70,7 @@ export class Subscription {
       repoPath,
       SubscriptionStatus.Pending,
       null,
-      confirmationToken,
+      subscriptionToken,
       null,
     );
   }
@@ -79,7 +79,7 @@ export class Subscription {
     const token = this._unsubscribeToken;
     if (token === null || token.value !== unsubscribeTokenValue) {
       throw new WrongTokenScopeError(
-        ConfirmationTokenScope.Unsubscribe,
+        SubscriptionTokenScope.Unsubscribe,
         'unknown',
       );
     }
@@ -95,26 +95,23 @@ export class Subscription {
     this._status = SubscriptionStatus.Unsubscribed;
   }
 
-  confirm(token: string, now: Date, unsubscribeToken: ConfirmationToken) {
-    if (this.confirmationToken.value !== token) {
-      throw new WrongTokenScopeError(
-        ConfirmationTokenScope.Subscribe,
-        'unknown',
-      );
+  confirm(token: string, now: Date, unsubscribeToken: SubscriptionToken) {
+    if (this.subscriptionToken.value !== token) {
+      throw new WrongTokenScopeError(SubscriptionTokenScope.Confirm, 'unknown');
     }
 
     if (this.status !== SubscriptionStatus.Pending) {
       throw new SubscriptionAlreadyConfirmedError();
     }
 
-    if (unsubscribeToken.scope !== ConfirmationTokenScope.Unsubscribe) {
+    if (unsubscribeToken.scope !== SubscriptionTokenScope.Unsubscribe) {
       throw new WrongTokenScopeError(
-        ConfirmationTokenScope.Unsubscribe,
+        SubscriptionTokenScope.Unsubscribe,
         unsubscribeToken.scope,
       );
     }
 
-    this._confirmationToken = this._confirmationToken.consume(now);
+    this._subscriptionToken = this._subscriptionToken.consume(now);
     this._unsubscribeToken = unsubscribeToken;
     this._status = SubscriptionStatus.Confirmed;
   }
@@ -126,10 +123,10 @@ export class Subscription {
     this._lastSeenTag = tag;
   }
 
-  renewConfirmation(newToken: ConfirmationToken): void {
-    if (newToken.scope !== ConfirmationTokenScope.Subscribe) {
+  renewConfirmation(newToken: SubscriptionToken): void {
+    if (newToken.scope !== SubscriptionTokenScope.Confirm) {
       throw new WrongTokenScopeError(
-        ConfirmationTokenScope.Subscribe,
+        SubscriptionTokenScope.Confirm,
         newToken.scope,
       );
     }
@@ -142,13 +139,13 @@ export class Subscription {
       throw new SubscriptionAlreadyDeactivatedError();
     }
 
-    this._confirmationToken = newToken;
+    this._subscriptionToken = newToken;
   }
 
-  reactivate(newToken: ConfirmationToken): void {
-    if (newToken.scope !== ConfirmationTokenScope.Subscribe) {
+  reactivate(newToken: SubscriptionToken): void {
+    if (newToken.scope !== SubscriptionTokenScope.Confirm) {
       throw new WrongTokenScopeError(
-        ConfirmationTokenScope.Subscribe,
+        SubscriptionTokenScope.Confirm,
         newToken.scope,
       );
     }
@@ -164,7 +161,7 @@ export class Subscription {
       );
     }
 
-    this._confirmationToken = newToken;
+    this._subscriptionToken = newToken;
     this._unsubscribeToken = null;
     this._status = SubscriptionStatus.Pending;
   }
@@ -177,11 +174,11 @@ export class Subscription {
     return this._lastSeenTag;
   }
 
-  get confirmationToken(): ConfirmationToken {
-    return this._confirmationToken;
+  get subscriptionToken(): SubscriptionToken {
+    return this._subscriptionToken;
   }
 
-  get unsubscribeToken(): ConfirmationToken | null {
+  get unsubscribeToken(): SubscriptionToken | null {
     return this._unsubscribeToken;
   }
 }

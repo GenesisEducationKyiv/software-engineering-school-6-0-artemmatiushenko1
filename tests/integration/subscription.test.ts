@@ -44,7 +44,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
   const findSubscriptionToken = async (
     targetSubscriptionId: string,
-    scope: 'subscribe' | 'unsubscribe',
+    scope: 'confirm' | 'unsubscribe',
     token?: string,
   ) => {
     const subscription = await db.query.subscriptions.findFirst({
@@ -55,7 +55,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       return undefined;
     }
 
-    if (scope === 'subscribe') {
+    if (scope === 'confirm') {
       if (token && subscription.confirmToken !== token) {
         return undefined;
       }
@@ -458,7 +458,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
       const consumedSubscribeToken = await findSubscriptionToken(
         subscription.id,
-        'subscribe',
+        'confirm',
         subscribeTokenValue,
       );
       assert(consumedSubscribeToken);

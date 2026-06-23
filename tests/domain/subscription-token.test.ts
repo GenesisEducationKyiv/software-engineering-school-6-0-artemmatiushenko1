@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { ConfirmationToken } from '../../src/domain/subscription/confirmation-token.js';
-import { ConfirmationTokenScope } from '../../src/domain/subscription/confirmation-token-scope.js';
+import { SubscriptionToken } from '../../src/domain/subscription/subscription-token.js';
+import { SubscriptionTokenScope } from '../../src/domain/subscription/subscription-token-scope.js';
 import {
   InvalidTokenError,
   TokenAlreadyUsedError,
@@ -12,30 +12,30 @@ const ISSUED_AT = new Date('2026-01-01T12:00:00Z');
 const TTL_MS = 3_600_000;
 
 const issueToken = (
-  overrides: Partial<Parameters<typeof ConfirmationToken.issue>[0]> = {},
+  overrides: Partial<Parameters<typeof SubscriptionToken.issue>[0]> = {},
 ) =>
-  ConfirmationToken.issue({
+  SubscriptionToken.issue({
     value: VALID_UUID,
-    scope: ConfirmationTokenScope.Subscribe,
+    scope: SubscriptionTokenScope.Confirm,
     issuedAt: ISSUED_AT,
     ttlMs: TTL_MS,
     ...overrides,
   });
 
-describe('ConfirmationToken', () => {
+describe('SubscriptionToken', () => {
   describe('issue', () => {
     it('should create a token with the expected properties', () => {
-      const token = issueToken({ scope: ConfirmationTokenScope.Subscribe });
+      const token = issueToken({ scope: SubscriptionTokenScope.Confirm });
 
       expect(token.value).toBe(VALID_UUID);
-      expect(token.scope).toBe(ConfirmationTokenScope.Subscribe);
+      expect(token.scope).toBe(SubscriptionTokenScope.Confirm);
       expect(token.consumedAt).toBeNull();
       expect(token.expiresAt).toEqual(new Date(ISSUED_AT.getTime() + TTL_MS));
     });
 
     it.each([
-      ConfirmationTokenScope.Subscribe,
-      ConfirmationTokenScope.Unsubscribe,
+      SubscriptionTokenScope.Confirm,
+      SubscriptionTokenScope.Unsubscribe,
     ])('should accept valid scope: %s', (scope) => {
       const token = issueToken({ scope });
 
@@ -125,8 +125,8 @@ describe('ConfirmationToken', () => {
     });
 
     it('should return false when scope differs', () => {
-      const first = issueToken({ scope: ConfirmationTokenScope.Subscribe });
-      const second = issueToken({ scope: ConfirmationTokenScope.Unsubscribe });
+      const first = issueToken({ scope: SubscriptionTokenScope.Confirm });
+      const second = issueToken({ scope: SubscriptionTokenScope.Unsubscribe });
 
       expect(first.equals(second)).toBe(false);
     });

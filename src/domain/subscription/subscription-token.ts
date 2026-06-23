@@ -3,18 +3,18 @@ import {
   TokenAlreadyUsedError,
   TokenExpiredError,
 } from './errors.js';
-import { ConfirmationTokenScope } from './confirmation-token-scope.js';
+import { SubscriptionTokenScope } from './subscription-token-scope.js';
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const isUuid = (value: string): boolean => UUID_REGEX.test(value);
 
-export class ConfirmationToken {
+export class SubscriptionToken {
   private constructor(
     public readonly value: string,
     public readonly expiresAt: Date,
-    public readonly scope: ConfirmationTokenScope,
+    public readonly scope: SubscriptionTokenScope,
     public readonly consumedAt: Date | null,
   ) {
     Object.freeze(this);
@@ -22,11 +22,11 @@ export class ConfirmationToken {
 
   static rehydrate(params: {
     value: string;
-    scope: ConfirmationTokenScope;
+    scope: SubscriptionTokenScope;
     expiresAt: Date;
     consumedAt?: Date | null;
-  }): ConfirmationToken {
-    return new ConfirmationToken(
+  }): SubscriptionToken {
+    return new SubscriptionToken(
       params.value,
       params.expiresAt,
       params.scope,
@@ -36,10 +36,10 @@ export class ConfirmationToken {
 
   static issue(params: {
     value: string;
-    scope: ConfirmationTokenScope;
+    scope: SubscriptionTokenScope;
     issuedAt: Date;
     ttlMs: number;
-  }): ConfirmationToken {
+  }): SubscriptionToken {
     if (!isUuid(params.value)) {
       throw new InvalidTokenError(
         `Invalid value: ${params.value}. Expected a valid UUID.`,
@@ -52,7 +52,7 @@ export class ConfirmationToken {
       );
     }
 
-    return new ConfirmationToken(
+    return new SubscriptionToken(
       params.value,
       new Date(params.issuedAt.getTime() + params.ttlMs),
       params.scope,
@@ -60,7 +60,7 @@ export class ConfirmationToken {
     );
   }
 
-  consume(now: Date): ConfirmationToken {
+  consume(now: Date): SubscriptionToken {
     if (this.consumedAt) {
       throw new TokenAlreadyUsedError('Token already used');
     }
@@ -69,10 +69,10 @@ export class ConfirmationToken {
       throw new TokenExpiredError('Token expired');
     }
 
-    return new ConfirmationToken(this.value, this.expiresAt, this.scope, now);
+    return new SubscriptionToken(this.value, this.expiresAt, this.scope, now);
   }
 
-  equals(other: ConfirmationToken): boolean {
+  equals(other: SubscriptionToken): boolean {
     return (
       this.value === other.value &&
       this.scope === other.scope &&

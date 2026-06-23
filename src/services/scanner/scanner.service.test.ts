@@ -8,11 +8,11 @@ import { GithubRateLimitError } from '../../domain/errors.js';
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../../domain/metrics.js';
 import { Subscription } from '../../domain/subscription/index.js';
-import { ConfirmationTokenScope } from '../../domain/subscription/confirmation-token-scope.js';
+import { SubscriptionTokenScope } from '../../domain/subscription/subscription-token-scope.js';
 import { Email } from '../../domain/subscription/email.js';
 import { RepoPath } from '../../domain/subscription/repo-path.js';
 import { ReleaseTag } from '../../domain/subscription/release-tag.js';
-import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
+import { SubscriptionToken } from '../../domain/subscription/subscription-token.js';
 
 const UNSUBSCRIBE_TOKEN = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
@@ -26,9 +26,9 @@ const createConfirmedDomainSubscription = (overrides: {
     overrides.id ?? '1',
     Email.fromString(overrides.email ?? 'test@example.com'),
     RepoPath.fromString(overrides.repo ?? 'owner/repo'),
-    ConfirmationToken.rehydrate({
+    SubscriptionToken.rehydrate({
       value: '550e8400-e29b-41d4-a716-446655440000',
-      scope: ConfirmationTokenScope.Subscribe,
+      scope: SubscriptionTokenScope.Confirm,
       expiresAt: new Date(Date.now() + 60_000),
     }),
   );
@@ -36,9 +36,9 @@ const createConfirmedDomainSubscription = (overrides: {
   subscription.confirm(
     '550e8400-e29b-41d4-a716-446655440000',
     new Date(),
-    ConfirmationToken.rehydrate({
+    SubscriptionToken.rehydrate({
       value: UNSUBSCRIBE_TOKEN,
-      scope: ConfirmationTokenScope.Unsubscribe,
+      scope: SubscriptionTokenScope.Unsubscribe,
       expiresAt: new Date(Date.now() + 60_000),
     }),
   );

@@ -32,7 +32,7 @@ describe('resolveDomainErrorHttpStatus', () => {
     [new AlreadySubscribedError('a@b.com', 'owner/repo'), 409],
     [new SubscriptionNotFoundError(), 404],
     [new InvalidTokenError(), 400],
-    [new WrongTokenScopeError('subscribe', 'unsubscribe'), 400],
+    [new WrongTokenScopeError('confirm', 'unsubscribe'), 400],
     [new IllegalStateTransitionError('pending', 'confirmed'), 400],
     [new TokenExpiredError('token'), 400],
     [new TokenAlreadyUsedError('token'), 400],

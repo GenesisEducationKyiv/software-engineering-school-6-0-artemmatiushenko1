@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Email } from '../../src/domain/subscription/email.js';
 import { RepoPath } from '../../src/domain/subscription/repo-path.js';
-import { ConfirmationToken } from '../../src/domain/subscription/confirmation-token.js';
-import { ConfirmationTokenScope } from '../../src/domain/subscription/confirmation-token-scope.js';
+import { SubscriptionToken } from '../../src/domain/subscription/subscription-token.js';
+import { SubscriptionTokenScope } from '../../src/domain/subscription/subscription-token-scope.js';
 import { ReleaseTag } from '../../src/domain/subscription/release-tag.js';
 import { Subscription } from '../../src/domain/subscription/subscription.js';
 import { SubscriptionStatus } from '../../src/domain/subscription/subscription-status.js';
@@ -24,22 +24,22 @@ const NOW = new Date('2026-01-01T12:30:00Z');
 const TTL_MS = 3_600_000;
 
 const issueConfirmToken = (
-  overrides: Partial<Parameters<typeof ConfirmationToken.issue>[0]> = {},
+  overrides: Partial<Parameters<typeof SubscriptionToken.issue>[0]> = {},
 ) =>
-  ConfirmationToken.issue({
+  SubscriptionToken.issue({
     value: CONFIRM_TOKEN_UUID,
-    scope: ConfirmationTokenScope.Subscribe,
+    scope: SubscriptionTokenScope.Confirm,
     issuedAt: ISSUED_AT,
     ttlMs: TTL_MS,
     ...overrides,
   });
 
 const issueUnsubscribeToken = (
-  overrides: Partial<Parameters<typeof ConfirmationToken.issue>[0]> = {},
+  overrides: Partial<Parameters<typeof SubscriptionToken.issue>[0]> = {},
 ) =>
-  ConfirmationToken.issue({
+  SubscriptionToken.issue({
     value: UNSUBSCRIBE_TOKEN_UUID,
-    scope: ConfirmationTokenScope.Unsubscribe,
+    scope: SubscriptionTokenScope.Unsubscribe,
     issuedAt: ISSUED_AT,
     ttlMs: TTL_MS,
     ...overrides,
@@ -57,12 +57,12 @@ const confirmSubscription = (subscription = requestSubscription()) => {
 describe('Subscription', () => {
   describe('request', () => {
     it('should create a pending subscription with the expected properties', () => {
-      const confirmationToken = issueConfirmToken();
+      const subscriptionToken = issueConfirmToken();
       const subscription = Subscription.request(
         SUBSCRIPTION_ID,
         EMAIL,
         REPO_PATH,
-        confirmationToken,
+        subscriptionToken,
       );
 
       expect(subscription.id).toBe(SUBSCRIPTION_ID);
@@ -88,13 +88,13 @@ describe('Subscription', () => {
           REPO_PATH,
           issueUnsubscribeToken(),
         ),
-      ).toThrow('Wrong token scope: expected subscribe, got unsubscribe');
+      ).toThrow('Wrong token scope: expected confirm, got unsubscribe');
     });
   });
 
   describe('rehydrate', () => {
     it('should restore a pending subscription with the expected properties', () => {
-      const confirmationToken = issueConfirmToken();
+      const subscriptionToken = issueConfirmToken();
 
       const subscription = Subscription.rehydrate({
         id: SUBSCRIPTION_ID,
@@ -102,7 +102,7 @@ describe('Subscription', () => {
         repoPath: REPO_PATH,
         status: SubscriptionStatus.Pending,
         lastSeenTag: null,
-        confirmationToken,
+        subscriptionToken,
         unsubscribeToken: null,
       });
 
@@ -122,7 +122,7 @@ describe('Subscription', () => {
         repoPath: REPO_PATH,
         status: SubscriptionStatus.Confirmed,
         lastSeenTag,
-        confirmationToken: issueConfirmToken(),
+        subscriptionToken: issueConfirmToken(),
         unsubscribeToken: issueUnsubscribeToken(),
       });
 
@@ -138,7 +138,7 @@ describe('Subscription', () => {
           repoPath: REPO_PATH,
           status: SubscriptionStatus.Confirmed,
           lastSeenTag: null,
-          confirmationToken: issueConfirmToken(),
+          subscriptionToken: issueConfirmToken(),
           unsubscribeToken: null,
         }),
       ).toThrow('Unsubscribe token is required for confirmed subscriptions');
@@ -162,7 +162,7 @@ describe('Subscription', () => {
       ).toThrow(WrongTokenScopeError);
       expect(() =>
         subscription.confirm('invalid-token', NOW, issueUnsubscribeToken()),
-      ).toThrow('Wrong token scope: expected subscribe, got unknown');
+      ).toThrow('Wrong token scope: expected confirm, got unknown');
     });
 
     it('should throw IllegalStateTransitionError when not pending', () => {
@@ -184,7 +184,7 @@ describe('Subscription', () => {
       ).toThrow(WrongTokenScopeError);
       expect(() =>
         subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueConfirmToken()),
-      ).toThrow('Wrong token scope: expected unsubscribe, got subscribe');
+      ).toThrow('Wrong token scope: expected unsubscribe, got confirm');
     });
   });
 
@@ -198,8 +198,8 @@ describe('Subscription', () => {
       subscription.renewConfirmation(renewedToken);
 
       expect(subscription.status).toBe(SubscriptionStatus.Pending);
-      expect(subscription.confirmationToken).toBe(renewedToken);
-      expect(subscription.confirmationToken.value).toBe(
+      expect(subscription.subscriptionToken).toBe(renewedToken);
+      expect(subscription.subscriptionToken.value).toBe(
         RENEWED_CONFIRM_TOKEN_UUID,
       );
       expect(subscription.unsubscribeToken).toBeNull();
@@ -213,7 +213,7 @@ describe('Subscription', () => {
       ).toThrow(WrongTokenScopeError);
       expect(() =>
         subscription.renewConfirmation(issueUnsubscribeToken()),
-      ).toThrow('Wrong token scope: expected subscribe, got unsubscribe');
+      ).toThrow('Wrong token scope: expected confirm, got unsubscribe');
     });
 
     it('should throw SubscriptionAlreadyConfirmedError when already confirmed', () => {
@@ -265,7 +265,7 @@ describe('Subscription', () => {
       subscription.reactivate(reactivationToken);
 
       expect(subscription.status).toBe(SubscriptionStatus.Pending);
-      expect(subscription.confirmationToken).toBe(reactivationToken);
+      expect(subscription.subscriptionToken).toBe(reactivationToken);
       expect(subscription.unsubscribeToken).toBeNull();
     });
 
@@ -276,7 +276,7 @@ describe('Subscription', () => {
         WrongTokenScopeError,
       );
       expect(() => subscription.reactivate(issueUnsubscribeToken())).toThrow(
-        'Wrong token scope: expected subscribe, got unsubscribe',
+        'Wrong token scope: expected confirm, got unsubscribe',
       );
     });
 

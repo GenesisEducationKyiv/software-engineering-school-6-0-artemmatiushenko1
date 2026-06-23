@@ -23,10 +23,10 @@ import type {
 import { mock } from 'vitest-mock-extended';
 import { Email } from '../../domain/subscription/email.js';
 import { RepoPath } from '../../domain/subscription/repo-path.js';
-import { ConfirmationToken } from '../../domain/subscription/confirmation-token.js';
+import { SubscriptionToken } from '../../domain/subscription/subscription-token.js';
 import { ReleaseTag } from '../../domain/subscription/release-tag.js';
 import { Subscription } from '../../domain/subscription/index.js';
-import { ConfirmationTokenScope } from '../../domain/subscription/confirmation-token-scope.js';
+import { SubscriptionTokenScope } from '../../domain/subscription/subscription-token-scope.js';
 import { SubscriptionStatus } from '../../domain/subscription/subscription-status.js';
 
 const createPendingDomainSubscription = (
@@ -36,9 +36,9 @@ const createPendingDomainSubscription = (
     overrides.id ?? '1',
     Email.fromString(overrides.email ?? 'test@example.com'),
     RepoPath.fromString(overrides.repo ?? 'owner/repo'),
-    ConfirmationToken.rehydrate({
+    SubscriptionToken.rehydrate({
       value: '550e8400-e29b-41d4-a716-446655440000',
-      scope: ConfirmationTokenScope.Subscribe,
+      scope: SubscriptionTokenScope.Confirm,
       expiresAt: new Date(Date.now() + 60_000),
     }),
   );
@@ -50,9 +50,9 @@ const createConfirmedDomainSubscription = (
   subscription.confirm(
     '550e8400-e29b-41d4-a716-446655440000',
     new Date(),
-    ConfirmationToken.rehydrate({
+    SubscriptionToken.rehydrate({
       value: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
-      scope: ConfirmationTokenScope.Unsubscribe,
+      scope: SubscriptionTokenScope.Unsubscribe,
       expiresAt: new Date(Date.now() + 60_000),
     }),
   );
@@ -129,7 +129,7 @@ describe('SubscriptionServiceImpl', () => {
     expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
     expect(savedSubscription.email.email).toBe(email);
     expect(savedSubscription.repoPath.toString()).toBe(repo);
-    expect(savedSubscription.confirmationToken.value).toBe(confirmToken);
+    expect(savedSubscription.subscriptionToken.value).toBe(confirmToken);
     expect(tx).toEqual({});
     expect(
       notificationServiceMock.notifySubscriptionConfirmation,
@@ -193,7 +193,7 @@ describe('SubscriptionServiceImpl', () => {
 
     expect(savedSubscription.id).toBe(existingDomainSubscription.id);
     expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
-    expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
+    expect(savedSubscription.subscriptionToken.value).toBe(newConfirmToken);
     expect(tx).toEqual({});
     expect(
       notificationServiceMock.notifySubscriptionConfirmation,
@@ -226,7 +226,7 @@ describe('SubscriptionServiceImpl', () => {
 
     expect(savedSubscription.id).toBe(existingDomainSubscription.id);
     expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
-    expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
+    expect(savedSubscription.subscriptionToken.value).toBe(newConfirmToken);
     expect(savedSubscription.unsubscribeToken).toBeNull();
     expect(
       notificationServiceMock.notifySubscriptionConfirmation,
@@ -283,7 +283,7 @@ describe('SubscriptionServiceImpl', () => {
 
     const [savedSubscription] = repoMock.save.mock.calls[0]!;
 
-    expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
+    expect(savedSubscription.subscriptionToken.value).toBe(newConfirmToken);
     expect(loggerMock.info).not.toHaveBeenCalled();
   });
 
@@ -407,7 +407,7 @@ describe('SubscriptionServiceImpl', () => {
 
       expect(repoMock.findByToken).toHaveBeenCalledWith(
         tokenValue,
-        ConfirmationTokenScope.Subscribe,
+        SubscriptionTokenScope.Confirm,
       );
       expect(tokenGeneratorMock.generate).toHaveBeenCalled();
       expect(repoMock.save).toHaveBeenCalledWith(
@@ -451,9 +451,9 @@ describe('SubscriptionServiceImpl', () => {
         '10',
         Email.fromString('test@example.com'),
         RepoPath.fromString('owner/repo'),
-        ConfirmationToken.rehydrate({
+        SubscriptionToken.rehydrate({
           value: tokenValue,
-          scope: ConfirmationTokenScope.Subscribe,
+          scope: SubscriptionTokenScope.Confirm,
           expiresAt: new Date('2026-01-01T11:00:00Z'),
         }),
       );
@@ -480,7 +480,7 @@ describe('SubscriptionServiceImpl', () => {
 
       expect(repoMock.findByToken).toHaveBeenCalledWith(
         tokenValue,
-        ConfirmationTokenScope.Unsubscribe,
+        SubscriptionTokenScope.Unsubscribe,
       );
       expect(repoMock.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -506,9 +506,9 @@ describe('SubscriptionServiceImpl', () => {
       subscription.confirm(
         '550e8400-e29b-41d4-a716-446655440000',
         new Date(),
-        ConfirmationToken.rehydrate({
+        SubscriptionToken.rehydrate({
           value: tokenValue,
-          scope: ConfirmationTokenScope.Unsubscribe,
+          scope: SubscriptionTokenScope.Unsubscribe,
           expiresAt: new Date('2026-01-01T11:00:00Z'),
         }),
       );

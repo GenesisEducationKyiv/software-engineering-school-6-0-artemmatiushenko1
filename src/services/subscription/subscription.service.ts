@@ -4,8 +4,8 @@ import type { NotificationService } from '../../domain/notification.js';
 import type { SubscriptionService } from '../../domain/subscription.js';
 import {
   Subscription,
-  ConfirmationToken,
-  ConfirmationTokenScope,
+  SubscriptionToken,
+  SubscriptionTokenScope,
   SubscriptionStatus,
 } from '../../domain/subscription/index.js';
 import {
@@ -63,9 +63,9 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       );
     }
 
-    const confirmToken = ConfirmationToken.issue({
+    const confirmToken = SubscriptionToken.issue({
       value: this.tokenGenerator.generate(),
-      scope: ConfirmationTokenScope.Subscribe,
+      scope: SubscriptionTokenScope.Confirm,
       issuedAt: this.clock.now(),
       ttlMs: SubscriptionServiceImpl.SUBSCRIPTION_CONFIRMATION_TTL_MS,
     });
@@ -92,7 +92,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     });
 
     await this.notificationService.notifySubscriptionConfirmation({
-      confirmToken: subscription.confirmationToken.value,
+      confirmToken: subscription.subscriptionToken.value,
       email: validatedEmail.email,
       repo: validatedRepo.toString(),
     });
@@ -136,7 +136,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
   async confirm(token: string): Promise<void> {
     const subscription = await this.subscriptionRepo.findByToken(
       token,
-      ConfirmationTokenScope.Subscribe,
+      SubscriptionTokenScope.Confirm,
     );
 
     if (!subscription) {
@@ -144,9 +144,9 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     const now = this.clock.now();
-    const unsubscribeToken = ConfirmationToken.issue({
+    const unsubscribeToken = SubscriptionToken.issue({
       value: this.tokenGenerator.generate(),
-      scope: ConfirmationTokenScope.Unsubscribe,
+      scope: SubscriptionTokenScope.Unsubscribe,
       issuedAt: now,
       ttlMs: SubscriptionServiceImpl.UNSUBSCRIBE_TTL_MS,
     });
@@ -171,7 +171,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
   async unsubscribe(token: string): Promise<void> {
     const subscription = await this.subscriptionRepo.findByToken(
       token,
-      ConfirmationTokenScope.Unsubscribe,
+      SubscriptionTokenScope.Unsubscribe,
     );
 
     if (!subscription) {

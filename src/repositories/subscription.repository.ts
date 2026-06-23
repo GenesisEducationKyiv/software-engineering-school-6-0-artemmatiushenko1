@@ -8,7 +8,7 @@ import {
   Subscription,
   Email,
   RepoPath,
-  ConfirmationTokenScope,
+  SubscriptionTokenScope,
   SubscriptionStatus,
 } from '../domain/subscription/index.js';
 import {
@@ -33,10 +33,10 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
 
   async findByToken(
     token: string,
-    scope: ConfirmationTokenScope,
+    scope: SubscriptionTokenScope,
   ): Promise<Subscription | null> {
     const tokenColumn =
-      scope === ConfirmationTokenScope.Subscribe
+      scope === SubscriptionTokenScope.Confirm
         ? subscriptions.confirmToken
         : subscriptions.unsubscribeToken;
 

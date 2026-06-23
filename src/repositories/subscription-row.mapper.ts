@@ -3,9 +3,9 @@ import {
   Subscription,
   Email,
   RepoPath,
-  ConfirmationToken,
+  SubscriptionToken,
   ReleaseTag,
-  ConfirmationTokenScope,
+  SubscriptionTokenScope,
   SubscriptionStatus,
 } from '../domain/subscription/index.js';
 
@@ -13,7 +13,7 @@ export const SubscriptionRowSchema = z.object({
   id: z.string(),
   email: z.email(),
   repo: z.string(),
-  status: z.enum(SubscriptionStatus),
+  status: z.nativeEnum(SubscriptionStatus),
   lastSeenTag: z.string().nullable(),
   confirmToken: z.string(),
   confirmExpiresAt: z.date(),
@@ -34,18 +34,18 @@ export class SubscriptionRowMapper {
       ? ReleaseTag.fromString(row.lastSeenTag)
       : null;
 
-    const confirmationToken = ConfirmationToken.rehydrate({
+    const subscriptionToken = SubscriptionToken.rehydrate({
       value: row.confirmToken,
-      scope: ConfirmationTokenScope.Subscribe,
+      scope: SubscriptionTokenScope.Confirm,
       expiresAt: row.confirmExpiresAt,
       consumedAt: row.confirmUsedAt,
     });
 
     const unsubscribeToken =
       row.unsubscribeToken && row.unsubscribeExpiresAt
-        ? ConfirmationToken.rehydrate({
+        ? SubscriptionToken.rehydrate({
             value: row.unsubscribeToken,
-            scope: ConfirmationTokenScope.Unsubscribe,
+            scope: SubscriptionTokenScope.Unsubscribe,
             expiresAt: row.unsubscribeExpiresAt,
             consumedAt: row.unsubscribeUsedAt,
           })
@@ -57,13 +57,13 @@ export class SubscriptionRowMapper {
       repoPath,
       status: row.status,
       lastSeenTag,
-      confirmationToken,
+      subscriptionToken,
       unsubscribeToken,
     });
   }
 
   toRow(subscription: Subscription) {
-    const confirmation = subscription.confirmationToken;
+    const subscriptionToken = subscription.subscriptionToken;
     const unsubscribe = subscription.unsubscribeToken;
 
     return {
@@ -72,9 +72,9 @@ export class SubscriptionRowMapper {
       repo: subscription.repoPath.toString(),
       status: subscription.status,
       lastSeenTag: subscription.lastSeenTag?.value ?? null,
-      confirmToken: confirmation.value,
-      confirmExpiresAt: confirmation.expiresAt,
-      confirmUsedAt: confirmation.consumedAt,
+      confirmToken: subscriptionToken.value,
+      confirmExpiresAt: subscriptionToken.expiresAt,
+      confirmUsedAt: subscriptionToken.consumedAt,
       unsubscribeToken: unsubscribe?.value ?? null,
       unsubscribeExpiresAt: unsubscribe?.expiresAt ?? null,
       unsubscribeUsedAt: unsubscribe?.consumedAt ?? null,
