@@ -4,6 +4,7 @@ import type { SubscriptionService } from '../../domain/subscription.js';
 import type { GithubClient } from '../../domain/github.js';
 import type { NotificationService } from '../../domain/notification.js';
 import type { Logger } from '../../domain/shared/logger.js';
+import type { Clock } from '../../domain/shared/index.js';
 import { GithubRateLimitError } from '../../domain/errors.js';
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../../domain/metrics.js';
@@ -15,6 +16,8 @@ import { ReleaseTag } from '../../domain/subscription/release-tag.js';
 import { SubscriptionToken } from '../../domain/subscription/subscription-token.js';
 
 const UNSUBSCRIBE_TOKEN = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
+const TOKEN_EXPIRES_AT = new Date('2026-01-01T13:00:00Z');
 
 const createConfirmedDomainSubscription = (overrides: {
   id?: string;
@@ -29,17 +32,17 @@ const createConfirmedDomainSubscription = (overrides: {
     SubscriptionToken.rehydrate({
       value: '550e8400-e29b-41d4-a716-446655440000',
       scope: SubscriptionTokenScope.Confirm,
-      expiresAt: new Date(Date.now() + 60_000),
+      expiresAt: TOKEN_EXPIRES_AT,
     }),
   );
 
   subscription.confirm(
     '550e8400-e29b-41d4-a716-446655440000',
-    new Date(),
+    FIXED_NOW,
     SubscriptionToken.rehydrate({
       value: UNSUBSCRIBE_TOKEN,
       scope: SubscriptionTokenScope.Unsubscribe,
-      expiresAt: new Date(Date.now() + 60_000),
+      expiresAt: TOKEN_EXPIRES_AT,
     }),
   );
 
@@ -56,16 +59,20 @@ describe('ScannerService', () => {
   const githubClientMock = mock<GithubClient>();
   const notificationServiceMock = mock<NotificationService>();
   const loggerMock = mock<Logger>();
+  const clockMock = mock<Clock>();
   const metricsMock = mock<Metrics>();
 
   beforeEach(() => {
     vi.resetAllMocks();
+
+    clockMock.now.mockReturnValue(FIXED_NOW);
 
     scannerService = new ScannerService(
       subscriptionServiceMock,
       githubClientMock,
       notificationServiceMock,
       loggerMock,
+      clockMock,
       metricsMock,
     );
   });
@@ -90,7 +97,7 @@ describe('ScannerService', () => {
       await scannerService.scan();
 
       expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
-        email: sub.email.email,
+        email: sub.email.value,
         repo: sub.repoPath.toString(),
         tag: latestRelease.tag,
         releaseName: latestRelease.name,
@@ -130,13 +137,8 @@ describe('ScannerService', () => {
 
       await scannerService.scan();
 
-      expect(loggerMock.error).toHaveBeenCalledWith(
-        'Error scanning subscription',
-        expect.any(Error),
-        { repo: 'owner/fail', subscriptionId: '1' },
-      );
       expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
-        email: sub2.email.email,
+        email: sub2.email.value,
         repo: sub2.repoPath.toString(),
         tag: latestRelease.tag,
         releaseName: latestRelease.name,

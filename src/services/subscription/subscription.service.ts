@@ -25,7 +25,7 @@ import type {
 } from '../../domain/shared/index.js';
 
 export class SubscriptionServiceImpl implements SubscriptionService {
-  private static readonly SUBSCRIPTION_CONFIRMATION_TTL_MS = 60_000;
+  private static readonly CONFIRMATION_TTL_MS = 60_000;
   private static readonly UNSUBSCRIBE_TTL_MS = 24 * 60 * 60 * 1000;
 
   constructor(
@@ -58,7 +58,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
 
     if (existingSubscription?.status === SubscriptionStatus.Confirmed) {
       throw new AlreadySubscribedError(
-        validatedEmail.email,
+        validatedEmail.value,
         validatedRepo.toString(),
       );
     }
@@ -67,7 +67,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       value: this.tokenGenerator.generate(),
       scope: SubscriptionTokenScope.Confirm,
       issuedAt: this.clock.now(),
-      ttlMs: SubscriptionServiceImpl.SUBSCRIPTION_CONFIRMATION_TTL_MS,
+      ttlMs: SubscriptionServiceImpl.CONFIRMATION_TTL_MS,
     });
 
     let subscription: Subscription;
@@ -93,12 +93,12 @@ export class SubscriptionServiceImpl implements SubscriptionService {
 
     await this.notificationService.notifySubscriptionConfirmation({
       confirmToken: subscription.confirmationToken.value,
-      email: validatedEmail.email,
+      email: validatedEmail.value,
       repo: validatedRepo.toString(),
     });
 
     this.logger.info('User subscribed', {
-      email: validatedEmail.email,
+      email: validatedEmail.value,
       repoPath: validatedRepo.toString(),
     });
   }
@@ -158,7 +158,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
     });
 
     await this.notificationService.notifySubscriptionConfirmed({
-      email: subscription.email.email,
+      email: subscription.email.value,
       repo: subscription.repoPath.toString(),
       unsubscribeToken: unsubscribeToken.value,
     });
@@ -178,8 +178,7 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       throw new SubscriptionNotFoundError();
     }
 
-    const now = this.clock.now();
-    subscription.unsubscribe(token, now);
+    subscription.unsubscribe(token, this.clock.now());
 
     await this.transactionManager.run(async (tx) => {
       await this.subscriptionRepo.save(subscription, tx);

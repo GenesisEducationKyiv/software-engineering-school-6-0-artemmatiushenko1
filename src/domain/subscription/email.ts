@@ -3,7 +3,7 @@ import { InvalidEmailError } from './errors.js';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export class Email {
-  private constructor(public readonly email: string) {
+  private constructor(public readonly value: string) {
     Object.freeze(this);
   }
 
@@ -16,6 +16,6 @@ export class Email {
   }
 
   equals(other: Email): boolean {
-    return this.email === other.email;
+    return this.value === other.value;
   }
 }

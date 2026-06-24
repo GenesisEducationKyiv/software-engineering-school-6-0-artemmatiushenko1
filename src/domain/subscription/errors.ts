@@ -19,7 +19,7 @@ export class InvalidRepoFormatError extends Error {
 export class InvalidTokenError extends Error {
   readonly code = 'INVALID_TOKEN' as const;
 
-  constructor(reason: string = 'Invalid token') {
+  constructor(reason: string) {
     super(`Invalid token: ${reason}`);
     this.name = 'InvalidTokenError';
   }
@@ -28,8 +28,8 @@ export class InvalidTokenError extends Error {
 export class TokenAlreadyUsedError extends Error {
   readonly code = 'TOKEN_ALREADY_USED' as const;
 
-  constructor(token: string) {
-    super(`Token ${token} already used`);
+  constructor() {
+    super(`Token already used`);
     this.name = 'TokenAlreadyUsedError';
   }
 }
@@ -37,8 +37,8 @@ export class TokenAlreadyUsedError extends Error {
 export class TokenExpiredError extends Error {
   readonly code = 'TOKEN_EXPIRED' as const;
 
-  constructor(token: string) {
-    super(`Token ${token} expired`);
+  constructor() {
+    super(`Token is expired`);
     this.name = 'TokenExpiredError';
   }
 }

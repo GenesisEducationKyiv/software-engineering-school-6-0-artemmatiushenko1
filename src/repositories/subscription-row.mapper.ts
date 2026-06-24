@@ -13,7 +13,7 @@ export const SubscriptionRowSchema = z.object({
   id: z.string(),
   email: z.email(),
   repo: z.string(),
-  status: z.nativeEnum(SubscriptionStatus),
+  status: z.enum(SubscriptionStatus),
   lastSeenTag: z.string().nullable(),
   confirmToken: z.string(),
   confirmExpiresAt: z.date(),
@@ -21,7 +21,6 @@ export const SubscriptionRowSchema = z.object({
   unsubscribeToken: z.string().nullable(),
   unsubscribeExpiresAt: z.date().nullable(),
   unsubscribeUsedAt: z.date().nullable(),
-  createdAt: z.date(),
 });
 
 export type SubscriptionRow = z.infer<typeof SubscriptionRowSchema>;
@@ -62,13 +61,13 @@ export class SubscriptionRowMapper {
     });
   }
 
-  toRow(subscription: Subscription) {
+  toRow(subscription: Subscription): SubscriptionRow {
     const subscriptionToken = subscription.confirmationToken;
     const unsubscribe = subscription.unsubscribeToken;
 
     return {
       id: subscription.id,
-      email: subscription.email.email,
+      email: subscription.email.value,
       repo: subscription.repoPath.toString(),
       status: subscription.status,
       lastSeenTag: subscription.lastSeenTag?.value ?? null,

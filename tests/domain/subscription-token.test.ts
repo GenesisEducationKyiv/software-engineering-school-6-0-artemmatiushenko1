@@ -75,6 +75,7 @@ describe('SubscriptionToken', () => {
       expect(consumed.expiresAt).toEqual(token.expiresAt);
       expect(consumed.consumedAt).toEqual(consumedAt);
       expect(token.consumedAt).toBeNull();
+      expect(token).not.toBe(consumed);
     });
 
     it('should allow consumption exactly at expiration time', () => {
@@ -92,7 +93,7 @@ describe('SubscriptionToken', () => {
       ).toThrow(TokenExpiredError);
       expect(() =>
         token.consume(new Date(ISSUED_AT.getTime() + 1_001)),
-      ).toThrow('Token Token expired expired');
+      ).toThrow('Token is expired');
     });
 
     it('should throw TokenAlreadyUsedError when the token was already consumed', () => {
@@ -101,9 +102,7 @@ describe('SubscriptionToken', () => {
       const consumed = token.consume(consumedAt);
 
       expect(() => consumed.consume(consumedAt)).toThrow(TokenAlreadyUsedError);
-      expect(() => consumed.consume(consumedAt)).toThrow(
-        'Token Token already used already used',
-      );
+      expect(() => consumed.consume(consumedAt)).toThrow('Token already used');
     });
   });
 

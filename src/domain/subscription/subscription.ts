@@ -150,10 +150,6 @@ export class Subscription {
       );
     }
 
-    if (this._status === SubscriptionStatus.Confirmed) {
-      throw new SubscriptionAlreadyConfirmedError();
-    }
-
     if (this._status !== SubscriptionStatus.Unsubscribed) {
       throw new IllegalStateTransitionError(
         this._status,

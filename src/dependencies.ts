@@ -152,6 +152,7 @@ export class AppContainer {
       this.githubClient,
       this.notificationService,
       this.logger,
+      this.clock,
       this.metrics,
     ));
   }

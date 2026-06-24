@@ -62,11 +62,11 @@ export class SubscriptionToken {
 
   consume(now: Date): SubscriptionToken {
     if (this.consumedAt) {
-      throw new TokenAlreadyUsedError('Token already used');
+      throw new TokenAlreadyUsedError();
     }
 
     if (this.expiresAt < now) {
-      throw new TokenExpiredError('Token expired');
+      throw new TokenExpiredError();
     }
 
     return new SubscriptionToken(this.value, this.expiresAt, this.scope, now);

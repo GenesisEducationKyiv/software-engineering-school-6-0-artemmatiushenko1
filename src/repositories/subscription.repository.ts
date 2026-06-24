@@ -58,7 +58,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       .from(subscriptions)
       .where(
         and(
-          eq(subscriptions.email, email.email),
+          eq(subscriptions.email, email.value),
           eq(subscriptions.repo, repoPath.toString()),
         ),
       )
@@ -101,7 +101,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
       .from(subscriptions)
       .where(
         and(
-          eq(subscriptions.email, email.email),
+          eq(subscriptions.email, email.value),
           eq(subscriptions.status, SubscriptionStatus.Confirmed),
         ),
       );
