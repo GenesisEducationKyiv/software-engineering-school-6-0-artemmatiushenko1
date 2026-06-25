@@ -2,19 +2,10 @@ import type { GithubClient } from '../../domain/github.js';
 import type { Subscription } from '../subscription/domain/index.js';
 import type { SubscriptionService } from '../subscription/api/subscription-service.interface.js';
 import type { NotificationService } from '../notification/api/notification.service.js';
-import type { Logger } from '../../shared-kernel/index.js';
+import type { Clock, Logger } from '../../shared-kernel/index.js';
 import { GithubRateLimitError } from '../../domain/errors.js';
 import type { Metrics } from '../../domain/metrics.js';
 import { msToSeconds } from '../../utils/time.utils.js';
-import { RepoPath } from '../subscription/domain/repo-path.js';
-
-type ScannableSubscription = {
-  id: string;
-  email: string;
-  repo: string;
-  lastSeenTag: string | null;
-  unsubscribeToken: string;
-};
 
 export class ScannerService {
   constructor(
@@ -22,12 +13,13 @@ export class ScannerService {
     private githubClient: GithubClient,
     private notificationService: NotificationService,
     private logger: Logger,
-    private metrics?: Metrics,
+    private clock: Clock,
+    private metrics: Metrics,
   ) {}
 
   async scan(): Promise<void> {
-    const startTime = Date.now();
-    this.metrics?.incrementScanTotal();
+    const startTime = this.clock.now().getTime();
+    this.metrics.incrementScanTotal();
 
     try {
       const activeSubscriptions =
@@ -41,15 +33,17 @@ export class ScannerService {
         await this.safeScanSubscription(sub);
       }
     } finally {
-      this.metrics?.recordScanDuration(msToSeconds(Date.now() - startTime));
+      this.metrics.recordScanDuration(
+        msToSeconds(this.clock.now().getTime() - startTime),
+      );
     }
   }
 
   private async safeScanSubscription(sub: Subscription): Promise<void> {
     try {
-      await this.processSubscription(this.toScannableFromDomain(sub));
+      await this.processSubscription(sub);
     } catch (error) {
-      this.metrics?.incrementScanFailures();
+      this.metrics.incrementScanFailures();
 
       if (error instanceof GithubRateLimitError) {
         this.logger.warn(
@@ -68,37 +62,43 @@ export class ScannerService {
     }
   }
 
-  private async processSubscription(sub: ScannableSubscription): Promise<void> {
+  private async processSubscription(sub: Subscription): Promise<void> {
+    if (!sub.unsubscribeToken) {
+      throw new Error('Unsubscribe token not found');
+    }
+
+    const repo = sub.repoPath.toString();
+    const lastSeenTag = sub.lastSeenTag?.value ?? null;
+
     this.logger.info('Processing subscription', {
       subscriptionId: sub.id,
-      repo: sub.repo,
-      email: sub.email,
+      repo,
+      email: sub.email.value,
     });
-    const repoPath = RepoPath.fromString(sub.repo);
 
     const latestRelease = await this.githubClient.getLatestRelease(
-      repoPath.owner,
-      repoPath.repo,
+      sub.repoPath.owner,
+      sub.repoPath.repo,
     );
 
     if (!latestRelease) {
-      this.logger.info('No releases found', { repo: sub.repo });
+      this.logger.info('No releases found', { repo });
       return;
     }
 
-    if (latestRelease.tag !== sub.lastSeenTag) {
+    if (latestRelease.tag !== lastSeenTag) {
       this.logger.info('New release detected', {
-        repo: sub.repo,
+        repo,
         tag: latestRelease.tag,
-        previousTag: sub.lastSeenTag,
+        previousTag: lastSeenTag,
       });
 
       await this.notificationService.notifyNewRelease({
-        email: sub.email,
-        repo: sub.repo,
+        email: sub.email.value,
+        repo,
         tag: latestRelease.tag,
         releaseName: latestRelease.name,
-        unsubscribeToken: sub.unsubscribeToken,
+        unsubscribeToken: sub.unsubscribeToken.value,
       });
 
       await this.subscriptionService.observeNewRelease(
@@ -107,23 +107,9 @@ export class ScannerService {
       );
     } else {
       this.logger.info('No new releases', {
-        repo: sub.repo,
-        currentTag: sub.lastSeenTag,
+        repo,
+        currentTag: lastSeenTag,
       });
     }
-  }
-
-  private toScannableFromDomain(sub: Subscription): ScannableSubscription {
-    if (!sub.unsubscribeToken) {
-      throw new Error('Unsubscribe token not found');
-    }
-
-    return {
-      id: sub.id,
-      email: sub.email.email,
-      repo: sub.repoPath.toString(),
-      lastSeenTag: sub.lastSeenTag?.value ?? null,
-      unsubscribeToken: sub.unsubscribeToken?.value,
-    };
   }
 }

@@ -1,5 +1,3 @@
-import type { SubscriptionStatus } from './subscription.js';
-
 export class InvalidEmailError extends Error {
   readonly code = 'INVALID_EMAIL' as const;
 
@@ -21,10 +19,8 @@ export class InvalidRepoFormatError extends Error {
 export class InvalidTokenError extends Error {
   readonly code = 'INVALID_TOKEN' as const;
 
-  constructor(reason: string = 'Invalid token') {
-    super(
-      reason.startsWith('Invalid token') ? reason : `Invalid token: ${reason}`,
-    );
+  constructor(reason: string) {
+    super(`Invalid token: ${reason}`);
     this.name = 'InvalidTokenError';
   }
 }
@@ -32,8 +28,8 @@ export class InvalidTokenError extends Error {
 export class TokenAlreadyUsedError extends Error {
   readonly code = 'TOKEN_ALREADY_USED' as const;
 
-  constructor(token: string) {
-    super(`Token ${token} already used`);
+  constructor() {
+    super(`Token already used`);
     this.name = 'TokenAlreadyUsedError';
   }
 }
@@ -41,8 +37,8 @@ export class TokenAlreadyUsedError extends Error {
 export class TokenExpiredError extends Error {
   readonly code = 'TOKEN_EXPIRED' as const;
 
-  constructor(token: string) {
-    super(`Token ${token} expired`);
+  constructor() {
+    super(`Token is expired`);
     this.name = 'TokenExpiredError';
   }
 }
@@ -59,7 +55,7 @@ export class InvalidReleaseTagError extends Error {
 export class IllegalStateTransitionError extends Error {
   readonly code = 'ILLEGAL_STATE_TRANSITION' as const;
 
-  constructor(currentState: SubscriptionStatus, newState: SubscriptionStatus) {
+  constructor(currentState: string, newState: string) {
     super(`Illegal state transition from ${currentState} to ${newState}`);
     this.name = 'IllegalStateTransitionError';
   }

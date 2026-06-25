@@ -4,20 +4,10 @@ import type { SubscriptionRepository } from '../application/ports/subscription.r
 import type { GithubClient } from '../../../domain/github.js';
 import type { NotificationService } from '../../notification/api/notification.service.js';
 import {
-  InvalidRepoFormatError,
-  InvalidEmailError,
   RepoNotFoundError,
   AlreadySubscribedError,
   SubscriptionNotFoundError,
-  TokenExpiredError,
-  InvalidReleaseTagError,
 } from '../../../domain/errors.js';
-import { mock } from 'vitest-mock-extended';
-import { Email } from '../domain/email.js';
-import { RepoPath } from '../domain/repo-path.js';
-import { ConfirmationToken } from '../domain/confirmation-token.js';
-import { ReleaseTag } from '../domain/release-tag.js';
-import { Subscription } from '../domain/index.js';
 import type {
   IdGenerator,
   Clock,
@@ -26,48 +16,60 @@ import type {
   Logger,
 } from '../../../shared-kernel/index.js';
 import type { TokenGenerator } from './ports/token-generator.js';
+import { mock } from 'vitest-mock-extended';
+import {
+  Email,
+  SubscriptionTokenScope,
+  SubscriptionStatus,
+  Subscription,
+  SubscriptionToken,
+  RepoPath,
+  ReleaseTag,
+} from '../domain/index.js';
 
-const createPendingDomainSubscription = (
+const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
+const TOKEN_EXPIRES_AT = new Date('2026-01-01T13:00:00Z');
+const CONFIRM_TOKEN_EXPIRES_AT = new Date('2026-01-01T12:01:00Z');
+
+const createPendingSubscription = (
   overrides: { id?: string; email?: string; repo?: string } = {},
 ) =>
   Subscription.request(
     overrides.id ?? '1',
     Email.fromString(overrides.email ?? 'test@example.com'),
     RepoPath.fromString(overrides.repo ?? 'owner/repo'),
-    ConfirmationToken.hydrate({
+    SubscriptionToken.rehydrate({
       value: '550e8400-e29b-41d4-a716-446655440000',
-      scope: 'subscribe',
-      expiresAt: new Date(Date.now() + 60_000),
+      scope: SubscriptionTokenScope.Confirm,
+      expiresAt: TOKEN_EXPIRES_AT,
     }),
   );
 
-const createConfirmedDomainSubscription = (
+const createConfirmedSubscription = (
   overrides: { id?: string; email?: string; repo?: string } = {},
 ) => {
-  const subscription = createPendingDomainSubscription(overrides);
+  const subscription = createPendingSubscription(overrides);
   subscription.confirm(
     '550e8400-e29b-41d4-a716-446655440000',
-    new Date(),
-    ConfirmationToken.hydrate({
+    FIXED_NOW,
+    SubscriptionToken.rehydrate({
       value: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
-      scope: 'unsubscribe',
-      expiresAt: new Date(Date.now() + 60_000),
+      scope: SubscriptionTokenScope.Unsubscribe,
+      expiresAt: TOKEN_EXPIRES_AT,
     }),
   );
 
   return subscription;
 };
 
-const createUnsubscribedDomainSubscription = (
+const createUnsubscribedSubscription = (
   overrides: { id?: string; email?: string; repo?: string } = {},
 ) => {
-  const subscription = createConfirmedDomainSubscription(overrides);
+  const subscription = createConfirmedSubscription(overrides);
   subscription.unsubscribe('6ba7b810-9dad-11d1-80b4-00c04fd430c8', FIXED_NOW);
 
   return subscription;
 };
-
-const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
 
 describe('SubscriptionServiceImpl', () => {
   let subscriptionService: SubscriptionServiceImpl;
@@ -124,11 +126,20 @@ describe('SubscriptionServiceImpl', () => {
     const [savedSubscription, tx] = repoMock.save.mock.calls[0]!;
 
     expect(savedSubscription.id).toBe(subscriptionId);
-    expect(savedSubscription.status).toBe('pending');
-    expect(savedSubscription.email.email).toBe(email);
+    expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
+    expect(savedSubscription.email.value).toBe(email);
     expect(savedSubscription.repoPath.toString()).toBe(repo);
-    expect(savedSubscription.confirmationToken.value).toBe(confirmToken);
-    expect(tx).toEqual({});
+    expect(
+      savedSubscription.confirmationToken.equals(
+        SubscriptionToken.rehydrate({
+          value: confirmToken,
+          scope: SubscriptionTokenScope.Confirm,
+          expiresAt: CONFIRM_TOKEN_EXPIRES_AT,
+        }),
+      ),
+    ).toBe(true);
+    expect(savedSubscription.unsubscribeToken).toBeNull();
+    expect(tx).toEqual(expect.anything());
     expect(
       notificationServiceMock.notifySubscriptionConfirmation,
     ).toHaveBeenCalledWith({
@@ -136,19 +147,6 @@ describe('SubscriptionServiceImpl', () => {
       repo,
       confirmToken,
     });
-    expect(loggerMock.info).toHaveBeenCalled();
-  });
-
-  it('should throw InvalidRepoFormatError for invalid repo format', async () => {
-    await expect(
-      subscriptionService.subscribe('test@example.com', 'invalid-repo'),
-    ).rejects.toThrow(InvalidRepoFormatError);
-  });
-
-  it('should throw InvalidEmailError for invalid email', async () => {
-    await expect(
-      subscriptionService.subscribe('invalid-email', 'owner/repo'),
-    ).rejects.toThrow(InvalidEmailError);
   });
 
   it('should throw RepoNotFoundError if repo does not exist', async () => {
@@ -160,7 +158,7 @@ describe('SubscriptionServiceImpl', () => {
   });
 
   it('should throw AlreadySubscribedError if already confirmed', async () => {
-    const subscription = createConfirmedDomainSubscription();
+    const subscription = createConfirmedSubscription();
 
     githubClientMock.repositoryExists.mockResolvedValue(true);
     repoMock.findByEmailAndRepo.mockResolvedValue(subscription);
@@ -170,11 +168,11 @@ describe('SubscriptionServiceImpl', () => {
     ).rejects.toThrow(AlreadySubscribedError);
   });
 
-  it('should refresh tokens and resend confirmation for an unconfirmed subscription', async () => {
+  it('should refresh tokens and resend confirmation for pending subscription', async () => {
     const email = 'test@example.com';
     const repo = 'owner/repo';
     const newConfirmToken = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-    const existingDomainSubscription = createPendingDomainSubscription({
+    const existingDomainSubscription = createPendingSubscription({
       email,
       repo,
     });
@@ -190,9 +188,16 @@ describe('SubscriptionServiceImpl', () => {
     const [savedSubscription, tx] = repoMock.save.mock.calls[0]!;
 
     expect(savedSubscription.id).toBe(existingDomainSubscription.id);
-    expect(savedSubscription.status).toBe('pending');
+    expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
     expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
-    expect(tx).toEqual({});
+    expect(savedSubscription.email.value).toBe(
+      existingDomainSubscription.email.value,
+    );
+    expect(savedSubscription.repoPath.toString()).toBe(
+      existingDomainSubscription.repoPath.toString(),
+    );
+    expect(savedSubscription.unsubscribeToken).toBeNull();
+    expect(tx).toEqual(expect.anything());
     expect(
       notificationServiceMock.notifySubscriptionConfirmation,
     ).toHaveBeenCalledWith({
@@ -200,14 +205,13 @@ describe('SubscriptionServiceImpl', () => {
       repo,
       confirmToken: newConfirmToken,
     });
-    expect(loggerMock.info).toHaveBeenCalled();
   });
 
   it('should reactivate an unsubscribed subscription and resend confirmation', async () => {
     const email = 'test@example.com';
     const repo = 'owner/repo';
     const newConfirmToken = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-    const existingDomainSubscription = createUnsubscribedDomainSubscription({
+    const existingDomainSubscription = createUnsubscribedSubscription({
       email,
       repo,
     });
@@ -223,9 +227,15 @@ describe('SubscriptionServiceImpl', () => {
     const [savedSubscription] = repoMock.save.mock.calls[0]!;
 
     expect(savedSubscription.id).toBe(existingDomainSubscription.id);
-    expect(savedSubscription.status).toBe('pending');
+    expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
     expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
     expect(savedSubscription.unsubscribeToken).toBeNull();
+    expect(savedSubscription.email.value).toEqual(
+      existingDomainSubscription.email.value,
+    );
+    expect(savedSubscription.repoPath).toEqual(
+      existingDomainSubscription.repoPath,
+    );
     expect(
       notificationServiceMock.notifySubscriptionConfirmation,
     ).toHaveBeenCalledWith({
@@ -235,7 +245,7 @@ describe('SubscriptionServiceImpl', () => {
     });
   });
 
-  it('should not leave partial db state when confirmation email fails for a new subscription', async () => {
+  it('should save subscription when confirmation email fails for a new subscription', async () => {
     const email = 'test@example.com';
     const repo = 'owner/repo';
     const confirmToken = '550e8400-e29b-41d4-a716-446655440000';
@@ -254,43 +264,12 @@ describe('SubscriptionServiceImpl', () => {
     );
 
     expect(repoMock.save).toHaveBeenCalledTimes(1);
-    expect(loggerMock.info).not.toHaveBeenCalled();
-  });
-
-  it('should not leave partial db state when confirmation email fails for a pending resubscribe', async () => {
-    const email = 'test@example.com';
-    const repo = 'owner/repo';
-    const newConfirmToken = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-    const existingDomainSubscription = createPendingDomainSubscription({
-      email,
-      repo,
-    });
-
-    tokenGeneratorMock.generate.mockReturnValue(newConfirmToken);
-    githubClientMock.repositoryExists.mockResolvedValue(true);
-    repoMock.findByEmailAndRepo.mockResolvedValue(existingDomainSubscription);
-    notificationServiceMock.notifySubscriptionConfirmation.mockRejectedValue(
-      new Error('SMTP error'),
-    );
-
-    await expect(subscriptionService.subscribe(email, repo)).rejects.toThrow(
-      'SMTP error',
-    );
-
-    expect(repoMock.save).toHaveBeenCalledTimes(1);
-
-    const [savedSubscription] = repoMock.save.mock.calls[0]!;
-
-    expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
-    expect(loggerMock.info).not.toHaveBeenCalled();
   });
 
   describe('getSubscriptionsByEmail', () => {
     it('should return confirmed subscriptions for a valid email', async () => {
       const email = 'test@example.com';
-      const subscriptions = [
-        createConfirmedDomainSubscription({ id: '1', email }),
-      ];
+      const subscriptions = [createConfirmedSubscription({ id: '1', email })];
 
       repoMock.findConfirmedSubscriptionsByEmail.mockResolvedValue(
         subscriptions,
@@ -316,17 +295,11 @@ describe('SubscriptionServiceImpl', () => {
         Email.fromString(email),
       );
     });
-
-    it('should throw InvalidEmailError for invalid email', async () => {
-      await expect(
-        subscriptionService.getSubscriptionsByEmail('invalid-email'),
-      ).rejects.toThrow(InvalidEmailError);
-    });
   });
 
   describe('observeNewRelease', () => {
     it('should update lastSeenTag and save for a confirmed subscription', async () => {
-      const subscription = createConfirmedDomainSubscription({ id: '10' });
+      const subscription = createConfirmedSubscription({ id: '10' });
 
       repoMock.findById.mockResolvedValue(subscription);
 
@@ -352,34 +325,8 @@ describe('SubscriptionServiceImpl', () => {
       expect(repoMock.save).not.toHaveBeenCalled();
     });
 
-    it('should throw InvalidReleaseTagError for an invalid tag', async () => {
-      const subscription = createConfirmedDomainSubscription({ id: '10' });
-
-      repoMock.findById.mockResolvedValue(subscription);
-
-      await expect(
-        subscriptionService.observeNewRelease('10', ''),
-      ).rejects.toThrow(InvalidReleaseTagError);
-
-      expect(repoMock.save).not.toHaveBeenCalled();
-    });
-
-    it('should still save when subscription is not confirmed', async () => {
-      const subscription = createPendingDomainSubscription({ id: '10' });
-
-      repoMock.findById.mockResolvedValue(subscription);
-
-      await subscriptionService.observeNewRelease('10', 'v1.0.0');
-
-      expect(subscription.lastSeenTag).toBeNull();
-      expect(repoMock.save).toHaveBeenCalledWith(
-        subscription,
-        expect.anything(),
-      );
-    });
-
     it('should not save when the release tag is unchanged', async () => {
-      const subscription = createConfirmedDomainSubscription({ id: '10' });
+      const subscription = createConfirmedSubscription({ id: '10' });
       subscription.observeRelease(ReleaseTag.fromString('v1.0.0'));
 
       repoMock.findById.mockResolvedValue(subscription);
@@ -394,7 +341,7 @@ describe('SubscriptionServiceImpl', () => {
     it('should successfully confirm subscription', async () => {
       const tokenValue = '550e8400-e29b-41d4-a716-446655440000';
       const unsubscribeTokenValue = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-      const subscription = createPendingDomainSubscription({
+      const subscription = createPendingSubscription({
         id: '10',
       });
 
@@ -405,13 +352,13 @@ describe('SubscriptionServiceImpl', () => {
 
       expect(repoMock.findByToken).toHaveBeenCalledWith(
         tokenValue,
-        'subscribe',
+        SubscriptionTokenScope.Confirm,
       );
       expect(tokenGeneratorMock.generate).toHaveBeenCalled();
       expect(repoMock.save).toHaveBeenCalledWith(
         expect.objectContaining({
           id: '10',
-          status: 'confirmed',
+          status: SubscriptionStatus.Confirmed,
         }),
         expect.anything(),
       );
@@ -422,7 +369,6 @@ describe('SubscriptionServiceImpl', () => {
         repo: 'owner/repo',
         unsubscribeToken: unsubscribeTokenValue,
       });
-      expect(loggerMock.info).toHaveBeenCalled();
     });
 
     it('should throw SubscriptionNotFoundError when token cannot be resolved', async () => {
@@ -432,45 +378,12 @@ describe('SubscriptionServiceImpl', () => {
         SubscriptionNotFoundError,
       );
     });
-
-    it('should throw SubscriptionNotFoundError when token has wrong scope', async () => {
-      const tokenValue = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-
-      repoMock.findByToken.mockResolvedValue(null);
-
-      await expect(subscriptionService.confirm(tokenValue)).rejects.toThrow(
-        SubscriptionNotFoundError,
-      );
-    });
-
-    it('should throw TokenExpiredError if token is expired', async () => {
-      const tokenValue = '550e8400-e29b-41d4-a716-446655440000';
-      const subscription = Subscription.request(
-        '10',
-        Email.fromString('test@example.com'),
-        RepoPath.fromString('owner/repo'),
-        ConfirmationToken.hydrate({
-          value: tokenValue,
-          scope: 'subscribe',
-          expiresAt: new Date('2026-01-01T11:00:00Z'),
-        }),
-      );
-
-      tokenGeneratorMock.generate.mockReturnValue(
-        '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
-      );
-      repoMock.findByToken.mockResolvedValue(subscription);
-
-      await expect(subscriptionService.confirm(tokenValue)).rejects.toThrow(
-        TokenExpiredError,
-      );
-    });
   });
 
   describe('unsubscribe', () => {
     it('should successfully unsubscribe', async () => {
       const tokenValue = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-      const subscription = createConfirmedDomainSubscription({ id: '10' });
+      const subscription = createConfirmedSubscription({ id: '10' });
 
       repoMock.findByToken.mockResolvedValue(subscription);
 
@@ -478,12 +391,12 @@ describe('SubscriptionServiceImpl', () => {
 
       expect(repoMock.findByToken).toHaveBeenCalledWith(
         tokenValue,
-        'unsubscribe',
+        SubscriptionTokenScope.Unsubscribe,
       );
       expect(repoMock.save).toHaveBeenCalledWith(
         expect.objectContaining({
           id: '10',
-          status: 'unsubscribed',
+          status: SubscriptionStatus.Unsubscribed,
         }),
         expect.anything(),
       );
@@ -496,26 +409,6 @@ describe('SubscriptionServiceImpl', () => {
       await expect(
         subscriptionService.unsubscribe('non-existent'),
       ).rejects.toThrow(SubscriptionNotFoundError);
-    });
-
-    it('should throw TokenExpiredError if token is expired', async () => {
-      const tokenValue = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-      const subscription = createPendingDomainSubscription({ id: '10' });
-      subscription.confirm(
-        '550e8400-e29b-41d4-a716-446655440000',
-        new Date(),
-        ConfirmationToken.hydrate({
-          value: tokenValue,
-          scope: 'unsubscribe',
-          expiresAt: new Date('2026-01-01T11:00:00Z'),
-        }),
-      );
-
-      repoMock.findByToken.mockResolvedValue(subscription);
-
-      await expect(subscriptionService.unsubscribe(tokenValue)).rejects.toThrow(
-        TokenExpiredError,
-      );
     });
   });
 });

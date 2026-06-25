@@ -1,8 +1,8 @@
 import type {
   Subscription,
-  ConfirmationTokenScope,
   Email,
   RepoPath,
+  SubscriptionTokenScope,
 } from '../../domain/index.js';
 import type { DomainTransaction } from '../../../../shared-kernel/transaction.js';
 
@@ -16,7 +16,7 @@ export interface SubscriptionRepository {
 
   findByToken(
     token: string,
-    scope: ConfirmationTokenScope,
+    scope: SubscriptionTokenScope,
   ): Promise<Subscription | null>;
 
   save(subscription: Subscription, tx?: DomainTransaction): Promise<void>;

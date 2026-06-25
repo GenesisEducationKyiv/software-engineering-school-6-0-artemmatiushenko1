@@ -1,35 +1,54 @@
 import { z } from 'zod';
 import {
   Subscription,
-  SubscriptionStatusSchema,
-} from '../domain/subscription.js';
-import { Email } from '../domain/email.js';
-import { RepoPath } from '../domain/repo-path.js';
-import { ConfirmationToken } from '../domain/confirmation-token.js';
-import { ReleaseTag } from '../domain/release-tag.js';
+  Email,
+  RepoPath,
+  SubscriptionToken,
+  ReleaseTag,
+  SubscriptionTokenScope,
+  SubscriptionStatus,
+} from '../domain/index.js';
 
 export const SubscriptionRowSchema = z.object({
   id: z.string(),
   email: z.email(),
   repo: z.string(),
-  status: SubscriptionStatusSchema,
+  status: z.enum(SubscriptionStatus),
   lastSeenTag: z.string().nullable(),
-  createdAt: z.date(),
+  confirmToken: z.string(),
+  confirmExpiresAt: z.date(),
+  confirmUsedAt: z.date().nullable(),
+  unsubscribeToken: z.string().nullable(),
+  unsubscribeExpiresAt: z.date().nullable(),
+  unsubscribeUsedAt: z.date().nullable(),
 });
 
 export type SubscriptionRow = z.infer<typeof SubscriptionRowSchema>;
 
 export class SubscriptionRowMapper {
-  toDomain(
-    row: SubscriptionRow,
-    confirmationToken: ConfirmationToken,
-    unsubscribeToken: ConfirmationToken | null,
-  ): Subscription {
+  toDomain(row: SubscriptionRow): Subscription {
     const email = Email.fromString(row.email);
     const repoPath = RepoPath.fromString(row.repo);
     const lastSeenTag = row.lastSeenTag
       ? ReleaseTag.fromString(row.lastSeenTag)
       : null;
+
+    const subscriptionToken = SubscriptionToken.rehydrate({
+      value: row.confirmToken,
+      scope: SubscriptionTokenScope.Confirm,
+      expiresAt: row.confirmExpiresAt,
+      consumedAt: row.confirmUsedAt,
+    });
+
+    const unsubscribeToken =
+      row.unsubscribeToken && row.unsubscribeExpiresAt
+        ? SubscriptionToken.rehydrate({
+            value: row.unsubscribeToken,
+            scope: SubscriptionTokenScope.Unsubscribe,
+            expiresAt: row.unsubscribeExpiresAt,
+            consumedAt: row.unsubscribeUsedAt,
+          })
+        : null;
 
     return Subscription.rehydrate({
       id: row.id,
@@ -37,19 +56,27 @@ export class SubscriptionRowMapper {
       repoPath,
       status: row.status,
       lastSeenTag,
-      confirmationToken,
+      confirmationToken: subscriptionToken,
       unsubscribeToken,
     });
   }
 
-  toRow(subscription: Subscription, createdAt: Date): SubscriptionRow {
+  toRow(subscription: Subscription): SubscriptionRow {
+    const subscriptionToken = subscription.confirmationToken;
+    const unsubscribe = subscription.unsubscribeToken;
+
     return {
       id: subscription.id,
-      email: subscription.email.email,
+      email: subscription.email.value,
       repo: subscription.repoPath.toString(),
       status: subscription.status,
       lastSeenTag: subscription.lastSeenTag?.value ?? null,
-      createdAt,
+      confirmToken: subscriptionToken.value,
+      confirmExpiresAt: subscriptionToken.expiresAt,
+      confirmUsedAt: subscriptionToken.consumedAt,
+      unsubscribeToken: unsubscribe?.value ?? null,
+      unsubscribeExpiresAt: unsubscribe?.expiresAt ?? null,
+      unsubscribeUsedAt: unsubscribe?.consumedAt ?? null,
     };
   }
 }

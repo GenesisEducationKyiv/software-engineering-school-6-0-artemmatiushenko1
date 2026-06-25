@@ -9,13 +9,13 @@ describe('Email', () => {
     it('should create an Email for a valid address', () => {
       const email = Email.fromString('test@example.com');
 
-      expect(email.email).toBe('test@example.com');
+      expect(email.value).toBe('test@example.com');
     });
 
     it('should normalize email to lowercase', () => {
       const email = Email.fromString('Test@Example.COM');
 
-      expect(email.email).toBe('test@example.com');
+      expect(email.value).toBe('test@example.com');
     });
 
     it.each([
@@ -25,7 +25,7 @@ describe('Email', () => {
     ])('should accept valid email: %s', (address) => {
       const email = Email.fromString(address);
 
-      expect(email.email).toBe(address);
+      expect(email.value).toBe(address);
     });
 
     it.each([

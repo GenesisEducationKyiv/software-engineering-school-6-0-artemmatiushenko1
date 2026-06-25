@@ -1,18 +1,21 @@
-import z from 'zod';
 import { InvalidEmailError } from './errors.js';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export class Email {
-  private constructor(public readonly email: string) {
+  private constructor(public readonly value: string) {
     Object.freeze(this);
   }
 
   static fromString(email: string): Email {
-    const isValid = z.email().trim().toLowerCase().safeParse(email);
-    if (!isValid.success) throw new InvalidEmailError(email);
-    return new Email(isValid.data);
+    if (!EMAIL_REGEX.test(email)) {
+      throw new InvalidEmailError(email);
+    }
+
+    return new Email(email.trim().toLowerCase());
   }
 
   equals(other: Email): boolean {
-    return this.email === other.email;
+    return this.value === other.value;
   }
 }

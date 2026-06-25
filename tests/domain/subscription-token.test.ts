@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { ConfirmationToken } from '../../src/modules/subscription/domain/confirmation-token.js';
+import { SubscriptionToken } from '../../src/modules/subscription/domain/subscription-token.js';
+import { SubscriptionTokenScope } from '../../src/modules/subscription/domain/subscription-token-scope.js';
 import {
   InvalidTokenError,
   TokenAlreadyUsedError,
@@ -11,43 +12,34 @@ const ISSUED_AT = new Date('2026-01-01T12:00:00Z');
 const TTL_MS = 3_600_000;
 
 const issueToken = (
-  overrides: Partial<Parameters<typeof ConfirmationToken.issue>[0]> = {},
+  overrides: Partial<Parameters<typeof SubscriptionToken.issue>[0]> = {},
 ) =>
-  ConfirmationToken.issue({
+  SubscriptionToken.issue({
     value: VALID_UUID,
-    scope: 'subscribe',
+    scope: SubscriptionTokenScope.Confirm,
     issuedAt: ISSUED_AT,
     ttlMs: TTL_MS,
     ...overrides,
   });
 
-describe('ConfirmationToken', () => {
+describe('SubscriptionToken', () => {
   describe('issue', () => {
     it('should create a token with the expected properties', () => {
-      const token = issueToken({ scope: 'subscribe' });
+      const token = issueToken({ scope: SubscriptionTokenScope.Confirm });
 
       expect(token.value).toBe(VALID_UUID);
-      expect(token.scope).toBe('subscribe');
+      expect(token.scope).toBe(SubscriptionTokenScope.Confirm);
       expect(token.consumedAt).toBeNull();
       expect(token.expiresAt).toEqual(new Date(ISSUED_AT.getTime() + TTL_MS));
     });
 
-    it.each(['subscribe', 'unsubscribe'] as const)(
-      'should accept valid scope: %s',
-      (scope) => {
-        const token = issueToken({ scope });
+    it.each([
+      SubscriptionTokenScope.Confirm,
+      SubscriptionTokenScope.Unsubscribe,
+    ])('should accept valid scope: %s', (scope) => {
+      const token = issueToken({ scope });
 
-        expect(token.scope).toBe(scope);
-      },
-    );
-
-    it('should throw InvalidTokenError for an invalid scope', () => {
-      expect(() => issueToken({ scope: 'invalid' as 'subscribe' })).toThrow(
-        InvalidTokenError,
-      );
-      expect(() => issueToken({ scope: 'invalid' as 'subscribe' })).toThrow(
-        "Invalid token: Invalid scope: invalid. Expected 'subscribe' or 'unsubscribe'.",
-      );
+      expect(token.scope).toBe(scope);
     });
 
     it.each(['not-a-uuid', '', '123'])(
@@ -83,6 +75,7 @@ describe('ConfirmationToken', () => {
       expect(consumed.expiresAt).toEqual(token.expiresAt);
       expect(consumed.consumedAt).toEqual(consumedAt);
       expect(token.consumedAt).toBeNull();
+      expect(token).not.toBe(consumed);
     });
 
     it('should allow consumption exactly at expiration time', () => {
@@ -100,7 +93,7 @@ describe('ConfirmationToken', () => {
       ).toThrow(TokenExpiredError);
       expect(() =>
         token.consume(new Date(ISSUED_AT.getTime() + 1_001)),
-      ).toThrow('Token Token expired expired');
+      ).toThrow('Token is expired');
     });
 
     it('should throw TokenAlreadyUsedError when the token was already consumed', () => {
@@ -109,9 +102,7 @@ describe('ConfirmationToken', () => {
       const consumed = token.consume(consumedAt);
 
       expect(() => consumed.consume(consumedAt)).toThrow(TokenAlreadyUsedError);
-      expect(() => consumed.consume(consumedAt)).toThrow(
-        'Token Token already used already used',
-      );
+      expect(() => consumed.consume(consumedAt)).toThrow('Token already used');
     });
   });
 
@@ -133,8 +124,8 @@ describe('ConfirmationToken', () => {
     });
 
     it('should return false when scope differs', () => {
-      const first = issueToken({ scope: 'subscribe' });
-      const second = issueToken({ scope: 'unsubscribe' });
+      const first = issueToken({ scope: SubscriptionTokenScope.Confirm });
+      const second = issueToken({ scope: SubscriptionTokenScope.Unsubscribe });
 
       expect(first.equals(second)).toBe(false);
     });

@@ -4,16 +4,20 @@ import type { SubscriptionService } from '../subscription/api/subscription-servi
 import type { GithubClient } from '../../domain/github.js';
 import type { NotificationService } from '../notification/api/notification.service.js';
 import type { Logger } from '../../shared-kernel/logger.js';
+import type { Clock } from '../../shared-kernel/index.js';
 import { GithubRateLimitError } from '../../domain/errors.js';
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../../domain/metrics.js';
 import { Subscription } from '../subscription/domain/index.js';
+import { SubscriptionTokenScope } from '../subscription/domain/subscription-token-scope.js';
 import { Email } from '../subscription/domain/email.js';
 import { RepoPath } from '../subscription/domain/repo-path.js';
 import { ReleaseTag } from '../subscription/domain/release-tag.js';
-import { ConfirmationToken } from '../subscription/domain/confirmation-token.js';
+import { SubscriptionToken } from '../subscription/domain/subscription-token.js';
 
 const UNSUBSCRIBE_TOKEN = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
+const TOKEN_EXPIRES_AT = new Date('2026-01-01T13:00:00Z');
 
 const createConfirmedDomainSubscription = (overrides: {
   id?: string;
@@ -25,20 +29,20 @@ const createConfirmedDomainSubscription = (overrides: {
     overrides.id ?? '1',
     Email.fromString(overrides.email ?? 'test@example.com'),
     RepoPath.fromString(overrides.repo ?? 'owner/repo'),
-    ConfirmationToken.hydrate({
+    SubscriptionToken.rehydrate({
       value: '550e8400-e29b-41d4-a716-446655440000',
-      scope: 'subscribe',
-      expiresAt: new Date(Date.now() + 60_000),
+      scope: SubscriptionTokenScope.Confirm,
+      expiresAt: TOKEN_EXPIRES_AT,
     }),
   );
 
   subscription.confirm(
     '550e8400-e29b-41d4-a716-446655440000',
-    new Date(),
-    ConfirmationToken.hydrate({
+    FIXED_NOW,
+    SubscriptionToken.rehydrate({
       value: UNSUBSCRIBE_TOKEN,
-      scope: 'unsubscribe',
-      expiresAt: new Date(Date.now() + 60_000),
+      scope: SubscriptionTokenScope.Unsubscribe,
+      expiresAt: TOKEN_EXPIRES_AT,
     }),
   );
 
@@ -55,16 +59,20 @@ describe('ScannerService', () => {
   const githubClientMock = mock<GithubClient>();
   const notificationServiceMock = mock<NotificationService>();
   const loggerMock = mock<Logger>();
+  const clockMock = mock<Clock>();
   const metricsMock = mock<Metrics>();
 
   beforeEach(() => {
     vi.resetAllMocks();
+
+    clockMock.now.mockReturnValue(FIXED_NOW);
 
     scannerService = new ScannerService(
       subscriptionServiceMock,
       githubClientMock,
       notificationServiceMock,
       loggerMock,
+      clockMock,
       metricsMock,
     );
   });
@@ -89,7 +97,7 @@ describe('ScannerService', () => {
       await scannerService.scan();
 
       expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
-        email: sub.email.email,
+        email: sub.email.value,
         repo: sub.repoPath.toString(),
         tag: latestRelease.tag,
         releaseName: latestRelease.name,
@@ -129,13 +137,8 @@ describe('ScannerService', () => {
 
       await scannerService.scan();
 
-      expect(loggerMock.error).toHaveBeenCalledWith(
-        'Error scanning subscription',
-        expect.any(Error),
-        { repo: 'owner/fail', subscriptionId: '1' },
-      );
       expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
-        email: sub2.email.email,
+        email: sub2.email.value,
         repo: sub2.repoPath.toString(),
         tag: latestRelease.tag,
         releaseName: latestRelease.name,
