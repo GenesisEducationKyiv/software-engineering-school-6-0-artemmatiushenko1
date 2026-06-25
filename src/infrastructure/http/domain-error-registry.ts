@@ -1,27 +1,51 @@
 import {
-  domainErrorTypes,
-  type DomainError,
-  InvalidRepoFormatError,
   InvalidEmailError,
+  InvalidRepoFormatError,
+  InvalidTokenError,
+  TokenAlreadyUsedError,
+  TokenExpiredError,
+  InvalidReleaseTagError,
+  IllegalStateTransitionError,
+  WrongTokenScopeError,
+  SubscriptionAlreadyDeactivatedError,
+  SubscriptionAlreadyConfirmedError,
+} from '../../modules/subscription/domain/errors.js';
+import {
+  RepoNotFoundError,
+  AlreadySubscribedError,
+  SubscriptionNotFoundError,
+} from '../../modules/subscription/application/errors.js';
+import { GithubRateLimitError } from '../../modules/github/domain/errors.js';
+import {
+  CommonErrorResponseDtoSchema,
+  type CommonErrorResponseDto,
+} from './response.dto.js';
+
+export const domainErrorRegistry = [
+  InvalidEmailError,
+  InvalidRepoFormatError,
+  RepoNotFoundError,
+  AlreadySubscribedError,
+  SubscriptionNotFoundError,
   InvalidTokenError,
   WrongTokenScopeError,
   IllegalStateTransitionError,
   TokenExpiredError,
   TokenAlreadyUsedError,
   InvalidReleaseTagError,
-} from '../../domain/errors.js';
-import { GithubRateLimitError } from '../../modules/github/domain/errors.js';
-import {
-  RepoNotFoundError,
-  AlreadySubscribedError,
-  SubscriptionNotFoundError,
-} from '../../modules/subscription/application/errors.js';
-import {
+  GithubRateLimitError,
   SubscriptionAlreadyConfirmedError,
   SubscriptionAlreadyDeactivatedError,
-} from '../../modules/subscription/domain/errors.js';
+] as const;
 
-type DomainErrorConstructor = (typeof domainErrorTypes)[number];
+export type DomainError = InstanceType<(typeof domainErrorRegistry)[number]>;
+
+export type DomainErrorCodeType = DomainError['code'];
+
+export const isDomainError = (error: unknown): error is DomainError =>
+  domainErrorRegistry.some((ErrorClass) => error instanceof ErrorClass);
+
+type DomainErrorConstructor = (typeof domainErrorRegistry)[number];
 
 const domainErrorHttpStatusEntries = [
   [InvalidEmailError, 400],
@@ -42,10 +66,7 @@ const domainErrorHttpStatusEntries = [
 
 export type DomainErrorHttpResponse = {
   status: number;
-  body: {
-    error: string;
-    code: string;
-  };
+  body: CommonErrorResponseDto;
 };
 
 export const resolveDomainErrorHttpStatus = (error: DomainError): number => {
@@ -62,12 +83,12 @@ export const resolveDomainErrorHttpResponse = (
   error: DomainError,
 ): DomainErrorHttpResponse => ({
   status: resolveDomainErrorHttpStatus(error),
-  body: {
+  body: CommonErrorResponseDtoSchema.parse({
     error: error.message,
     code: error.code,
-  },
+  }),
 });
 
-export const mappedDomainErrorTypes = domainErrorHttpStatusEntries.map(
+export const httpMappedDomainErrors = domainErrorHttpStatusEntries.map(
   ([ErrorClass]) => ErrorClass,
 );

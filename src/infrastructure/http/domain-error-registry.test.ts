@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  domainErrorTypes,
   InvalidRepoFormatError,
   InvalidEmailError,
   InvalidTokenError,
@@ -9,7 +8,9 @@ import {
   TokenExpiredError,
   TokenAlreadyUsedError,
   InvalidReleaseTagError,
-} from '../../domain/errors.js';
+  SubscriptionAlreadyConfirmedError,
+  SubscriptionAlreadyDeactivatedError,
+} from '../../modules/subscription/domain/errors.js';
 import { GithubRateLimitError } from '../../modules/github/domain/errors.js';
 import {
   RepoNotFoundError,
@@ -17,16 +18,13 @@ import {
   SubscriptionNotFoundError,
 } from '../../modules/subscription/application/errors.js';
 import {
-  SubscriptionAlreadyConfirmedError,
-  SubscriptionAlreadyDeactivatedError,
-} from '../../modules/subscription/domain/errors.js';
-import {
+  domainErrorRegistry,
   resolveDomainErrorHttpStatus,
   resolveDomainErrorHttpResponse,
-  mappedDomainErrorTypes,
-} from './domain-error-http-status.js';
+  httpMappedDomainErrors,
+} from './domain-error-registry.js';
 
-describe('resolveDomainErrorHttpStatus', () => {
+describe('domain error registry', () => {
   it.each([
     [new InvalidRepoFormatError('owner'), 400],
     [new InvalidEmailError('bad'), 400],
@@ -58,7 +56,7 @@ describe('resolveDomainErrorHttpStatus', () => {
     });
   });
 
-  it('should map every domain error type', () => {
-    expect(mappedDomainErrorTypes).toEqual([...domainErrorTypes]);
+  it('should map every registered domain error to an HTTP status', () => {
+    expect(httpMappedDomainErrors).toEqual([...domainErrorRegistry]);
   });
 });
