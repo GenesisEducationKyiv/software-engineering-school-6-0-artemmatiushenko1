@@ -4,14 +4,14 @@ import type {
   GithubRelease,
 } from '../api/github-client.interface.js';
 import { GitHubReleaseSchema } from './github-release.schema.js';
-import type { Metrics } from '../../../infrastructure/metrics/metrics.interface.js';
+import type { CacheMetrics } from '../api/cache-metrics.interface.js';
 
 export class CachedOctokitGithubClient implements GithubClient {
   constructor(
     private readonly client: GithubClient,
     private readonly redis: Redis,
     private readonly ttlSeconds: number,
-    private readonly metrics?: Metrics,
+    private readonly metrics?: CacheMetrics,
   ) {}
 
   async repositoryExists(owner: string, repo: string): Promise<boolean> {

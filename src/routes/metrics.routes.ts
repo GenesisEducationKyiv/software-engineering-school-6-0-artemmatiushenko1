@@ -1,8 +1,8 @@
 import type { FastifyPluginCallback } from 'fastify';
-import type { Metrics } from '../infrastructure/metrics/metrics.interface.js';
+import type { MetricsExporter } from '../infrastructure/metrics/metrics-exporter.interface.js';
 
 interface MetricsRoutesOptions {
-  metrics: Metrics;
+  metrics: MetricsExporter;
 }
 
 export const metricsRoutes: FastifyPluginCallback<MetricsRoutesOptions> = (

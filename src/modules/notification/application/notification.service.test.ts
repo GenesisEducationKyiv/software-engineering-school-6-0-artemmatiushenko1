@@ -3,13 +3,13 @@ import { NotificationServiceImpl } from './notification.service.js';
 import type { NewReleaseNotificationContext } from '../api/notification.service.js';
 import type { EmailClient } from './ports/email-client.js';
 import { mock } from 'vitest-mock-extended';
-import type { Metrics } from '../../../infrastructure/metrics/metrics.interface.js';
+import type { NotificationMetrics } from './ports/notification-metrics.js';
 
 describe('NotificationServiceImpl', () => {
   let notificationService: NotificationServiceImpl;
   const emailClientMock = mock<EmailClient>();
   const appUrl = 'http://localhost:3000';
-  const metricsMock = mock<Metrics>();
+  const metricsMock = mock<NotificationMetrics>();
 
   beforeEach(() => {
     vi.resetAllMocks();

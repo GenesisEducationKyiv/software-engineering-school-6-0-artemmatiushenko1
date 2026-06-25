@@ -7,7 +7,7 @@ import type { Logger } from '../../shared-kernel/logger.js';
 import type { Clock } from '../../shared-kernel/index.js';
 import { GithubRateLimitError } from '../github/domain/errors.js';
 import { mock } from 'vitest-mock-extended';
-import type { Metrics } from '../../infrastructure/metrics/metrics.interface.js';
+import type { ScannerMetrics } from './scanner-metrics.interface.js';
 import { Subscription } from '../subscription/domain/index.js';
 import { SubscriptionTokenScope } from '../subscription/domain/subscription-token-scope.js';
 import { Email } from '../subscription/domain/email.js';
@@ -60,7 +60,7 @@ describe('ScannerService', () => {
   const notificationServiceMock = mock<NotificationService>();
   const loggerMock = mock<Logger>();
   const clockMock = mock<Clock>();
-  const metricsMock = mock<Metrics>();
+  const metricsMock = mock<ScannerMetrics>();
 
   beforeEach(() => {
     vi.resetAllMocks();

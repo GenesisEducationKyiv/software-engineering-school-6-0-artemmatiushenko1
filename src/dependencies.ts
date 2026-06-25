@@ -13,6 +13,7 @@ import { UnsubscribeUseCase } from './modules/subscription/application/unsubscri
 import { GetSubscriptionsByEmailUseCase } from './modules/subscription/application/get-subscriptions-by-email.use-case.js';
 import { SubscriptionQueriesImpl } from './modules/subscription/application/subscription-queries.js';
 import { PrometheusMetrics } from './infrastructure/metrics/prometheus-metrics.js';
+import type { Metrics } from './infrastructure/metrics/metrics.interface.js';
 import { FastifyLogger } from './infrastructure/logger/fastify-logger.js';
 import type { FastifyBaseLogger } from 'fastify';
 import type { GithubClient } from './modules/github/api/github-client.interface.js';
@@ -31,7 +32,7 @@ import { NodemailerEmailClient } from './modules/notification/infrastructure/nod
 export interface AppDependencies {
   db: Database;
   redis: Redis;
-  metrics: PrometheusMetrics;
+  metrics: Metrics;
   subscribeUseCase: SubscribeUseCase;
   confirmUseCase: ConfirmUseCase;
   unsubscribeUseCase: UnsubscribeUseCase;
@@ -42,7 +43,7 @@ export interface AppDependencies {
 
 export class AppContainer {
   private loggerInstance?: Logger;
-  private metricsInstance?: PrometheusMetrics;
+  private metricsInstance?: Metrics;
   private redisInstance?: Redis;
   private githubClientInstance?: GithubClient;
   private emailClientInstance?: EmailClient;
@@ -73,11 +74,11 @@ export class AppContainer {
     this.loggerInstance = value;
   }
 
-  get metrics(): PrometheusMetrics {
+  get metrics(): Metrics {
     return (this.metricsInstance ??= new PrometheusMetrics());
   }
 
-  set metrics(value: PrometheusMetrics) {
+  set metrics(value: Metrics) {
     this.metricsInstance = value;
   }
 

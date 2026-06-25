@@ -5,14 +5,14 @@ import type {
   GithubClient,
   GithubRelease,
 } from '../api/github-client.interface.js';
-import type { Metrics } from '../../../infrastructure/metrics/metrics.interface.js';
+import type { CacheMetrics } from '../api/cache-metrics.interface.js';
 import { mock } from 'vitest-mock-extended';
 
 describe('CachedOctokitGithubClient', () => {
   let cachedClient: CachedOctokitGithubClient;
   const githubClientMock = mock<GithubClient>();
   const redisMock = mock<Redis>();
-  const metricsMock = mock<Metrics>();
+  const metricsMock = mock<CacheMetrics>();
   const TTL = 600;
 
   beforeEach(() => {

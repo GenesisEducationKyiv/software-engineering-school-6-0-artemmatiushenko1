@@ -14,13 +14,13 @@ import {
   buildConfirmUrl,
   buildUnsubscribeUrl,
 } from '../infrastructure/links.js';
-import type { Metrics } from '../../../infrastructure/metrics/metrics.interface.js';
+import type { NotificationMetrics } from './ports/notification-metrics.js';
 
 export class NotificationServiceImpl implements NotificationService {
   constructor(
     private emailClient: EmailClient,
     private appUrl: string,
-    private metrics?: Metrics,
+    private metrics?: NotificationMetrics,
   ) {}
 
   async notifySubscriptionConfirmation(
