@@ -171,7 +171,6 @@ If you need to run tests locally with the Playwright UI:
 - `src/modules`: Feature modules (domain, application, infrastructure, api).
 - `src/shared-kernel`: Cross-cutting ports (clock, logger, id generation).
 - `src/infrastructure`: DB, HTTP, metrics, and other shared adapters.
-- `src/routes`: API route definitions.
 - `client/`: Frontend application code.
 - `drizzle/`: Database migrations.
 - `nginx/`: Public reverse proxy (blocks `/metrics` from the internet).

@@ -16,8 +16,8 @@ import { registerSubscribeRoute } from './modules/subscription/infrastructure/ht
 import { registerListSubscriptionsRoute } from './modules/subscription/infrastructure/http/list-subscriptions.controller.js';
 import { registerConfirmRoute } from './modules/subscription/infrastructure/http/confirm.controller.js';
 import { registerUnsubscribeRoute } from './modules/subscription/infrastructure/http/unsubscribe.controller.js';
-import { metricsRoutes } from './routes/metrics.routes.js';
-import { healthRoutes } from './routes/health.routes.js';
+import { registerHealthRoute } from './infrastructure/http/health.controller.js';
+import { registerMetricsRoute } from './infrastructure/metrics/metrics.controller.js';
 import cron, { type ScheduledTask } from 'node-cron';
 import { CommonErrorResponseDtoSchema } from './infrastructure/http/response.dto.js';
 import { type AppDependencies } from './dependencies.js';
@@ -161,10 +161,9 @@ export class App {
   }
 
   private async setupRoutes() {
-    await this.fastify.register(healthRoutes);
-    await this.fastify.register(metricsRoutes, {
-      metrics: this.deps.metrics,
-    });
+    registerHealthRoute(this.fastify);
+    registerMetricsRoute(this.fastify, this.deps.metrics);
+
     await this.fastify.register(
       (fastify) => {
         const {
