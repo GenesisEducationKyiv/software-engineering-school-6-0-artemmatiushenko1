@@ -4,7 +4,7 @@ import {
   register,
   collectDefaultMetrics,
 } from 'prom-client';
-import type { Metrics } from '../../domain/metrics.js';
+import type { Metrics } from './metrics.interface.js';
 
 export class PrometheusMetrics implements Metrics {
   constructor() {

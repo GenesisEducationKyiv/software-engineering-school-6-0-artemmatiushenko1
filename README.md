@@ -168,9 +168,9 @@ If you need to run tests locally with the Playwright UI:
 
 ## Project Structure
 
-- `src/domain`: Core business logic and interfaces.
-- `src/infrastructure`: Implementations of external services (DB, GitHub, Email, Metrics).
-- `src/services`: Application services orchestrating domain logic.
+- `src/modules`: Feature modules (domain, application, infrastructure, api).
+- `src/shared-kernel`: Cross-cutting ports (clock, logger, id generation).
+- `src/infrastructure`: DB, HTTP, metrics, and other shared adapters.
 - `src/routes`: API route definitions.
 - `client/`: Frontend application code.
 - `drizzle/`: Database migrations.

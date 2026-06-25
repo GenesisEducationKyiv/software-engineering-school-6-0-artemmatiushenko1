@@ -7,7 +7,7 @@ import type { Logger } from '../../shared-kernel/logger.js';
 import type { Clock } from '../../shared-kernel/index.js';
 import { GithubRateLimitError } from '../github/domain/errors.js';
 import { mock } from 'vitest-mock-extended';
-import type { Metrics } from '../../domain/metrics.js';
+import type { Metrics } from '../../infrastructure/metrics/metrics.interface.js';
 import { Subscription } from '../subscription/domain/index.js';
 import { SubscriptionTokenScope } from '../subscription/domain/subscription-token-scope.js';
 import { Email } from '../subscription/domain/email.js';

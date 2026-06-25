@@ -4,7 +4,7 @@ import type {
   GithubRelease,
 } from '../api/github-client.interface.js';
 import { GitHubReleaseSchema } from './github-release.schema.js';
-import type { Metrics } from '../../../domain/metrics.js';
+import type { Metrics } from '../../../infrastructure/metrics/metrics.interface.js';
 
 export class CachedOctokitGithubClient implements GithubClient {
   constructor(

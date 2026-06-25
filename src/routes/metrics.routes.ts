@@ -1,5 +1,5 @@
 import type { FastifyPluginCallback } from 'fastify';
-import type { Metrics } from '../domain/metrics.js';
+import type { Metrics } from '../infrastructure/metrics/metrics.interface.js';
 
 interface MetricsRoutesOptions {
   metrics: Metrics;

@@ -5,7 +5,7 @@ import type {
   GithubClient,
   GithubRelease,
 } from '../api/github-client.interface.js';
-import type { Metrics } from '../../../domain/metrics.js';
+import type { Metrics } from '../../../infrastructure/metrics/metrics.interface.js';
 import { mock } from 'vitest-mock-extended';
 
 describe('CachedOctokitGithubClient', () => {

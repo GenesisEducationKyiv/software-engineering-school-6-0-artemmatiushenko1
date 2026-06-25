@@ -14,7 +14,7 @@ import {
   buildConfirmUrl,
   buildUnsubscribeUrl,
 } from '../infrastructure/links.js';
-import type { Metrics } from '../../../domain/metrics.js';
+import type { Metrics } from '../../../infrastructure/metrics/metrics.interface.js';
 
 export class NotificationServiceImpl implements NotificationService {
   constructor(
