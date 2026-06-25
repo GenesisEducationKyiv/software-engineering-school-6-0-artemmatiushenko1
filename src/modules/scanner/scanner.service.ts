@@ -1,6 +1,6 @@
 import type { GithubClient } from '../../domain/github.js';
 import type { Subscription } from '../subscription/domain/index.js';
-import type { SubscriptionService } from '../subscription/api/subscription-service.interface.js';
+import type { SubscriptionQueries } from '../subscription/api/subscription-queries.interface.js';
 import type { NotificationService } from '../notification/api/notification.service.js';
 import type { Clock, Logger } from '../../shared-kernel/index.js';
 import { GithubRateLimitError } from '../../domain/errors.js';
@@ -9,7 +9,7 @@ import { msToSeconds } from '../../utils/time.utils.js';
 
 export class ScannerService {
   constructor(
-    private subscriptionService: SubscriptionService,
+    private subscriptionQueries: SubscriptionQueries,
     private githubClient: GithubClient,
     private notificationService: NotificationService,
     private logger: Logger,
@@ -23,7 +23,7 @@ export class ScannerService {
 
     try {
       const activeSubscriptions =
-        await this.subscriptionService.findAllConfirmedSubscriptions();
+        await this.subscriptionQueries.findAllConfirmedSubscriptions();
 
       this.logger.info('Active subscriptions found for scan', {
         count: activeSubscriptions.length,
@@ -101,7 +101,7 @@ export class ScannerService {
         unsubscribeToken: sub.unsubscribeToken.value,
       });
 
-      await this.subscriptionService.observeNewRelease(
+      await this.subscriptionQueries.observeNewRelease(
         sub.id,
         latestRelease.tag,
       );

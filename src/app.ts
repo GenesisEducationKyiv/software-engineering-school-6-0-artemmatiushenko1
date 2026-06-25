@@ -167,12 +167,17 @@ export class App {
     });
     await this.fastify.register(
       (fastify) => {
-        const { subscriptionService } = this.deps;
+        const {
+          subscribeUseCase,
+          confirmUseCase,
+          unsubscribeUseCase,
+          getSubscriptionsByEmailUseCase,
+        } = this.deps;
 
-        registerSubscribeRoute(fastify, subscriptionService);
-        registerListSubscriptionsRoute(fastify, subscriptionService);
-        registerConfirmRoute(fastify, subscriptionService);
-        registerUnsubscribeRoute(fastify, subscriptionService);
+        registerSubscribeRoute(fastify, subscribeUseCase);
+        registerListSubscriptionsRoute(fastify, getSubscriptionsByEmailUseCase);
+        registerConfirmRoute(fastify, confirmUseCase);
+        registerUnsubscribeRoute(fastify, unsubscribeUseCase);
       },
       { prefix: this.config.apiPrefix },
     );

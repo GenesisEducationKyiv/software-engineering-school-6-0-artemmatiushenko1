@@ -7,14 +7,18 @@ import { DrizzleSubscriptionRepository } from './modules/subscription/infrastruc
 import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
 import { NotificationServiceImpl } from './modules/notification/application/notification.service.js';
 import { ScannerService } from './modules/scanner/scanner.service.js';
-import { SubscriptionServiceImpl } from './modules/subscription/application/subscription.service.js';
+import { SubscribeUseCase } from './modules/subscription/application/subscribe.use-case.js';
+import { ConfirmUseCase } from './modules/subscription/application/confirm.use-case.js';
+import { UnsubscribeUseCase } from './modules/subscription/application/unsubscribe.use-case.js';
+import { GetSubscriptionsByEmailUseCase } from './modules/subscription/application/get-subscriptions-by-email.use-case.js';
+import { SubscriptionQueriesImpl } from './modules/subscription/application/subscription-queries.js';
 import { PrometheusMetrics } from './infrastructure/metrics/prometheus-metrics.js';
 import { FastifyLogger } from './infrastructure/logger/fastify-logger.js';
 import type { FastifyBaseLogger } from 'fastify';
 import type { GithubClient } from './domain/github.js';
 import type { EmailClient } from './modules/notification/application/ports/email-client.js';
 import type { NotificationService } from './modules/notification/api/notification.service.js';
-import type { SubscriptionService } from './modules/subscription/api/subscription-service.interface.js';
+import type { SubscriptionQueries } from './modules/subscription/api/subscription-queries.interface.js';
 import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
 import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
@@ -28,7 +32,10 @@ export interface AppDependencies {
   db: Database;
   redis: Redis;
   metrics: PrometheusMetrics;
-  subscriptionService: SubscriptionService;
+  subscribeUseCase: SubscribeUseCase;
+  confirmUseCase: ConfirmUseCase;
+  unsubscribeUseCase: UnsubscribeUseCase;
+  getSubscriptionsByEmailUseCase: GetSubscriptionsByEmailUseCase;
   scannerService: ScannerService;
   logger: Logger;
 }
@@ -43,7 +50,11 @@ export class AppContainer {
   private transactionManagerInstance?: DrizzleTransactionManager;
   private notificationServiceInstance?: NotificationService;
   private scannerServiceInstance?: ScannerService;
-  private subscriptionServiceInstance?: SubscriptionService;
+  private subscriptionQueriesInstance?: SubscriptionQueries;
+  private subscribeUseCaseInstance?: SubscribeUseCase;
+  private confirmUseCaseInstance?: ConfirmUseCase;
+  private unsubscribeUseCaseInstance?: UnsubscribeUseCase;
+  private getSubscriptionsByEmailUseCaseInstance?: GetSubscriptionsByEmailUseCase;
   private idGeneratorInstance?: IdGenerator;
   private tokenGeneratorInstance?: TokenGenerator;
   private clockInstance?: Clock;
@@ -144,23 +155,19 @@ export class AppContainer {
     this.notificationServiceInstance = value;
   }
 
-  get scannerService(): ScannerService {
-    return (this.scannerServiceInstance ??= new ScannerService(
-      this.subscriptionService,
-      this.githubClient,
-      this.notificationService,
-      this.logger,
-      this.clock,
-      this.metrics,
+  get subscriptionQueries(): SubscriptionQueries {
+    return (this.subscriptionQueriesInstance ??= new SubscriptionQueriesImpl(
+      this.subscriptionRepo,
+      this.transactionManager,
     ));
   }
 
-  set scannerService(value: ScannerService) {
-    this.scannerServiceInstance = value;
+  set subscriptionQueries(value: SubscriptionQueries) {
+    this.subscriptionQueriesInstance = value;
   }
 
-  get subscriptionService(): SubscriptionService {
-    return (this.subscriptionServiceInstance ??= new SubscriptionServiceImpl(
+  get subscribeUseCase(): SubscribeUseCase {
+    return (this.subscribeUseCaseInstance ??= new SubscribeUseCase(
       this.subscriptionRepo,
       this.githubClient,
       this.notificationService,
@@ -172,8 +179,60 @@ export class AppContainer {
     ));
   }
 
-  set subscriptionService(value: SubscriptionService) {
-    this.subscriptionServiceInstance = value;
+  set subscribeUseCase(value: SubscribeUseCase) {
+    this.subscribeUseCaseInstance = value;
+  }
+
+  get confirmUseCase(): ConfirmUseCase {
+    return (this.confirmUseCaseInstance ??= new ConfirmUseCase(
+      this.subscriptionRepo,
+      this.notificationService,
+      this.transactionManager,
+      this.logger,
+      this.tokenGenerator,
+      this.clock,
+    ));
+  }
+
+  set confirmUseCase(value: ConfirmUseCase) {
+    this.confirmUseCaseInstance = value;
+  }
+
+  get unsubscribeUseCase(): UnsubscribeUseCase {
+    return (this.unsubscribeUseCaseInstance ??= new UnsubscribeUseCase(
+      this.subscriptionRepo,
+      this.transactionManager,
+      this.logger,
+      this.clock,
+    ));
+  }
+
+  set unsubscribeUseCase(value: UnsubscribeUseCase) {
+    this.unsubscribeUseCaseInstance = value;
+  }
+
+  get getSubscriptionsByEmailUseCase(): GetSubscriptionsByEmailUseCase {
+    return (this.getSubscriptionsByEmailUseCaseInstance ??=
+      new GetSubscriptionsByEmailUseCase(this.subscriptionRepo));
+  }
+
+  set getSubscriptionsByEmailUseCase(value: GetSubscriptionsByEmailUseCase) {
+    this.getSubscriptionsByEmailUseCaseInstance = value;
+  }
+
+  get scannerService(): ScannerService {
+    return (this.scannerServiceInstance ??= new ScannerService(
+      this.subscriptionQueries,
+      this.githubClient,
+      this.notificationService,
+      this.logger,
+      this.clock,
+      this.metrics,
+    ));
+  }
+
+  set scannerService(value: ScannerService) {
+    this.scannerServiceInstance = value;
   }
 
   get idGenerator(): IdGenerator {
@@ -205,7 +264,10 @@ export class AppContainer {
       db: this.db,
       redis: this.redis,
       metrics: this.metrics,
-      subscriptionService: this.subscriptionService,
+      subscribeUseCase: this.subscribeUseCase,
+      confirmUseCase: this.confirmUseCase,
+      unsubscribeUseCase: this.unsubscribeUseCase,
+      getSubscriptionsByEmailUseCase: this.getSubscriptionsByEmailUseCase,
       scannerService: this.scannerService,
       logger: this.logger,
     };

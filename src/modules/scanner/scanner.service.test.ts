@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ScannerService } from './scanner.service.js';
-import type { SubscriptionService } from '../subscription/api/subscription-service.interface.js';
+import type { SubscriptionQueries } from '../subscription/api/subscription-queries.interface.js';
 import type { GithubClient } from '../../domain/github.js';
 import type { NotificationService } from '../notification/api/notification.service.js';
 import type { Logger } from '../../shared-kernel/logger.js';
@@ -55,7 +55,7 @@ const createConfirmedDomainSubscription = (overrides: {
 
 describe('ScannerService', () => {
   let scannerService: ScannerService;
-  const subscriptionServiceMock = mock<SubscriptionService>();
+  const subscriptionQueriesMock = mock<SubscriptionQueries>();
   const githubClientMock = mock<GithubClient>();
   const notificationServiceMock = mock<NotificationService>();
   const loggerMock = mock<Logger>();
@@ -68,7 +68,7 @@ describe('ScannerService', () => {
     clockMock.now.mockReturnValue(FIXED_NOW);
 
     scannerService = new ScannerService(
-      subscriptionServiceMock,
+      subscriptionQueriesMock,
       githubClientMock,
       notificationServiceMock,
       loggerMock,
@@ -89,7 +89,7 @@ describe('ScannerService', () => {
         publishedAt: new Date().toISOString(),
       };
 
-      subscriptionServiceMock.findAllConfirmedSubscriptions.mockResolvedValue([
+      subscriptionQueriesMock.findAllConfirmedSubscriptions.mockResolvedValue([
         sub,
       ]);
       githubClientMock.getLatestRelease.mockResolvedValue(latestRelease);
@@ -103,7 +103,7 @@ describe('ScannerService', () => {
         releaseName: latestRelease.name,
         unsubscribeToken: UNSUBSCRIBE_TOKEN,
       });
-      expect(subscriptionServiceMock.observeNewRelease).toHaveBeenCalledWith(
+      expect(subscriptionQueriesMock.observeNewRelease).toHaveBeenCalledWith(
         '1',
         'v1.1.0',
       );
@@ -127,7 +127,7 @@ describe('ScannerService', () => {
         publishedAt: new Date().toISOString(),
       };
 
-      subscriptionServiceMock.findAllConfirmedSubscriptions.mockResolvedValue([
+      subscriptionQueriesMock.findAllConfirmedSubscriptions.mockResolvedValue([
         sub1,
         sub2,
       ]);
@@ -151,7 +151,7 @@ describe('ScannerService', () => {
         lastSeenTag: 'v1.0.0',
       });
 
-      subscriptionServiceMock.findAllConfirmedSubscriptions.mockResolvedValue([
+      subscriptionQueriesMock.findAllConfirmedSubscriptions.mockResolvedValue([
         sub,
       ]);
       githubClientMock.getLatestRelease.mockResolvedValue({
@@ -163,7 +163,7 @@ describe('ScannerService', () => {
       await scannerService.scan();
 
       expect(notificationServiceMock.notifyNewRelease).not.toHaveBeenCalled();
-      expect(subscriptionServiceMock.observeNewRelease).not.toHaveBeenCalled();
+      expect(subscriptionQueriesMock.observeNewRelease).not.toHaveBeenCalled();
     });
 
     it('should stop scanning if rate limit is exceeded', async () => {
@@ -174,7 +174,7 @@ describe('ScannerService', () => {
         lastSeenTag: 'v1.0.0',
       });
 
-      subscriptionServiceMock.findAllConfirmedSubscriptions.mockResolvedValue([
+      subscriptionQueriesMock.findAllConfirmedSubscriptions.mockResolvedValue([
         sub,
       ]);
       githubClientMock.getLatestRelease.mockRejectedValueOnce(

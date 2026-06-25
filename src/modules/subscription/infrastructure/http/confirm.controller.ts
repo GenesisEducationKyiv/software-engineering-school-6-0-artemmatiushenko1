@@ -1,16 +1,16 @@
 import type { FastifyInstance } from 'fastify';
-import type { SubscriptionService } from '../../api/subscription-service.interface.js';
+import type { ConfirmUseCase } from '../../application/confirm.use-case.js';
 import { CommonSuccessResponseDtoSchema } from '../../../../dtos/response.dto.js';
 
 export function registerConfirmRoute(
   fastify: FastifyInstance,
-  subscriptionService: SubscriptionService,
+  confirmUseCase: ConfirmUseCase,
 ): void {
   fastify.get<{ Params: { token?: string } }>(
     '/confirm/:token',
     async (request, reply) => {
       const { token = '' } = request.params;
-      await subscriptionService.confirm(token);
+      await confirmUseCase.execute(token);
 
       return reply.status(200).send(
         CommonSuccessResponseDtoSchema.parse({

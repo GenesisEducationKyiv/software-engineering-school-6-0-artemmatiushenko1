@@ -1,18 +1,17 @@
 import type { FastifyInstance } from 'fastify';
-import type { SubscriptionService } from '../../api/subscription-service.interface.js';
+import type { GetSubscriptionsByEmailUseCase } from '../../application/get-subscriptions-by-email.use-case.js';
 import { SubscriptionsResponseDtoSchema } from '../../../../dtos/subscription.dto.js';
 import { SubscriptionStatus } from '../../domain/index.js';
 
 export function registerListSubscriptionsRoute(
   fastify: FastifyInstance,
-  subscriptionService: SubscriptionService,
+  getSubscriptionsByEmailUseCase: GetSubscriptionsByEmailUseCase,
 ): void {
   fastify.get<{ Querystring: { email?: string } }>(
     '/subscriptions',
     async (request, reply) => {
       const { email = '' } = request.query;
-      const subscriptions =
-        await subscriptionService.getSubscriptionsByEmail(email);
+      const subscriptions = await getSubscriptionsByEmailUseCase.execute(email);
 
       return reply.status(200).send(
         SubscriptionsResponseDtoSchema.parse(
