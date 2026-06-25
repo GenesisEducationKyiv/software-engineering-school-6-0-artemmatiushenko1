@@ -17,7 +17,7 @@ import { registerUnsubscribeRoute } from './modules/subscription/infrastructure/
 import { metricsRoutes } from './routes/metrics.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
 import cron, { type ScheduledTask } from 'node-cron';
-import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
+import { CommonErrorResponseDtoSchema } from './infrastructure/http/response.dto.js';
 import { type AppDependencies } from './dependencies.js';
 import { msToSeconds } from './utils/time.utils.js';
 import { REQUEST_ID_HEADER } from './infrastructure/fastify/constants.js';

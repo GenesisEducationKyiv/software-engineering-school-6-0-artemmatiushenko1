@@ -22,7 +22,7 @@ import assert from 'assert';
 import {
   CommonSuccessResponseDtoSchema,
   CommonErrorResponseDtoSchema,
-} from '../../src/dtos/response.dto.js';
+} from '../../src/infrastructure/http/response.dto.js';
 import { parseResponse } from '../../src/utils/test.utils.js';
 import { SubscriptionsResponseDtoSchema } from '../../src/modules/subscription/infrastructure/http/subscriptions-response.dto.js';
 import { AppContainer } from '../../src/dependencies.js';
