@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { GetSubscriptionsByEmailUseCase } from '../../application/get-subscriptions-by-email.use-case.js';
-import { SubscriptionsResponseDtoSchema } from '../../../../dtos/subscription.dto.js';
+import { SubscriptionsResponseDtoSchema } from './subscriptions-response.dto.js';
 import { SubscriptionStatus } from '../../domain/index.js';
 
 export function registerListSubscriptionsRoute(
