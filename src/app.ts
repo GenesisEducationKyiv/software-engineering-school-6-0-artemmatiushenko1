@@ -7,7 +7,7 @@ import type { OpenAPIV2 } from 'openapi-types';
 import {
   isDomainError,
   resolveDomainErrorHttpResponse,
-} from './infrastructure/http/domain-error-registry.js';
+} from './platform/http/domain-error-registry.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,14 +16,14 @@ import { registerSubscribeRoute } from './modules/subscription/infrastructure/ht
 import { registerListSubscriptionsRoute } from './modules/subscription/infrastructure/http/list-subscriptions.controller.js';
 import { registerConfirmRoute } from './modules/subscription/infrastructure/http/confirm.controller.js';
 import { registerUnsubscribeRoute } from './modules/subscription/infrastructure/http/unsubscribe.controller.js';
-import { registerHealthRoute } from './infrastructure/http/health.controller.js';
-import { registerMetricsRoute } from './infrastructure/metrics/metrics.controller.js';
+import { registerHealthRoute } from './platform/http/health.controller.js';
+import { registerMetricsRoute } from './platform/metrics/metrics.controller.js';
 import cron, { type ScheduledTask } from 'node-cron';
-import { CommonErrorResponseDtoSchema } from './infrastructure/http/response.dto.js';
+import { CommonErrorResponseDtoSchema } from './platform/http/response.dto.js';
 import { type AppDependencies } from './dependencies.js';
 import { msToSeconds } from './utils/time.utils.js';
-import { REQUEST_ID_HEADER } from './infrastructure/fastify/constants.js';
-import { runWithRequestLogger } from './infrastructure/logger/request-log-context.js';
+import { REQUEST_ID_HEADER } from './platform/fastify/constants.js';
+import { runWithRequestLogger } from './platform/logger/request-log-context.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

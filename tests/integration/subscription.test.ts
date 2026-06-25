@@ -12,17 +12,17 @@ import { App } from '../../src/app.js';
 import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import * as schema from '../../src/infrastructure/db/schema.js';
+import * as schema from '../../src/platform/db/schema.js';
 import {
   MIGRATIONS_FOLDER,
   runDatabaseMigrations,
-} from '../../src/infrastructure/db/migrate.js';
-import type { Database } from '../../src/infrastructure/db/types.js';
+} from '../../src/platform/db/migrate.js';
+import type { Database } from '../../src/platform/db/types.js';
 import assert from 'assert';
 import {
   CommonSuccessResponseDtoSchema,
   CommonErrorResponseDtoSchema,
-} from '../../src/infrastructure/http/response.dto.js';
+} from '../../src/platform/http/response.dto.js';
 import { parseResponse } from '../../src/utils/test.utils.js';
 import { SubscriptionsResponseDtoSchema } from '../../src/modules/subscription/infrastructure/http/subscriptions-response.dto.js';
 import { AppContainer } from '../../src/dependencies.js';
@@ -31,7 +31,7 @@ import type { EmailClient } from '../../src/modules/notification/application/por
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
 import { TEST_APP_CONFIG } from './constants.js';
-import { createFastifyServerOptions } from '../../src/infrastructure/fastify/create-fastify-server-options.js';
+import { createFastifyServerOptions } from '../../src/platform/fastify/create-fastify-server-options.js';
 import { randomUUID } from 'node:crypto';
 import type { Clock } from '../../src/shared-kernel/clock.js';
 import { SubscriptionTokenScope } from '../../src/modules/subscription/domain/subscription-token-scope.js';

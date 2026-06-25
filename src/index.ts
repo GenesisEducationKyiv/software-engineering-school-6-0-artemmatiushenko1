@@ -2,12 +2,12 @@ import Fastify from 'fastify';
 import { App } from './app.js';
 import { AppContainer } from './dependencies.js';
 import { createConfig } from './config.js';
-import { db } from './infrastructure/db/client.js';
-import { createFastifyServerOptions } from './infrastructure/fastify/create-fastify-server-options.js';
+import { db } from './platform/db/client.js';
+import { createFastifyServerOptions } from './platform/fastify/create-fastify-server-options.js';
 import {
   MIGRATIONS_FOLDER,
   runDatabaseMigrations,
-} from './infrastructure/db/migrate.js';
+} from './platform/db/migrate.js';
 
 const appConfig = createConfig();
 

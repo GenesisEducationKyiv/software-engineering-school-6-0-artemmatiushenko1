@@ -6,15 +6,15 @@ import { mock } from 'vitest-mock-extended';
 import { Redis } from 'ioredis';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import * as schema from '../../src/infrastructure/db/schema.js';
+import * as schema from '../../src/platform/db/schema.js';
 import {
   MIGRATIONS_FOLDER,
   runDatabaseMigrations,
-} from '../../src/infrastructure/db/migrate.js';
-import type { Database } from '../../src/infrastructure/db/types.js';
+} from '../../src/platform/db/migrate.js';
+import type { Database } from '../../src/platform/db/types.js';
 import { register } from 'prom-client';
 import { TEST_APP_CONFIG } from './constants.js';
-import { createFastifyServerOptions } from '../../src/infrastructure/fastify/create-fastify-server-options.js';
+import { createFastifyServerOptions } from '../../src/platform/fastify/create-fastify-server-options.js';
 
 describe('Metrics Routes', () => {
   let app: App;

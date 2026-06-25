@@ -1,10 +1,10 @@
 import { Redis } from 'ioredis';
-import { type Database } from './infrastructure/db/types.js';
+import { type Database } from './platform/db/types.js';
 import { type AppConfig } from './config.js';
 import { OctokitGithubClient } from './modules/github/infrastructure/octokit.client.js';
 import { CachedOctokitGithubClient } from './modules/github/infrastructure/cached-octokit.client.js';
 import { DrizzleSubscriptionRepository } from './modules/subscription/infrastructure/subscription.repository.js';
-import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
+import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-manager.js';
 import { NotificationServiceImpl } from './modules/notification/application/notification.service.js';
 import { ScannerService } from './modules/scanner/scanner.service.js';
 import { SubscribeUseCase } from './modules/subscription/application/subscribe.use-case.js';
@@ -12,9 +12,9 @@ import { ConfirmUseCase } from './modules/subscription/application/confirm.use-c
 import { UnsubscribeUseCase } from './modules/subscription/application/unsubscribe.use-case.js';
 import { GetSubscriptionsByEmailUseCase } from './modules/subscription/application/get-subscriptions-by-email.use-case.js';
 import { SubscriptionQueriesImpl } from './modules/subscription/application/subscription-queries.js';
-import { PrometheusMetrics } from './infrastructure/metrics/prometheus-metrics.js';
-import type { Metrics } from './infrastructure/metrics/metrics.interface.js';
-import { FastifyLogger } from './infrastructure/logger/fastify-logger.js';
+import { PrometheusMetrics } from './platform/metrics/prometheus-metrics.js';
+import type { Metrics } from './platform/metrics/metrics.interface.js';
+import { FastifyLogger } from './platform/logger/fastify-logger.js';
 import type { FastifyBaseLogger } from 'fastify';
 import type { GithubClient } from './modules/github/api/github-client.interface.js';
 import type { EmailClient } from './modules/notification/application/ports/email-client.js';
