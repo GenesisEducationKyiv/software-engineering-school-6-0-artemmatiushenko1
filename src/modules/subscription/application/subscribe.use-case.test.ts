@@ -3,10 +3,7 @@ import { SubscribeUseCase } from './subscribe.use-case.js';
 import type { SubscriptionRepository } from './ports/subscription.repository.ts';
 import type { GithubClient } from '../../../domain/github.js';
 import type { NotificationService } from '../../notification/api/notification.service.js';
-import {
-  RepoNotFoundError,
-  AlreadySubscribedError,
-} from '../../../domain/errors.js';
+import { RepoNotFoundError, AlreadySubscribedError } from './errors.js';
 import type {
   IdGenerator,
   Clock,

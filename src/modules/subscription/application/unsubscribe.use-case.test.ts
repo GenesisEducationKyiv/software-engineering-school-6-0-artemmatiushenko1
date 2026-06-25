@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UnsubscribeUseCase } from './unsubscribe.use-case.js';
 import type { SubscriptionRepository } from './ports/subscription.repository.ts';
-import { SubscriptionNotFoundError } from '../../../domain/errors.js';
+import { SubscriptionNotFoundError } from './errors.js';
 import type {
   Clock,
   TransactionManager,

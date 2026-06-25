@@ -1,6 +1,6 @@
 import type { SubscriptionRepository } from './ports/subscription.repository.js';
 import { SubscriptionTokenScope } from '../domain/index.js';
-import { SubscriptionNotFoundError } from '../../../domain/errors.js';
+import { SubscriptionNotFoundError } from './errors.js';
 import type {
   Clock,
   Logger,

@@ -3,9 +3,6 @@ import {
   type DomainError,
   InvalidRepoFormatError,
   InvalidEmailError,
-  RepoNotFoundError,
-  AlreadySubscribedError,
-  SubscriptionNotFoundError,
   InvalidTokenError,
   WrongTokenScopeError,
   IllegalStateTransitionError,
@@ -14,6 +11,11 @@ import {
   InvalidReleaseTagError,
   GithubRateLimitError,
 } from '../../domain/errors.js';
+import {
+  RepoNotFoundError,
+  AlreadySubscribedError,
+  SubscriptionNotFoundError,
+} from '../../modules/subscription/application/errors.js';
 import {
   SubscriptionAlreadyConfirmedError,
   SubscriptionAlreadyDeactivatedError,

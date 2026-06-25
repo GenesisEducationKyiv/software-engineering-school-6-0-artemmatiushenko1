@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConfirmUseCase } from './confirm.use-case.js';
 import type { SubscriptionRepository } from './ports/subscription.repository.ts';
 import type { NotificationService } from '../../notification/api/notification.service.js';
-import { SubscriptionNotFoundError } from '../../../domain/errors.js';
+import { SubscriptionNotFoundError } from './errors.js';
 import type {
   Clock,
   TransactionManager,

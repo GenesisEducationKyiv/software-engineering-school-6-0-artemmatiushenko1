@@ -7,10 +7,7 @@ import {
   SubscriptionTokenScope,
   SubscriptionStatus,
 } from '../domain/index.js';
-import {
-  RepoNotFoundError,
-  AlreadySubscribedError,
-} from '../../../domain/errors.js';
+import { RepoNotFoundError, AlreadySubscribedError } from './errors.js';
 import { Email } from '../domain/email.js';
 import { RepoPath } from '../domain/repo-path.js';
 import type { TokenGenerator } from './ports/token-generator.js';
