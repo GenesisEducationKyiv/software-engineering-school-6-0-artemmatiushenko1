@@ -1,9 +1,9 @@
-import type { GithubClient } from '../../domain/github.js';
+import type { GithubClient } from '../github/api/github-client.interface.js';
 import type { Subscription } from '../subscription/domain/index.js';
 import type { SubscriptionQueries } from '../subscription/api/subscription-queries.interface.js';
 import type { NotificationService } from '../notification/api/notification.service.js';
 import type { Clock, Logger } from '../../shared-kernel/index.js';
-import { GithubRateLimitError } from '../../domain/errors.js';
+import { GithubRateLimitError } from '../github/domain/errors.js';
 import type { Metrics } from '../../domain/metrics.js';
 import { msToSeconds } from '../../utils/time.utils.js';
 

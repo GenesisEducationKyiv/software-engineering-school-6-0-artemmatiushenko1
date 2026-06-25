@@ -1,4 +1,4 @@
-import type { GithubClient } from '../../../domain/github.js';
+import type { GithubClient } from '../../github/api/github-client.interface.js';
 import type { SubscriptionRepository } from './ports/subscription.repository.js';
 import type { NotificationService } from '../../notification/api/notification.service.js';
 import {

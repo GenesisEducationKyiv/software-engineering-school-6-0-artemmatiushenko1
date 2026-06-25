@@ -26,7 +26,7 @@ import {
 import { parseResponse } from '../../src/utils/test.utils.js';
 import { SubscriptionsResponseDtoSchema } from '../../src/modules/subscription/infrastructure/http/subscriptions-response.dto.js';
 import { AppContainer } from '../../src/dependencies.js';
-import type { GithubClient } from '../../src/domain/github.js';
+import type { GithubClient } from '../../src/modules/github/api/github-client.interface.js';
 import type { EmailClient } from '../../src/modules/notification/application/ports/email-client.js';
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';

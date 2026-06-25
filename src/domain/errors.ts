@@ -15,6 +15,7 @@ import {
   AlreadySubscribedError,
   SubscriptionNotFoundError,
 } from '../modules/subscription/application/errors.js';
+import { GithubRateLimitError } from '../modules/github/domain/errors.js';
 
 export {
   InvalidEmailError,
@@ -25,15 +26,8 @@ export {
   InvalidReleaseTagError,
   IllegalStateTransitionError,
   WrongTokenScopeError,
+  GithubRateLimitError,
 };
-
-export class GithubRateLimitError extends Error {
-  readonly code = 'GITHUB_RATE_LIMIT' as const;
-
-  constructor() {
-    super('GitHub API rate limit exceeded');
-  }
-}
 
 export const domainErrorTypes = [
   InvalidEmailError,

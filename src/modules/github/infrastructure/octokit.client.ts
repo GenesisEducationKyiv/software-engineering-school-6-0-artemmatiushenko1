@@ -1,7 +1,10 @@
 import { Octokit } from 'octokit';
-import type { GithubClient, GithubRelease } from '../../domain/github.js';
+import type {
+  GithubClient,
+  GithubRelease,
+} from '../api/github-client.interface.js';
 import { RequestError } from '@octokit/request-error';
-import { GithubRateLimitError } from '../../domain/errors.js';
+import { GithubRateLimitError } from '../domain/errors.js';
 
 export class OctokitGithubClient implements GithubClient {
   private octokit: Octokit;

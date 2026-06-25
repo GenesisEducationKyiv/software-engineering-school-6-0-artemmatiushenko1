@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Redis } from 'ioredis';
 import { CachedOctokitGithubClient } from './cached-octokit.client.js';
-import type { GithubClient, GithubRelease } from '../../domain/github.js';
-import type { Metrics } from '../../domain/metrics.js';
+import type {
+  GithubClient,
+  GithubRelease,
+} from '../api/github-client.interface.js';
+import type { Metrics } from '../../../domain/metrics.js';
 import { mock } from 'vitest-mock-extended';
 
 describe('CachedOctokitGithubClient', () => {

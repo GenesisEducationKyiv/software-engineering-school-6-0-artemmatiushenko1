@@ -1,10 +1,10 @@
 import type { Redis } from 'ioredis';
-import {
-  GitHubReleaseSchema,
-  type GithubClient,
-  type GithubRelease,
-} from '../../domain/github.js';
-import type { Metrics } from '../../domain/metrics.js';
+import type {
+  GithubClient,
+  GithubRelease,
+} from '../api/github-client.interface.js';
+import { GitHubReleaseSchema } from './github-release.schema.js';
+import type { Metrics } from '../../../domain/metrics.js';
 
 export class CachedOctokitGithubClient implements GithubClient {
   constructor(

@@ -1,8 +1,8 @@
 import { Redis } from 'ioredis';
 import { type Database } from './infrastructure/db/types.js';
 import { type AppConfig } from './config.js';
-import { OctokitGithubClient } from './infrastructure/github/octokit.client.js';
-import { CachedOctokitGithubClient } from './infrastructure/github/cached-octokit.client.js';
+import { OctokitGithubClient } from './modules/github/infrastructure/octokit.client.js';
+import { CachedOctokitGithubClient } from './modules/github/infrastructure/cached-octokit.client.js';
 import { DrizzleSubscriptionRepository } from './modules/subscription/infrastructure/subscription.repository.js';
 import { DrizzleTransactionManager } from './infrastructure/db/drizzle-transaction-manager.js';
 import { NotificationServiceImpl } from './modules/notification/application/notification.service.js';
@@ -15,7 +15,7 @@ import { SubscriptionQueriesImpl } from './modules/subscription/application/subs
 import { PrometheusMetrics } from './infrastructure/metrics/prometheus-metrics.js';
 import { FastifyLogger } from './infrastructure/logger/fastify-logger.js';
 import type { FastifyBaseLogger } from 'fastify';
-import type { GithubClient } from './domain/github.js';
+import type { GithubClient } from './modules/github/api/github-client.interface.js';
 import type { EmailClient } from './modules/notification/application/ports/email-client.js';
 import type { NotificationService } from './modules/notification/api/notification.service.js';
 import type { SubscriptionQueries } from './modules/subscription/api/subscription-queries.interface.js';

@@ -9,8 +9,8 @@ import {
   TokenExpiredError,
   TokenAlreadyUsedError,
   InvalidReleaseTagError,
-  GithubRateLimitError,
 } from '../../domain/errors.js';
+import { GithubRateLimitError } from '../../modules/github/domain/errors.js';
 import {
   RepoNotFoundError,
   AlreadySubscribedError,

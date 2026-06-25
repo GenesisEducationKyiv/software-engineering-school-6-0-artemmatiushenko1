@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ScannerService } from './scanner.service.js';
 import type { SubscriptionQueries } from '../subscription/api/subscription-queries.interface.js';
-import type { GithubClient } from '../../domain/github.js';
+import type { GithubClient } from '../github/api/github-client.interface.js';
 import type { NotificationService } from '../notification/api/notification.service.js';
 import type { Logger } from '../../shared-kernel/logger.js';
 import type { Clock } from '../../shared-kernel/index.js';
-import { GithubRateLimitError } from '../../domain/errors.js';
+import { GithubRateLimitError } from '../github/domain/errors.js';
 import { mock } from 'vitest-mock-extended';
 import type { Metrics } from '../../domain/metrics.js';
 import { Subscription } from '../subscription/domain/index.js';
