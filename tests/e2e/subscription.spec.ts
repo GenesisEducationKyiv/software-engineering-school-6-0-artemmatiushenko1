@@ -1,7 +1,7 @@
 import { EXISTING_REPO, NON_EXISTING_REPO } from './mocks/github/constants.js';
 import { test, expect } from '@playwright/test';
-import { db } from '../../src/db/index.js';
-import * as schema from '../../src/db/schema.js';
+import { db } from '../../src/infrastructure/db/client.js';
+import * as schema from '../../src/infrastructure/db/schema.js';
 import { clearEmails, getLinkFromEmail } from './utils/email.js';
 
 const TEST_EMAIL = 'test-e2e@example.com';

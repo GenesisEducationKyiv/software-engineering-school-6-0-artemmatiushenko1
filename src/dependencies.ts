@@ -1,5 +1,5 @@
 import { Redis } from 'ioredis';
-import { type Database } from './db/types.js';
+import { type Database } from './infrastructure/db/types.js';
 import { type AppConfig } from './config.js';
 import { OctokitGithubClient } from './infrastructure/github/octokit.client.js';
 import { CachedOctokitGithubClient } from './infrastructure/github/cached-octokit.client.js';

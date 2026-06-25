@@ -10,7 +10,7 @@ import * as schema from './schema.js';
 import type { Database } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const MIGRATIONS_FOLDER = path.join(__dirname, '../../drizzle');
+export const MIGRATIONS_FOLDER = path.join(__dirname, '../../../drizzle');
 
 const isPgliteDatabase = (
   db: Database,

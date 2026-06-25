@@ -6,12 +6,12 @@ import { mock } from 'vitest-mock-extended';
 import { Redis } from 'ioredis';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import * as schema from '../../src/db/schema.js';
+import * as schema from '../../src/infrastructure/db/schema.js';
 import {
   MIGRATIONS_FOLDER,
   runDatabaseMigrations,
-} from '../../src/db/migrate.js';
-import type { Database } from '../../src/db/types.js';
+} from '../../src/infrastructure/db/migrate.js';
+import type { Database } from '../../src/infrastructure/db/types.js';
 import { register } from 'prom-client';
 import { TEST_APP_CONFIG } from './constants.js';
 import { createFastifyServerOptions } from '../../src/infrastructure/fastify/create-fastify-server-options.js';
