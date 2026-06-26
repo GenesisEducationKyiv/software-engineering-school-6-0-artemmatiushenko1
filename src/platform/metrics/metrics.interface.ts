@@ -9,9 +9,3 @@ export type Metrics = NotificationMetrics &
   CacheMetrics &
   HttpMetrics &
   MetricsExporter;
-
-export type { NotificationMetrics } from '../../modules/notification/application/ports/notification-metrics.js';
-export type { ScannerMetrics } from '../../modules/scanner/scanner-metrics.interface.js';
-export type { CacheMetrics } from '../../modules/github/api/cache-metrics.interface.js';
-export type { HttpMetrics } from './http-metrics.interface.js';
-export type { MetricsExporter } from './metrics-exporter.interface.js';
