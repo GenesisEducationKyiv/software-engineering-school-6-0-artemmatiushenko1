@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/artemmatiushenko1/github-release-notifier/actions/workflows/ci.yaml/badge.svg)](https://github.com/artemmatiushenko1/github-release-notifier/actions/workflows/ci.yaml)
 
-![Client Screenshot](./docs/image.png)
+![Client Screenshot](./assets/cover-image.png)
 
 A monolith service that allows users to subscribe to email notifications about new releases of any public GitHub repository.
 
