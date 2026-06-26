@@ -1,13 +1,13 @@
-import type { GithubClient } from '../github/api/github-client.interface.js';
-import type { Subscription } from '../subscription/domain/index.js';
-import type { SubscriptionQueries } from '../subscription/api/subscription-queries.interface.js';
-import type { NotificationService } from '../notification/api/notification.service.js';
-import type { Clock, Logger } from '../../shared-kernel/index.js';
-import { GithubRateLimitError } from '../github/domain/errors.js';
-import type { ScannerMetrics } from './scanner-metrics.interface.js';
-import { msToSeconds } from '../../utils/time.utils.js';
+import type { GithubClient } from '../../github/api/github-client.interface.js';
+import type { Subscription } from '../../subscription/domain/index.js';
+import type { SubscriptionQueries } from '../../subscription/api/subscription-queries.interface.js';
+import type { NotificationService } from '../../notification/api/notification.service.js';
+import type { Clock, Logger } from '../../../shared-kernel/index.js';
+import { GithubRateLimitError } from '../../github/domain/errors.js';
+import type { ScannerMetrics } from '../scanner-metrics.interface.js';
+import { msToSeconds } from '../../../utils/time.utils.js';
 
-export class ScannerService {
+export class ScanUseCase {
   constructor(
     private subscriptionQueries: SubscriptionQueries,
     private githubClient: GithubClient,
@@ -17,7 +17,7 @@ export class ScannerService {
     private metrics: ScannerMetrics,
   ) {}
 
-  async scan(): Promise<void> {
+  async execute(): Promise<void> {
     const startTime = this.clock.now().getTime();
     this.metrics.incrementScanTotal();
 

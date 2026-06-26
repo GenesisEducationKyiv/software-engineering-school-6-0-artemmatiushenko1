@@ -6,7 +6,7 @@ import { CachedOctokitGithubClient } from './modules/github/infrastructure/cache
 import { DrizzleSubscriptionRepository } from './modules/subscription/infrastructure/subscription.repository.js';
 import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-manager.js';
 import { NotificationServiceImpl } from './modules/notification/application/notification.service.js';
-import { ScannerService } from './modules/scanner/scanner.service.js';
+import { ScanUseCase } from './modules/scanner/application/scan.use-case.js';
 import { SubscribeUseCase } from './modules/subscription/application/subscribe.use-case.js';
 import { ConfirmUseCase } from './modules/subscription/application/confirm.use-case.js';
 import { UnsubscribeUseCase } from './modules/subscription/application/unsubscribe.use-case.js';
@@ -37,7 +37,7 @@ export interface AppDependencies {
   confirmUseCase: ConfirmUseCase;
   unsubscribeUseCase: UnsubscribeUseCase;
   getSubscriptionsByEmailUseCase: GetSubscriptionsByEmailUseCase;
-  scannerService: ScannerService;
+  scanUseCase: ScanUseCase;
   logger: Logger;
 }
 
@@ -50,7 +50,7 @@ export class AppContainer {
   private subscriptionRepoInstance?: DrizzleSubscriptionRepository;
   private transactionManagerInstance?: DrizzleTransactionManager;
   private notificationServiceInstance?: NotificationService;
-  private scannerServiceInstance?: ScannerService;
+  private scanUseCaseInstance?: ScanUseCase;
   private subscriptionQueriesInstance?: SubscriptionQueries;
   private subscribeUseCaseInstance?: SubscribeUseCase;
   private confirmUseCaseInstance?: ConfirmUseCase;
@@ -221,8 +221,8 @@ export class AppContainer {
     this.getSubscriptionsByEmailUseCaseInstance = value;
   }
 
-  get scannerService(): ScannerService {
-    return (this.scannerServiceInstance ??= new ScannerService(
+  get scanUseCase(): ScanUseCase {
+    return (this.scanUseCaseInstance ??= new ScanUseCase(
       this.subscriptionQueries,
       this.githubClient,
       this.notificationService,
@@ -232,8 +232,8 @@ export class AppContainer {
     ));
   }
 
-  set scannerService(value: ScannerService) {
-    this.scannerServiceInstance = value;
+  set scanUseCase(value: ScanUseCase) {
+    this.scanUseCaseInstance = value;
   }
 
   get idGenerator(): IdGenerator {
@@ -269,7 +269,7 @@ export class AppContainer {
       confirmUseCase: this.confirmUseCase,
       unsubscribeUseCase: this.unsubscribeUseCase,
       getSubscriptionsByEmailUseCase: this.getSubscriptionsByEmailUseCase,
-      scannerService: this.scannerService,
+      scanUseCase: this.scanUseCase,
       logger: this.logger,
     };
   }

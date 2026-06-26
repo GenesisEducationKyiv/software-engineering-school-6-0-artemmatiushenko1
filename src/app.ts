@@ -18,12 +18,12 @@ import { registerConfirmRoute } from './modules/subscription/infrastructure/http
 import { registerUnsubscribeRoute } from './modules/subscription/infrastructure/http/unsubscribe.controller.js';
 import { registerHealthRoute } from './platform/http/health.controller.js';
 import { registerMetricsRoute } from './platform/metrics/metrics.controller.js';
-import cron, { type ScheduledTask } from 'node-cron';
 import { CommonErrorResponseDtoSchema } from './platform/http/response.dto.js';
 import { type AppDependencies } from './dependencies.js';
 import { msToSeconds } from './utils/time.utils.js';
 import { REQUEST_ID_HEADER } from './platform/fastify/constants.js';
 import { runWithRequestLogger } from './platform/logger/request-log-context.js';
+import { ScanCron } from './modules/scanner/infrastructure/scan.cron.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,7 +32,7 @@ export class App {
   public readonly fastify: FastifyInstance;
   private readonly deps: AppDependencies;
   private readonly config: AppConfig;
-  private scanTask?: ScheduledTask;
+  private scanCron?: ScanCron;
 
   private constructor(
     config: AppConfig,
@@ -183,19 +183,12 @@ export class App {
   }
 
   startScannerCron() {
-    this.scanTask = cron.schedule(this.config.scannerCron, async () => {
-      this.deps.logger.info('Starting scheduled scan');
-      try {
-        await this.deps.scannerService.scan();
-        this.deps.logger.info('Scheduled scan completed');
-      } catch (error) {
-        if (error instanceof Error) {
-          this.deps.logger.error('Scheduled scan failed', error);
-        } else {
-          throw error;
-        }
-      }
-    });
+    this.scanCron = new ScanCron(
+      this.config.scannerCron,
+      this.deps.scanUseCase,
+      this.deps.logger,
+    );
+    this.scanCron.start();
   }
 
   public async start() {
@@ -220,7 +213,7 @@ export class App {
       this.deps.logger.info('Starting graceful shutdown', { signal });
 
       try {
-        await this.scanTask?.stop();
+        await this.scanCron?.stop();
         this.deps.logger.info('Scanner tasks stopped.');
 
         await this.deps.redis.quit();

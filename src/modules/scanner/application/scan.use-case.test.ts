@@ -1,19 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ScannerService } from './scanner.service.js';
-import type { SubscriptionQueries } from '../subscription/api/subscription-queries.interface.js';
-import type { GithubClient } from '../github/api/github-client.interface.js';
-import type { NotificationService } from '../notification/api/notification.service.js';
-import type { Logger } from '../../shared-kernel/logger.js';
-import type { Clock } from '../../shared-kernel/index.js';
-import { GithubRateLimitError } from '../github/domain/errors.js';
+import { ScanUseCase } from './scan.use-case.js';
+import type { SubscriptionQueries } from '../../subscription/api/subscription-queries.interface.js';
+import type { GithubClient } from '../../github/api/github-client.interface.js';
+import type { NotificationService } from '../../notification/api/notification.service.js';
+import type { Logger } from '../../../shared-kernel/logger.js';
+import type { Clock } from '../../../shared-kernel/index.js';
+import { GithubRateLimitError } from '../../github/domain/errors.js';
 import { mock } from 'vitest-mock-extended';
-import type { ScannerMetrics } from './scanner-metrics.interface.js';
-import { Subscription } from '../subscription/domain/index.js';
-import { SubscriptionTokenScope } from '../subscription/domain/subscription-token-scope.js';
-import { Email } from '../subscription/domain/email.js';
-import { RepoPath } from '../subscription/domain/repo-path.js';
-import { ReleaseTag } from '../subscription/domain/release-tag.js';
-import { SubscriptionToken } from '../subscription/domain/subscription-token.js';
+import type { ScannerMetrics } from '../scanner-metrics.interface.js';
+import { Subscription } from '../../subscription/domain/index.js';
+import { SubscriptionTokenScope } from '../../subscription/domain/subscription-token-scope.js';
+import { Email } from '../../subscription/domain/email.js';
+import { RepoPath } from '../../subscription/domain/repo-path.js';
+import { ReleaseTag } from '../../subscription/domain/release-tag.js';
+import { SubscriptionToken } from '../../subscription/domain/subscription-token.js';
 
 const UNSUBSCRIBE_TOKEN = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
@@ -53,8 +53,8 @@ const createConfirmedDomainSubscription = (overrides: {
   return subscription;
 };
 
-describe('ScannerService', () => {
-  let scannerService: ScannerService;
+describe('ScanUseCase', () => {
+  let scanUseCase: ScanUseCase;
   const subscriptionQueriesMock = mock<SubscriptionQueries>();
   const githubClientMock = mock<GithubClient>();
   const notificationServiceMock = mock<NotificationService>();
@@ -67,7 +67,7 @@ describe('ScannerService', () => {
 
     clockMock.now.mockReturnValue(FIXED_NOW);
 
-    scannerService = new ScannerService(
+    scanUseCase = new ScanUseCase(
       subscriptionQueriesMock,
       githubClientMock,
       notificationServiceMock,
@@ -77,7 +77,7 @@ describe('ScannerService', () => {
     );
   });
 
-  describe('scan', () => {
+  describe('execute', () => {
     it('should notify and update tag when a new release is found', async () => {
       const sub = createConfirmedDomainSubscription({
         lastSeenTag: 'v1.0.0',
@@ -94,7 +94,7 @@ describe('ScannerService', () => {
       ]);
       githubClientMock.getLatestRelease.mockResolvedValue(latestRelease);
 
-      await scannerService.scan();
+      await scanUseCase.execute();
 
       expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
         email: sub.email.value,
@@ -135,7 +135,7 @@ describe('ScannerService', () => {
         .mockRejectedValueOnce(new Error('GitHub unavailable'))
         .mockResolvedValueOnce(latestRelease);
 
-      await scannerService.scan();
+      await scanUseCase.execute();
 
       expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
         email: sub2.email.value,
@@ -160,7 +160,7 @@ describe('ScannerService', () => {
         publishedAt: new Date().toISOString(),
       });
 
-      await scannerService.scan();
+      await scanUseCase.execute();
 
       expect(notificationServiceMock.notifyNewRelease).not.toHaveBeenCalled();
       expect(subscriptionQueriesMock.observeNewRelease).not.toHaveBeenCalled();
@@ -181,7 +181,7 @@ describe('ScannerService', () => {
         new GithubRateLimitError(),
       );
 
-      await expect(scannerService.scan()).rejects.toThrow(GithubRateLimitError);
+      await expect(scanUseCase.execute()).rejects.toThrow(GithubRateLimitError);
 
       expect(loggerMock.warn).toHaveBeenCalledWith(
         expect.stringContaining('rate limit exceeded'),
