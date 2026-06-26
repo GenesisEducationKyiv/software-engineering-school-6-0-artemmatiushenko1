@@ -23,7 +23,7 @@ import {
   CommonSuccessResponseDtoSchema,
   CommonErrorResponseDtoSchema,
 } from '../../src/platform/http/response.dto.js';
-import { parseResponse } from '../../src/utils/test.utils.js';
+import { parseResponse } from './utils/parse-response.js';
 import { SubscriptionsResponseDtoSchema } from '../../src/modules/subscription/infrastructure/http/subscriptions-response.dto.js';
 import { AppContainer } from '../../src/dependencies.js';
 import type { GithubClient } from '../../src/modules/github/api/github-client.interface.js';
