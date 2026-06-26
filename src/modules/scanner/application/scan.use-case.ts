@@ -4,7 +4,7 @@ import type { SubscriptionQueries } from '../../subscription/api/subscription-qu
 import type { NotificationService } from '../../notification/api/notification.service.js';
 import type { Clock, Logger } from '../../../shared-kernel/index.js';
 import { GithubRateLimitError } from '../../github/domain/errors.js';
-import type { ScannerMetrics } from '../scanner-metrics.interface.js';
+import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
 import { msToSeconds } from '../../../utils/time.utils.js';
 
 export class ScanUseCase {
