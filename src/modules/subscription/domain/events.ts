@@ -5,6 +5,8 @@ import type { SubscriptionToken } from './subscription-token.js';
 
 type SubscriptionConfirmedEventPayload = {
   repoPath: RepoPath;
+  email: Email;
+  unsubscribeToken: SubscriptionToken;
 };
 
 export class SubscriptionConfirmedEvent extends DomainEvent<SubscriptionConfirmedEventPayload> {

@@ -199,11 +199,11 @@ export class AppContainer {
   get confirmUseCase(): ConfirmUseCase {
     return (this.confirmUseCaseInstance ??= new ConfirmUseCase(
       this.subscriptionRepo,
-      this.notificationService,
       this.transactionManager,
       this.logger,
       this.tokenGenerator,
       this.clock,
+      this.eventBus,
     ));
   }
 

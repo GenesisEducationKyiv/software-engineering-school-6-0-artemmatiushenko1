@@ -1,5 +1,4 @@
 import type { SubscriptionRepository } from '../ports/subscription.repository.js';
-import type { NotificationService } from '../../../notification/api/notification.service.js';
 import {
   SubscriptionToken,
   SubscriptionTokenScope,
@@ -11,17 +10,19 @@ import type {
   Logger,
   TransactionManager,
 } from '../../../../shared-kernel/index.js';
+import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
+import { toPublicApiEvents } from '../subscription-event.mapper.js';
 
 export class ConfirmUseCase {
   private static readonly UNSUBSCRIBE_TTL_MS = 24 * 60 * 60 * 1000;
 
   constructor(
     private subscriptionRepo: SubscriptionRepository,
-    private notificationService: NotificationService,
     private transactionManager: TransactionManager,
     private logger: Logger,
     private tokenGenerator: TokenGenerator,
     private clock: Clock,
+    private eventBus: EventBus,
   ) {}
 
   async execute(token: string): Promise<void> {
@@ -48,11 +49,10 @@ export class ConfirmUseCase {
       await this.subscriptionRepo.save(subscription, tx);
     });
 
-    await this.notificationService.notifySubscriptionConfirmed({
-      email: subscription.email.value,
-      repo: subscription.repoPath.toString(),
-      unsubscribeToken: unsubscribeToken.value,
-    });
+    const integrationEvents = toPublicApiEvents(subscription.pullEvents());
+    if (integrationEvents.length > 0) {
+      await this.eventBus.publish(integrationEvents);
+    }
 
     this.logger.info('Subscription confirmed', {
       subscriptionId: subscription.id,

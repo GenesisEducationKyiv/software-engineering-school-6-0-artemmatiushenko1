@@ -41,6 +41,7 @@ export const createConfirmedSubscription = (
       expiresAt: TOKEN_EXPIRES_AT,
     }),
   );
+  subscription.pullEvents();
 
   return subscription;
 };

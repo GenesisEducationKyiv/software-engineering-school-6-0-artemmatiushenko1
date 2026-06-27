@@ -62,7 +62,9 @@ const toPublicApiEvent = (event: DomainEvent): SubscriptionPublicApiEvent => {
       aggregateId: event.aggregateId,
       occurredAt: event.occurredAt,
       payload: {
+        email: event.payload.email.value,
         repo: event.payload.repoPath.toString(),
+        unsubscribeToken: event.payload.unsubscribeToken.value,
       },
     };
   }

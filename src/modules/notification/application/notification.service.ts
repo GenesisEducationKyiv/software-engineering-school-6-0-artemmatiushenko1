@@ -20,9 +20,11 @@ import { SubscriptionEventType } from '../../subscription/api/events.js';
 import type { SubscriptionRequestedEvent } from '../../subscription/api/events.js';
 import type { SubscriptionConfirmationRenewedEvent } from '../../subscription/api/events.js';
 import type { SubscriptionReactivatedEvent } from '../../subscription/api/events.js';
+import type { SubscriptionConfirmedEvent } from '../../subscription/api/events.js';
 import { SubscriptionRequestedSubscriber } from './subscribers/subscription-requested.subscriber.js';
 import { SubscriptionConfirmationRenewedSubscriber } from './subscribers/subscription-confirmation-renewed.subscriber.js';
 import { SubscriptionReactivatedSubscriber } from './subscribers/subscription-reactivated.subscriber.js';
+import { SubscriptionConfirmedSubscriber } from './subscribers/subscription-confirmed.subscriber.js';
 
 export class NotificationServiceImpl implements NotificationService {
   constructor(
@@ -42,6 +44,9 @@ export class NotificationServiceImpl implements NotificationService {
       new SubscriptionConfirmationRenewedSubscriber(this);
     const subscriptionReactivatedSubscriber =
       new SubscriptionReactivatedSubscriber(this);
+    const subscriptionConfirmedSubscriber = new SubscriptionConfirmedSubscriber(
+      this,
+    );
 
     eventBus.subscribe(
       SubscriptionEventType.Requested,
@@ -59,6 +64,12 @@ export class NotificationServiceImpl implements NotificationService {
       SubscriptionEventType.Reactivated,
       (event: SubscriptionReactivatedEvent) =>
         subscriptionReactivatedSubscriber.handle(event),
+    );
+
+    eventBus.subscribe(
+      SubscriptionEventType.Confirmed,
+      (event: SubscriptionConfirmedEvent) =>
+        subscriptionConfirmedSubscriber.handle(event),
     );
   }
 

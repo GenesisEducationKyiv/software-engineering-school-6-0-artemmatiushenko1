@@ -38,7 +38,9 @@ export type SubscriptionReactivatedEvent = DomainEventEnvelope<
 
 export type SubscriptionConfirmedEvent = DomainEventEnvelope<
   {
+    email: string;
     repo: string;
+    unsubscribeToken: string;
   },
   typeof SubscriptionEventType.Confirmed
 >;

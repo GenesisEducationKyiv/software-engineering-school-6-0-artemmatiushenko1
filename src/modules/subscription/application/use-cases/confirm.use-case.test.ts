@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConfirmUseCase } from './confirm.use-case.js';
 import type { SubscriptionRepository } from '../ports/subscription.repository.ts';
-import type { NotificationService } from '../../../notification/api/notification.service.js';
 import { SubscriptionNotFoundError } from '../errors.js';
 import type {
   Clock,
@@ -10,6 +9,8 @@ import type {
   Logger,
 } from '../../../../shared-kernel/index.js';
 import type { TokenGenerator } from '../ports/token-generator.js';
+import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
+import { SubscriptionEventType } from '../../api/events.js';
 import { mock } from 'vitest-mock-extended';
 import {
   SubscriptionTokenScope,
@@ -23,11 +24,11 @@ import {
 describe('ConfirmUseCase', () => {
   let confirmUseCase: ConfirmUseCase;
   const repoMock = mock<SubscriptionRepository>();
-  const notificationServiceMock = mock<NotificationService>();
   const loggerMock = mock<Logger>();
   const transactionManagerMock = mock<TransactionManager>();
   const tokenGeneratorMock = mock<TokenGenerator>();
   const clockMock = mock<Clock>();
+  const eventBusMock = mock<EventBus>();
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -38,13 +39,15 @@ describe('ConfirmUseCase', () => {
       async (work) => await work({} as DomainTransaction),
     );
 
+    eventBusMock.publish.mockResolvedValue(undefined);
+
     confirmUseCase = new ConfirmUseCase(
       repoMock,
-      notificationServiceMock,
       transactionManagerMock,
       loggerMock,
       tokenGeneratorMock,
       clockMock,
+      eventBusMock,
     );
   });
 
@@ -72,13 +75,18 @@ describe('ConfirmUseCase', () => {
       }),
       expect.anything(),
     );
-    expect(
-      notificationServiceMock.notifySubscriptionConfirmed,
-    ).toHaveBeenCalledWith({
-      email: 'test@example.com',
-      repo: 'owner/repo',
-      unsubscribeToken: unsubscribeTokenValue,
-    });
+    expect(eventBusMock.publish).toHaveBeenCalledWith([
+      {
+        type: SubscriptionEventType.Confirmed,
+        aggregateId: '10',
+        occurredAt: FIXED_NOW,
+        payload: {
+          email: 'test@example.com',
+          repo: 'owner/repo',
+          unsubscribeToken: unsubscribeTokenValue,
+        },
+      },
+    ]);
   });
 
   it('should throw SubscriptionNotFoundError when token cannot be resolved', async () => {

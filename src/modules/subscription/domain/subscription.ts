@@ -13,6 +13,7 @@ import { SubscriptionStatus } from './subscription-status.js';
 import type { DomainEvent } from '../../../shared-kernel/domain-event.js';
 import {
   SubscriptionConfirmationRenewedEvent,
+  SubscriptionConfirmedEvent,
   SubscriptionReactivatedEvent,
   SubscriptionRequestedEvent,
 } from './events.js';
@@ -137,6 +138,18 @@ export class Subscription {
     this._confirmationToken = this._confirmationToken.consume(now);
     this._unsubscribeToken = unsubscribeToken;
     this._status = SubscriptionStatus.Confirmed;
+
+    this.events.push(
+      new SubscriptionConfirmedEvent(
+        this.id,
+        {
+          repoPath: this.repoPath,
+          email: this.email,
+          unsubscribeToken: this._unsubscribeToken,
+        },
+        now,
+      ),
+    );
   }
 
   observeRelease(tag: ReleaseTag) {
