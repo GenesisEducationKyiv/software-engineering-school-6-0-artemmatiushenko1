@@ -1,11 +1,11 @@
-import type { SubscriptionRepository } from './ports/subscription.repository.js';
-import { SubscriptionTokenScope } from '../domain/index.js';
-import { SubscriptionNotFoundError } from './errors.js';
+import type { SubscriptionRepository } from '../ports/subscription.repository.js';
+import { SubscriptionTokenScope } from '../../domain/index.js';
+import { SubscriptionNotFoundError } from '../errors.js';
 import type {
   Clock,
   Logger,
   TransactionManager,
-} from '../../../shared-kernel/index.js';
+} from '../../../../shared-kernel/index.js';
 
 export class UnsubscribeUseCase {
   constructor(

@@ -1,13 +1,16 @@
-import type { SubscriptionRepository } from './ports/subscription.repository.js';
-import type { NotificationService } from '../../notification/api/notification.service.js';
-import { SubscriptionToken, SubscriptionTokenScope } from '../domain/index.js';
-import { SubscriptionNotFoundError } from './errors.js';
-import type { TokenGenerator } from './ports/token-generator.js';
+import type { SubscriptionRepository } from '../ports/subscription.repository.js';
+import type { NotificationService } from '../../../notification/api/notification.service.js';
+import {
+  SubscriptionToken,
+  SubscriptionTokenScope,
+} from '../../domain/index.js';
+import { SubscriptionNotFoundError } from '../errors.js';
+import type { TokenGenerator } from '../ports/token-generator.js';
 import type {
   Clock,
   Logger,
   TransactionManager,
-} from '../../../shared-kernel/index.js';
+} from '../../../../shared-kernel/index.js';
 
 export class ConfirmUseCase {
   private static readonly UNSUBSCRIBE_TTL_MS = 24 * 60 * 60 * 1000;

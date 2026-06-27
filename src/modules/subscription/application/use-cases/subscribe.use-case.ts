@@ -1,23 +1,23 @@
-import type { GithubClient } from '../../github/api/github-client.interface.js';
-import type { SubscriptionRepository } from './ports/subscription.repository.js';
+import type { GithubClient } from '../../../github/api/github-client.interface.js';
+import type { SubscriptionRepository } from '../ports/subscription.repository.js';
 import {
   Subscription,
   SubscriptionToken,
   SubscriptionTokenScope,
   SubscriptionStatus,
-} from '../domain/index.js';
-import { RepoNotFoundError, AlreadySubscribedError } from './errors.js';
-import { Email } from '../domain/email.js';
-import { RepoPath } from '../domain/repo-path.js';
-import type { TokenGenerator } from './ports/token-generator.js';
+} from '../../domain/index.js';
+import { RepoNotFoundError, AlreadySubscribedError } from '../errors.js';
+import { Email } from '../../domain/email.js';
+import { RepoPath } from '../../domain/repo-path.js';
+import type { TokenGenerator } from '../ports/token-generator.js';
 import type {
   Clock,
   IdGenerator,
   Logger,
   TransactionManager,
-} from '../../../shared-kernel/index.js';
-import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
-import { toPublicApiEvents } from './subscription-event.mapper.js';
+} from '../../../../shared-kernel/index.js';
+import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
+import { toPublicApiEvents } from '../subscription-event.mapper.js';
 
 export class SubscribeUseCase {
   private static readonly CONFIRMATION_TTL_MS = 60_000;

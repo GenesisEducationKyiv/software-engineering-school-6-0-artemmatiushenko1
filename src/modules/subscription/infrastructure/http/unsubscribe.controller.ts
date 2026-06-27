@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import type { UnsubscribeUseCase } from '../../application/unsubscribe.use-case.js';
+import type { UnsubscribeUseCase } from '../../application/use-cases/unsubscribe.use-case.js';
 import { CommonSuccessResponseDtoSchema } from '../../../../platform/http/response.dto.js';
 
 export function registerUnsubscribeRoute(

@@ -1,15 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UnsubscribeUseCase } from './unsubscribe.use-case.js';
-import type { SubscriptionRepository } from './ports/subscription.repository.ts';
-import { SubscriptionNotFoundError } from './errors.js';
+import type { SubscriptionRepository } from '../ports/subscription.repository.ts';
+import { SubscriptionNotFoundError } from '../errors.js';
 import type {
   Clock,
   TransactionManager,
   DomainTransaction,
   Logger,
-} from '../../../shared-kernel/index.js';
+} from '../../../../shared-kernel/index.js';
 import { mock } from 'vitest-mock-extended';
-import { SubscriptionTokenScope, SubscriptionStatus } from '../domain/index.js';
+import {
+  SubscriptionTokenScope,
+  SubscriptionStatus,
+} from '../../domain/index.js';
 import {
   createConfirmedSubscription,
   FIXED_NOW,

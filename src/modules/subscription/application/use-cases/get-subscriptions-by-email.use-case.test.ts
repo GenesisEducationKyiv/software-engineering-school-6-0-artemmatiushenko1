@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GetSubscriptionsByEmailUseCase } from './get-subscriptions-by-email.use-case.js';
-import type { SubscriptionRepository } from './ports/subscription.repository.ts';
+import type { SubscriptionRepository } from '../ports/subscription.repository.ts';
 import { mock } from 'vitest-mock-extended';
-import { Email } from '../domain/index.js';
+import { Email } from '../../domain/index.js';
 import { createConfirmedSubscription } from './subscription-test-fixtures.js';
 
 describe('GetSubscriptionsByEmailUseCase', () => {

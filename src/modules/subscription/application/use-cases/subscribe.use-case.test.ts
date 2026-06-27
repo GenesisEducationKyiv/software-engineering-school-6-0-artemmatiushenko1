@@ -1,24 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SubscribeUseCase } from './subscribe.use-case.js';
-import type { SubscriptionRepository } from './ports/subscription.repository.ts';
-import type { GithubClient } from '../../github/api/github-client.interface.js';
-import { RepoNotFoundError, AlreadySubscribedError } from './errors.js';
+import type { SubscriptionRepository } from '../ports/subscription.repository.ts';
+import type { GithubClient } from '../../../github/api/github-client.interface.js';
+import { RepoNotFoundError, AlreadySubscribedError } from '../errors.js';
 import type {
   IdGenerator,
   Clock,
   TransactionManager,
   DomainTransaction,
   Logger,
-} from '../../../shared-kernel/index.js';
-import type { TokenGenerator } from './ports/token-generator.js';
-import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
-import { SubscriptionEventType } from '../api/events.js';
+} from '../../../../shared-kernel/index.js';
+import type { TokenGenerator } from '../ports/token-generator.js';
+import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
+import { SubscriptionEventType } from '../../api/events.js';
 import { mock } from 'vitest-mock-extended';
 import {
   SubscriptionTokenScope,
   SubscriptionStatus,
   SubscriptionToken,
-} from '../domain/index.js';
+} from '../../domain/index.js';
 import {
   CONFIRM_TOKEN_EXPIRES_AT,
   createConfirmedSubscription,

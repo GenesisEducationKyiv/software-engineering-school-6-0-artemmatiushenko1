@@ -7,10 +7,10 @@ import { DrizzleSubscriptionRepository } from './modules/subscription/infrastruc
 import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-manager.js';
 import { NotificationServiceImpl } from './modules/notification/application/notification.service.js';
 import { ScanUseCase } from './modules/scanner/application/scan.use-case.js';
-import { SubscribeUseCase } from './modules/subscription/application/subscribe.use-case.js';
-import { ConfirmUseCase } from './modules/subscription/application/confirm.use-case.js';
-import { UnsubscribeUseCase } from './modules/subscription/application/unsubscribe.use-case.js';
-import { GetSubscriptionsByEmailUseCase } from './modules/subscription/application/get-subscriptions-by-email.use-case.js';
+import { SubscribeUseCase } from './modules/subscription/application/use-cases/subscribe.use-case.js';
+import { ConfirmUseCase } from './modules/subscription/application/use-cases/confirm.use-case.js';
+import { UnsubscribeUseCase } from './modules/subscription/application/use-cases/unsubscribe.use-case.js';
+import { GetSubscriptionsByEmailUseCase } from './modules/subscription/application/use-cases/get-subscriptions-by-email.use-case.js';
 import { SubscriptionQueriesImpl } from './modules/subscription/application/subscription-queries.js';
 import { PrometheusMetrics } from './platform/metrics/prometheus-metrics.js';
 import type { Metrics } from './platform/metrics/metrics.interface.js';

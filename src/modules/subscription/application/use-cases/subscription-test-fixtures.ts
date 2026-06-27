@@ -5,7 +5,7 @@ import {
   SubscriptionToken,
   RepoPath,
   SubscriptionStatus,
-} from '../domain/index.js';
+} from '../../domain/index.js';
 
 export const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
 export const TOKEN_EXPIRES_AT = new Date('2026-01-01T13:00:00Z');

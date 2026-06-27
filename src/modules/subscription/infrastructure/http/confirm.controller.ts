@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import type { ConfirmUseCase } from '../../application/confirm.use-case.js';
+import type { ConfirmUseCase } from '../../application/use-cases/confirm.use-case.js';
 import { CommonSuccessResponseDtoSchema } from '../../../../platform/http/response.dto.js';
 
 export function registerConfirmRoute(

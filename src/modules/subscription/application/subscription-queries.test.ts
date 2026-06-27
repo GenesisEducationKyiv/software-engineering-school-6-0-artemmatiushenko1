@@ -8,7 +8,7 @@ import type {
 } from '../../../shared-kernel/index.js';
 import { mock } from 'vitest-mock-extended';
 import { ReleaseTag } from '../domain/index.js';
-import { createConfirmedSubscription } from './subscription-test-fixtures.js';
+import { createConfirmedSubscription } from './use-cases/subscription-test-fixtures.js';
 
 describe('SubscriptionQueriesImpl', () => {
   let subscriptionQueries: SubscriptionQueriesImpl;
