@@ -1,6 +1,5 @@
-// TODO: add generic parameter for event type
-export type DomainEventEnvelope<TPayload = unknown> = {
-  readonly type: string;
+export type DomainEventEnvelope<TPayload = unknown, TEventType = string> = {
+  readonly type: TEventType;
   readonly aggregateId: string;
   readonly occurredAt: Date;
   readonly payload: TPayload;

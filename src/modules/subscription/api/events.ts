@@ -7,43 +7,35 @@ export const SubscriptionEventType = {
   Renewed: 'SubscriptionRenewed',
 } as const;
 
-export type SubscriptionRequestedPayload = {
-  email: string;
-  repo: string;
-  confirmationToken: string;
-};
+export type SubscriptionRequestedEvent = DomainEventEnvelope<
+  {
+    email: string;
+    repo: string;
+    confirmationToken: string;
+  },
+  typeof SubscriptionEventType.Requested
+>;
 
-export type SubscriptionRequestedEvent =
-  DomainEventEnvelope<SubscriptionRequestedPayload> & {
-    type: typeof SubscriptionEventType.Requested;
-  };
+export type SubscriptionConfirmedEvent = DomainEventEnvelope<
+  {
+    repo: string;
+  },
+  typeof SubscriptionEventType.Confirmed
+>;
 
-export type SubscriptionConfirmedPayload = {
-  repo: string;
-};
+export type SubscriptionDeactivatedEvent = DomainEventEnvelope<
+  {
+    repo: string;
+  },
+  typeof SubscriptionEventType.Deactivated
+>;
 
-export type SubscriptionConfirmedEvent =
-  DomainEventEnvelope<SubscriptionConfirmedPayload> & {
-    type: typeof SubscriptionEventType.Confirmed;
-  };
-
-export type SubscriptionDeactivatedPayload = {
-  repo: string;
-};
-
-export type SubscriptionDeactivatedEvent =
-  DomainEventEnvelope<SubscriptionDeactivatedPayload> & {
-    type: typeof SubscriptionEventType.Deactivated;
-  };
-
-export type SubscriptionRenewedPayload = {
-  repo: string;
-};
-
-export type SubscriptionRenewedEvent =
-  DomainEventEnvelope<SubscriptionRenewedPayload> & {
-    type: typeof SubscriptionEventType.Renewed;
-  };
+export type SubscriptionRenewedEvent = DomainEventEnvelope<
+  {
+    repo: string;
+  },
+  typeof SubscriptionEventType.Renewed
+>;
 
 export type SubscriptionPublicApiEvent =
   | SubscriptionRequestedEvent

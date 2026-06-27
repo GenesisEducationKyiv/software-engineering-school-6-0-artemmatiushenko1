@@ -61,5 +61,7 @@ const toPublicApiEvent = (event: DomainEvent): SubscriptionPublicApiEvent => {
     };
   }
 
-  throw new Error(`Unknown subscription domain event type: ${event.type}`);
+  throw new Error(
+    `Unknown subscription domain event type: ${event.constructor.name}`,
+  );
 };

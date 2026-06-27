@@ -13,7 +13,7 @@ export class SubscriptionConfirmedEvent extends DomainEvent<SubscriptionConfirme
     payload: SubscriptionConfirmedEventPayload,
     occurredAt: Date,
   ) {
-    super(aggregateId, payload, occurredAt, 'SubscriptionConfirmed');
+    super(aggregateId, payload, occurredAt);
   }
 }
 
@@ -27,7 +27,7 @@ export class SubscriptionDeactivatedEvent extends DomainEvent<SubscriptionDeacti
     payload: SubscriptionDeactivatedEventPayload,
     occurredAt: Date,
   ) {
-    super(aggregateId, payload, occurredAt, 'SubscriptionDeactivated');
+    super(aggregateId, payload, occurredAt);
   }
 }
 
@@ -41,7 +41,7 @@ export class SubscriptionRenewedEvent extends DomainEvent<SubscriptionRenewedEve
     payload: SubscriptionRenewedEventPayload,
     occurredAt: Date,
   ) {
-    super(aggregateId, payload, occurredAt, 'SubscriptionRenewed');
+    super(aggregateId, payload, occurredAt);
   }
 }
 
@@ -57,6 +57,6 @@ export class SubscriptionRequestedEvent extends DomainEvent<SubscriptionRequeste
     payload: SubscriptionRequestedEventPayload,
     occurredAt: Date,
   ) {
-    super(aggregateId, payload, occurredAt, 'SubscriptionRequested');
+    super(aggregateId, payload, occurredAt);
   }
 }
