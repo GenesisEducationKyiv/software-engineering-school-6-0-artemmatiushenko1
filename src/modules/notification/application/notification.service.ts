@@ -28,10 +28,10 @@ import { SubscriptionConfirmedSubscriber } from './subscribers/subscription-conf
 
 export class NotificationServiceImpl implements NotificationService {
   constructor(
-    private emailClient: EmailClient,
-    private appUrl: string,
+    private readonly emailClient: EmailClient,
+    private readonly appUrl: string,
     eventBus: EventBus,
-    private metrics?: NotificationMetrics,
+    private readonly metrics?: NotificationMetrics,
   ) {
     this.registerSubscribers(eventBus);
   }
@@ -83,6 +83,8 @@ export class NotificationServiceImpl implements NotificationService {
       to: context.email,
       ...template,
     });
+
+    this.metrics?.incrementNotificationsSent();
   }
 
   async notifySubscriptionConfirmed(
@@ -101,6 +103,8 @@ export class NotificationServiceImpl implements NotificationService {
       to: context.email,
       ...template,
     });
+
+    this.metrics?.incrementNotificationsSent();
   }
 
   async notifyNewRelease(
