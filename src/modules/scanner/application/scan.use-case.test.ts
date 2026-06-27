@@ -2,10 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ScanUseCase } from './scan.use-case.js';
 import type { SubscriptionQueries } from '../../subscription/api/subscription-queries.interface.js';
 import type { GithubClient } from '../../github/api/github-client.interface.js';
-import type { NotificationService } from '../../notification/api/notification.service.js';
 import type { Logger } from '../../../shared-kernel/logger.js';
 import type { Clock } from '../../../shared-kernel/index.js';
+import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
 import { GithubRateLimitError } from '../../github/domain/errors.js';
+import { ScannerEventType } from '../api/events.js';
 import { mock } from 'vitest-mock-extended';
 import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
 import { Subscription } from '../../subscription/domain/index.js';
@@ -46,6 +47,7 @@ const createConfirmedDomainSubscription = (overrides: {
       expiresAt: TOKEN_EXPIRES_AT,
     }),
   );
+  subscription.pullEvents();
 
   if (overrides.lastSeenTag) {
     subscription.observeRelease(ReleaseTag.fromString(overrides.lastSeenTag));
@@ -58,23 +60,24 @@ describe('ScanUseCase', () => {
   let scanUseCase: ScanUseCase;
   const subscriptionQueriesMock = mock<SubscriptionQueries>();
   const githubClientMock = mock<GithubClient>();
-  const notificationServiceMock = mock<NotificationService>();
   const loggerMock = mock<Logger>();
   const clockMock = mock<Clock>();
   const metricsMock = mock<ScannerMetrics>();
+  const eventBusMock = mock<EventBus>();
 
   beforeEach(() => {
     vi.resetAllMocks();
 
     clockMock.now.mockReturnValue(FIXED_NOW);
+    eventBusMock.publish.mockResolvedValue(undefined);
 
     scanUseCase = new ScanUseCase(
       subscriptionQueriesMock,
       githubClientMock,
-      notificationServiceMock,
       loggerMock,
       clockMock,
       metricsMock,
+      eventBusMock,
     );
   });
 
@@ -97,17 +100,24 @@ describe('ScanUseCase', () => {
 
       await scanUseCase.execute();
 
-      expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
-        email: sub.email.value,
-        repo: sub.repoPath.toString(),
-        tag: latestRelease.tag,
-        releaseName: latestRelease.name,
-        unsubscribeToken: UNSUBSCRIBE_TOKEN,
-      });
       expect(subscriptionQueriesMock.observeNewRelease).toHaveBeenCalledWith(
         '1',
         'v1.1.0',
       );
+      expect(eventBusMock.publish).toHaveBeenCalledWith([
+        {
+          type: ScannerEventType.NewReleaseDetected,
+          aggregateId: '1',
+          occurredAt: FIXED_NOW,
+          payload: {
+            email: sub.email.value,
+            repo: sub.repoPath.toString(),
+            tag: latestRelease.tag,
+            releaseName: latestRelease.name,
+            unsubscribeToken: UNSUBSCRIBE_TOKEN,
+          },
+        },
+      ]);
     });
 
     it('should continue scanning other subscriptions when one fails', async () => {
@@ -138,13 +148,20 @@ describe('ScanUseCase', () => {
 
       await scanUseCase.execute();
 
-      expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith({
-        email: sub2.email.value,
-        repo: sub2.repoPath.toString(),
-        tag: latestRelease.tag,
-        releaseName: latestRelease.name,
-        unsubscribeToken: UNSUBSCRIBE_TOKEN,
-      });
+      expect(eventBusMock.publish).toHaveBeenCalledWith([
+        {
+          type: ScannerEventType.NewReleaseDetected,
+          aggregateId: '2',
+          occurredAt: FIXED_NOW,
+          payload: {
+            email: sub2.email.value,
+            repo: sub2.repoPath.toString(),
+            tag: latestRelease.tag,
+            releaseName: latestRelease.name,
+            unsubscribeToken: UNSUBSCRIBE_TOKEN,
+          },
+        },
+      ]);
     });
 
     it('should not notify when the latest release tag is unchanged', async () => {
@@ -163,7 +180,7 @@ describe('ScanUseCase', () => {
 
       await scanUseCase.execute();
 
-      expect(notificationServiceMock.notifyNewRelease).not.toHaveBeenCalled();
+      expect(eventBusMock.publish).not.toHaveBeenCalled();
       expect(subscriptionQueriesMock.observeNewRelease).not.toHaveBeenCalled();
     });
 

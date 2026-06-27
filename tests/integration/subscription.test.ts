@@ -165,6 +165,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     container.redis = redisMock;
     container.clock = clockMock;
 
+    container.registerEventSubscribers();
     const deps = container.build();
     app = await App.create(TEST_APP_CONFIG, deps, fastify);
   });

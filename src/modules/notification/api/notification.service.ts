@@ -18,7 +18,11 @@ export type SubscriptionConfirmedContext = {
   unsubscribeToken: string;
 };
 
+import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
+
 export interface NotificationService {
+  registerEventSubscribers(eventBus: EventBus): void;
+
   notifySubscriptionConfirmation(
     context: SubscriptionConfirmationContext,
   ): Promise<void>;

@@ -62,6 +62,7 @@ export class AppContainer {
   private tokenGeneratorInstance?: TokenGenerator;
   private clockInstance?: Clock;
   private eventBusInstance?: EventBus;
+  private eventSubscribersRegistered = false;
 
   constructor(
     private readonly config: AppConfig,
@@ -151,7 +152,6 @@ export class AppContainer {
     return (this.notificationServiceInstance ??= new NotificationServiceImpl(
       this.emailClient,
       this.config.appUrl,
-      this.eventBus,
       this.metrics,
     ));
   }
@@ -237,10 +237,10 @@ export class AppContainer {
     return (this.scanUseCaseInstance ??= new ScanUseCase(
       this.subscriptionQueries,
       this.githubClient,
-      this.notificationService,
       this.logger,
       this.clock,
       this.metrics,
+      this.eventBus,
     ));
   }
 
@@ -270,6 +270,15 @@ export class AppContainer {
 
   set clock(value: Clock) {
     this.clockInstance = value;
+  }
+
+  registerEventSubscribers(): void {
+    if (this.eventSubscribersRegistered) {
+      return;
+    }
+
+    this.notificationService.registerEventSubscribers(this.eventBus);
+    this.eventSubscribersRegistered = true;
   }
 
   build(): AppDependencies {

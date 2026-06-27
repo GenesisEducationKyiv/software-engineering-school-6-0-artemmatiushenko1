@@ -1,3 +1,4 @@
+import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
 import type { EmailClient } from './ports/email-client.js';
 import type {
   NotificationService,
@@ -15,28 +16,27 @@ import {
   buildUnsubscribeUrl,
 } from '../infrastructure/links.js';
 import type { NotificationMetrics } from './ports/notification-metrics.js';
-import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
 import { SubscriptionEventType } from '../../subscription/api/events.js';
 import type { SubscriptionRequestedEvent } from '../../subscription/api/events.js';
 import type { SubscriptionConfirmationRenewedEvent } from '../../subscription/api/events.js';
 import type { SubscriptionReactivatedEvent } from '../../subscription/api/events.js';
 import type { SubscriptionConfirmedEvent } from '../../subscription/api/events.js';
+import { ScannerEventType } from '../../scanner/api/events.js';
+import type { NewReleaseDetectedEvent } from '../../scanner/api/events.js';
 import { SubscriptionRequestedSubscriber } from './subscribers/subscription-requested.subscriber.js';
 import { SubscriptionConfirmationRenewedSubscriber } from './subscribers/subscription-confirmation-renewed.subscriber.js';
 import { SubscriptionReactivatedSubscriber } from './subscribers/subscription-reactivated.subscriber.js';
 import { SubscriptionConfirmedSubscriber } from './subscribers/subscription-confirmed.subscriber.js';
+import { NewReleaseDetectedSubscriber } from './subscribers/new-release-detected.subscriber.js';
 
 export class NotificationServiceImpl implements NotificationService {
   constructor(
     private readonly emailClient: EmailClient,
     private readonly appUrl: string,
-    eventBus: EventBus,
     private readonly metrics?: NotificationMetrics,
-  ) {
-    this.registerSubscribers(eventBus);
-  }
+  ) {}
 
-  private registerSubscribers(eventBus: EventBus): void {
+  registerEventSubscribers(eventBus: EventBus): void {
     const subscriptionRequestedSubscriber = new SubscriptionRequestedSubscriber(
       this,
     );
@@ -47,6 +47,7 @@ export class NotificationServiceImpl implements NotificationService {
     const subscriptionConfirmedSubscriber = new SubscriptionConfirmedSubscriber(
       this,
     );
+    const newReleaseDetectedSubscriber = new NewReleaseDetectedSubscriber(this);
 
     eventBus.subscribe(
       SubscriptionEventType.Requested,
@@ -70,6 +71,12 @@ export class NotificationServiceImpl implements NotificationService {
       SubscriptionEventType.Confirmed,
       (event: SubscriptionConfirmedEvent) =>
         subscriptionConfirmedSubscriber.handle(event),
+    );
+
+    eventBus.subscribe(
+      ScannerEventType.NewReleaseDetected,
+      (event: NewReleaseDetectedEvent) =>
+        newReleaseDetectedSubscriber.handle(event),
     );
   }
 

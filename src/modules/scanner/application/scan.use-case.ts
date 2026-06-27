@@ -1,20 +1,21 @@
 import type { GithubClient } from '../../github/api/github-client.interface.js';
 import type { Subscription } from '../../subscription/domain/index.js';
 import type { SubscriptionQueries } from '../../subscription/api/subscription-queries.interface.js';
-import type { NotificationService } from '../../notification/api/notification.service.js';
 import type { Clock, Logger } from '../../../shared-kernel/index.js';
 import { GithubRateLimitError } from '../../github/domain/errors.js';
 import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
 import { msToSeconds } from '../../../utils/time.utils.js';
+import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
+import { ScannerEventType } from '../api/events.js';
 
 export class ScanUseCase {
   constructor(
     private subscriptionQueries: SubscriptionQueries,
     private githubClient: GithubClient,
-    private notificationService: NotificationService,
     private logger: Logger,
     private clock: Clock,
     private metrics: ScannerMetrics,
+    private eventBus: EventBus,
   ) {}
 
   async execute(): Promise<void> {
@@ -93,18 +94,25 @@ export class ScanUseCase {
         previousTag: lastSeenTag,
       });
 
-      await this.notificationService.notifyNewRelease({
-        email: sub.email.value,
-        repo,
-        tag: latestRelease.tag,
-        releaseName: latestRelease.name,
-        unsubscribeToken: sub.unsubscribeToken.value,
-      });
-
       await this.subscriptionQueries.observeNewRelease(
         sub.id,
         latestRelease.tag,
       );
+
+      await this.eventBus.publish([
+        {
+          type: ScannerEventType.NewReleaseDetected,
+          aggregateId: sub.id,
+          occurredAt: this.clock.now(),
+          payload: {
+            email: sub.email.value,
+            repo,
+            tag: latestRelease.tag,
+            releaseName: latestRelease.name,
+            unsubscribeToken: sub.unsubscribeToken.value,
+          },
+        },
+      ]);
     } else {
       this.logger.info('No new releases', {
         repo,

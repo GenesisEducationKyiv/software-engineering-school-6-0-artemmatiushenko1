@@ -5,11 +5,12 @@ import type { EmailClient } from './ports/email-client.js';
 import { mock } from 'vitest-mock-extended';
 import type { NotificationMetrics } from './ports/notification-metrics.js';
 import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
+import { SubscriptionEventType } from '../../subscription/api/events.js';
+import { ScannerEventType } from '../../scanner/api/events.js';
 
 describe('NotificationServiceImpl', () => {
   let notificationService: NotificationServiceImpl;
   const emailClientMock = mock<EmailClient>();
-  const eventBusMock = mock<EventBus>();
   const appUrl = 'http://localhost:3000';
   const metricsMock = mock<NotificationMetrics>();
 
@@ -19,7 +20,6 @@ describe('NotificationServiceImpl', () => {
     notificationService = new NotificationServiceImpl(
       emailClientMock,
       appUrl,
-      eventBusMock,
       metricsMock,
     );
   });
@@ -81,5 +81,33 @@ describe('NotificationServiceImpl', () => {
       }),
     );
     expect(metricsMock.incrementNotificationsSent).toHaveBeenCalled();
+  });
+
+  it('registers all notification event handlers on the event bus', () => {
+    const eventBus = mock<EventBus>();
+
+    notificationService.registerEventSubscribers(eventBus);
+
+    expect(eventBus.subscribe).toHaveBeenCalledTimes(5);
+    expect(eventBus.subscribe).toHaveBeenCalledWith(
+      SubscriptionEventType.Requested,
+      expect.any(Function),
+    );
+    expect(eventBus.subscribe).toHaveBeenCalledWith(
+      SubscriptionEventType.ConfirmationRenewed,
+      expect.any(Function),
+    );
+    expect(eventBus.subscribe).toHaveBeenCalledWith(
+      SubscriptionEventType.Reactivated,
+      expect.any(Function),
+    );
+    expect(eventBus.subscribe).toHaveBeenCalledWith(
+      SubscriptionEventType.Confirmed,
+      expect.any(Function),
+    );
+    expect(eventBus.subscribe).toHaveBeenCalledWith(
+      ScannerEventType.NewReleaseDetected,
+      expect.any(Function),
+    );
   });
 });

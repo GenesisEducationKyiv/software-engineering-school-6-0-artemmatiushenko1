@@ -13,6 +13,7 @@ const appConfig = createConfig();
 
 const fastify = Fastify(createFastifyServerOptions(appConfig));
 const container = new AppContainer(appConfig, fastify.log, db);
+container.registerEventSubscribers();
 const deps = container.build();
 
 deps.logger.info('Running database migrations...');
