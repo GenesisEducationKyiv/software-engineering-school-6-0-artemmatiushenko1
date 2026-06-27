@@ -15,13 +15,30 @@ import {
   buildUnsubscribeUrl,
 } from '../infrastructure/links.js';
 import type { NotificationMetrics } from './ports/notification-metrics.js';
+import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
+import { SubscriptionEventType } from '../../subscription/api/events.js';
+import type { SubscriptionRequestedEvent } from '../../subscription/api/events.js';
+import { SubscriptionRequestedHandler } from './handlers/subscription-requested.handler.js';
 
 export class NotificationServiceImpl implements NotificationService {
   constructor(
     private emailClient: EmailClient,
     private appUrl: string,
+    eventBus: EventBus,
     private metrics?: NotificationMetrics,
-  ) {}
+  ) {
+    this.registerEventHandlers(eventBus);
+  }
+
+  private registerEventHandlers(eventBus: EventBus): void {
+    const subscriptionRequestedHandler = new SubscriptionRequestedHandler(this);
+
+    eventBus.subscribe(
+      SubscriptionEventType.Requested,
+      (event: SubscriptionRequestedEvent) =>
+        subscriptionRequestedHandler.handle(event),
+    );
+  }
 
   async notifySubscriptionConfirmation(
     context: SubscriptionConfirmationContext,

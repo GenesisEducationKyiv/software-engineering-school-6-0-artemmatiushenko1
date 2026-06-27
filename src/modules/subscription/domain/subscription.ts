@@ -10,8 +10,12 @@ import {
 import type { ReleaseTag } from './release-tag.js';
 import type { RepoPath } from './repo-path.js';
 import { SubscriptionStatus } from './subscription-status.js';
+import type { DomainEvent } from '../../../shared-kernel/domain-event.js';
+import { SubscriptionRequestedEvent } from './events.js';
 
 export class Subscription {
+  private readonly events: DomainEvent[] = [];
+
   private constructor(
     public readonly id: string,
     public readonly email: Email,
@@ -56,6 +60,7 @@ export class Subscription {
     email: Email,
     repoPath: RepoPath,
     confirmationToken: SubscriptionToken,
+    now: Date,
   ): Subscription {
     if (confirmationToken.scope !== SubscriptionTokenScope.Confirm) {
       throw new WrongTokenScopeError(
@@ -64,7 +69,7 @@ export class Subscription {
       );
     }
 
-    return new Subscription(
+    const subscription = new Subscription(
       id,
       email,
       repoPath,
@@ -73,6 +78,20 @@ export class Subscription {
       confirmationToken,
       null,
     );
+
+    subscription.events.push(
+      new SubscriptionRequestedEvent(
+        subscription.id,
+        {
+          repoPath: subscription.repoPath,
+          email: subscription.email,
+          confirmationToken: subscription.confirmationToken,
+        },
+        now,
+      ),
+    );
+
+    return subscription;
   }
 
   unsubscribe(unsubscribeTokenValue: string, now: Date) {
@@ -123,7 +142,7 @@ export class Subscription {
     this._lastSeenTag = tag;
   }
 
-  renewConfirmation(newToken: SubscriptionToken): void {
+  renewConfirmation(newToken: SubscriptionToken, now: Date): void {
     if (newToken.scope !== SubscriptionTokenScope.Confirm) {
       throw new WrongTokenScopeError(
         SubscriptionTokenScope.Confirm,
@@ -140,9 +159,22 @@ export class Subscription {
     }
 
     this._confirmationToken = newToken;
+
+    // TODO: is this the right event to push?
+    this.events.push(
+      new SubscriptionRequestedEvent(
+        this.id,
+        {
+          repoPath: this.repoPath,
+          email: this.email,
+          confirmationToken: this._confirmationToken,
+        },
+        now,
+      ),
+    );
   }
 
-  reactivate(newConfirmationToken: SubscriptionToken): void {
+  reactivate(newConfirmationToken: SubscriptionToken, now: Date): void {
     if (newConfirmationToken.scope !== SubscriptionTokenScope.Confirm) {
       throw new WrongTokenScopeError(
         SubscriptionTokenScope.Confirm,
@@ -160,6 +192,19 @@ export class Subscription {
     this._confirmationToken = newConfirmationToken;
     this._unsubscribeToken = null;
     this._status = SubscriptionStatus.Pending;
+
+    // TODO: is this the right event to push?
+    this.events.push(
+      new SubscriptionRequestedEvent(
+        this.id,
+        {
+          repoPath: this.repoPath,
+          email: this.email,
+          confirmationToken: this._confirmationToken,
+        },
+        now,
+      ),
+    );
   }
 
   get status(): SubscriptionStatus {
@@ -176,5 +221,11 @@ export class Subscription {
 
   get unsubscribeToken(): SubscriptionToken | null {
     return this._unsubscribeToken;
+  }
+
+  pullEvents(): DomainEvent[] {
+    const copy = [...this.events];
+    this.events.length = 0;
+    return copy;
   }
 }

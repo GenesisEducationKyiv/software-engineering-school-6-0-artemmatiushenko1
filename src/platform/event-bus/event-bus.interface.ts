@@ -1,9 +1,9 @@
-import type { DomainEvent } from './domain-event.js';
+import type { DomainEventEnvelope } from './domain-event-envelope.js';
 
 export interface EventBus {
-  publish<T>(event: DomainEvent<T>): Promise<void>;
-  subscribe<T>(
-    event: DomainEvent<T>,
-    callback: (event: DomainEvent<T>) => void,
+  publish(events: DomainEventEnvelope[]): Promise<void>;
+  subscribe<T extends DomainEventEnvelope>(
+    eventType: T['type'],
+    callback: (event: T) => void | Promise<void>,
   ): void;
 }

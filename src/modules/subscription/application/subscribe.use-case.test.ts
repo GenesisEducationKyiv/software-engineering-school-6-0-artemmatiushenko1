@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SubscribeUseCase } from './subscribe.use-case.js';
 import type { SubscriptionRepository } from './ports/subscription.repository.ts';
 import type { GithubClient } from '../../github/api/github-client.interface.js';
-import type { NotificationService } from '../../notification/api/notification.service.js';
 import { RepoNotFoundError, AlreadySubscribedError } from './errors.js';
 import type {
   IdGenerator,
@@ -12,6 +11,8 @@ import type {
   Logger,
 } from '../../../shared-kernel/index.js';
 import type { TokenGenerator } from './ports/token-generator.js';
+import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
+import { SubscriptionEventType } from '../api/events.js';
 import { mock } from 'vitest-mock-extended';
 import {
   SubscriptionTokenScope,
@@ -30,12 +31,12 @@ describe('SubscribeUseCase', () => {
   let subscribeUseCase: SubscribeUseCase;
   const repoMock = mock<SubscriptionRepository>();
   const githubClientMock = mock<GithubClient>();
-  const notificationServiceMock = mock<NotificationService>();
   const loggerMock = mock<Logger>();
   const transactionManagerMock = mock<TransactionManager>();
   const idGeneratorMock = mock<IdGenerator>();
   const tokenGeneratorMock = mock<TokenGenerator>();
   const clockMock = mock<Clock>();
+  const eventBusMock = mock<EventBus>();
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -46,15 +47,17 @@ describe('SubscribeUseCase', () => {
       async (work) => await work({} as DomainTransaction),
     );
 
+    eventBusMock.publish.mockResolvedValue(undefined);
+
     subscribeUseCase = new SubscribeUseCase(
       repoMock,
       githubClientMock,
-      notificationServiceMock,
       transactionManagerMock,
       loggerMock,
       idGeneratorMock,
       tokenGeneratorMock,
       clockMock,
+      eventBusMock,
     );
   });
 
@@ -95,13 +98,18 @@ describe('SubscribeUseCase', () => {
     ).toBe(true);
     expect(savedSubscription.unsubscribeToken).toBeNull();
     expect(tx).toEqual(expect.anything());
-    expect(
-      notificationServiceMock.notifySubscriptionConfirmation,
-    ).toHaveBeenCalledWith({
-      email,
-      repo,
-      confirmToken,
-    });
+    expect(eventBusMock.publish).toHaveBeenCalledWith([
+      {
+        type: SubscriptionEventType.Requested,
+        aggregateId: subscriptionId,
+        occurredAt: FIXED_NOW,
+        payload: {
+          email,
+          repo,
+          confirmationToken: confirmToken,
+        },
+      },
+    ]);
   });
 
   it('should throw RepoNotFoundError if repo does not exist', async () => {
@@ -153,13 +161,18 @@ describe('SubscribeUseCase', () => {
     );
     expect(savedSubscription.unsubscribeToken).toBeNull();
     expect(tx).toEqual(expect.anything());
-    expect(
-      notificationServiceMock.notifySubscriptionConfirmation,
-    ).toHaveBeenCalledWith({
-      email,
-      repo,
-      confirmToken: newConfirmToken,
-    });
+    expect(eventBusMock.publish).toHaveBeenCalledWith([
+      {
+        type: SubscriptionEventType.Requested,
+        aggregateId: existingDomainSubscription.id,
+        occurredAt: FIXED_NOW,
+        payload: {
+          email,
+          repo,
+          confirmationToken: newConfirmToken,
+        },
+      },
+    ]);
   });
 
   it('should reactivate an unsubscribed subscription and resend confirmation', async () => {
@@ -191,16 +204,21 @@ describe('SubscribeUseCase', () => {
     expect(savedSubscription.repoPath).toEqual(
       existingDomainSubscription.repoPath,
     );
-    expect(
-      notificationServiceMock.notifySubscriptionConfirmation,
-    ).toHaveBeenCalledWith({
-      email,
-      repo,
-      confirmToken: newConfirmToken,
-    });
+    expect(eventBusMock.publish).toHaveBeenCalledWith([
+      {
+        type: SubscriptionEventType.Requested,
+        aggregateId: existingDomainSubscription.id,
+        occurredAt: FIXED_NOW,
+        payload: {
+          email,
+          repo,
+          confirmationToken: newConfirmToken,
+        },
+      },
+    ]);
   });
 
-  it('should save subscription when confirmation email fails for a new subscription', async () => {
+  it('should propagate event handler failures after the subscription is saved', async () => {
     const email = 'test@example.com';
     const repo = 'owner/repo';
     const confirmToken = '550e8400-e29b-41d4-a716-446655440000';
@@ -210,9 +228,7 @@ describe('SubscribeUseCase', () => {
     idGeneratorMock.next.mockReturnValue(subscriptionId);
     repoMock.findByEmailAndRepo.mockResolvedValue(null);
     githubClientMock.repositoryExists.mockResolvedValue(true);
-    notificationServiceMock.notifySubscriptionConfirmation.mockRejectedValue(
-      new Error('SMTP error'),
-    );
+    eventBusMock.publish.mockRejectedValue(new Error('SMTP error'));
 
     await expect(subscribeUseCase.execute(email, repo)).rejects.toThrow(
       'SMTP error',

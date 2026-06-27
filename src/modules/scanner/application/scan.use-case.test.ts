@@ -34,6 +34,7 @@ const createConfirmedDomainSubscription = (overrides: {
       scope: SubscriptionTokenScope.Confirm,
       expiresAt: TOKEN_EXPIRES_AT,
     }),
+    FIXED_NOW,
   );
 
   subscription.confirm(

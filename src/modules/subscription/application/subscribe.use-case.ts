@@ -1,6 +1,5 @@
 import type { GithubClient } from '../../github/api/github-client.interface.js';
 import type { SubscriptionRepository } from './ports/subscription.repository.js';
-import type { NotificationService } from '../../notification/api/notification.service.js';
 import {
   Subscription,
   SubscriptionToken,
@@ -17,6 +16,8 @@ import type {
   Logger,
   TransactionManager,
 } from '../../../shared-kernel/index.js';
+import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
+import { toIntegrationEvents } from './subscription-integration-event.mapper.js';
 
 export class SubscribeUseCase {
   private static readonly CONFIRMATION_TTL_MS = 60_000;
@@ -24,12 +25,12 @@ export class SubscribeUseCase {
   constructor(
     private subscriptionRepo: SubscriptionRepository,
     private githubClient: GithubClient,
-    private notificationService: NotificationService,
     private transactionManager: TransactionManager,
     private logger: Logger,
     private idGenerator: IdGenerator,
     private tokenGenerator: TokenGenerator,
     private clock: Clock,
+    private eventBus: EventBus,
   ) {}
 
   async execute(email: string, repoPath: string): Promise<void> {
@@ -66,9 +67,9 @@ export class SubscribeUseCase {
     let subscription: Subscription;
     if (existingSubscription) {
       if (existingSubscription.status === SubscriptionStatus.Unsubscribed) {
-        existingSubscription.reactivate(confirmToken);
+        existingSubscription.reactivate(confirmToken, this.clock.now());
       } else {
-        existingSubscription.renewConfirmation(confirmToken);
+        existingSubscription.renewConfirmation(confirmToken, this.clock.now());
       }
       subscription = existingSubscription;
     } else {
@@ -77,6 +78,7 @@ export class SubscribeUseCase {
         validatedEmail,
         validatedRepo,
         confirmToken,
+        this.clock.now(),
       );
     }
 
@@ -84,11 +86,10 @@ export class SubscribeUseCase {
       await this.subscriptionRepo.save(subscription, tx);
     });
 
-    await this.notificationService.notifySubscriptionConfirmation({
-      confirmToken: subscription.confirmationToken.value,
-      email: validatedEmail.value,
-      repo: validatedRepo.toString(),
-    });
+    const integrationEvents = toIntegrationEvents(subscription.pullEvents());
+    if (integrationEvents.length > 0) {
+      await this.eventBus.publish(integrationEvents);
+    }
 
     this.logger.info('User subscribed', {
       email: validatedEmail.value,

@@ -4,10 +4,12 @@ import type { NewReleaseNotificationContext } from '../api/notification.service.
 import type { EmailClient } from './ports/email-client.js';
 import { mock } from 'vitest-mock-extended';
 import type { NotificationMetrics } from './ports/notification-metrics.js';
+import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
 
 describe('NotificationServiceImpl', () => {
   let notificationService: NotificationServiceImpl;
   const emailClientMock = mock<EmailClient>();
+  const eventBusMock = mock<EventBus>();
   const appUrl = 'http://localhost:3000';
   const metricsMock = mock<NotificationMetrics>();
 
@@ -17,6 +19,7 @@ describe('NotificationServiceImpl', () => {
     notificationService = new NotificationServiceImpl(
       emailClientMock,
       appUrl,
+      eventBusMock,
       metricsMock,
     );
   });

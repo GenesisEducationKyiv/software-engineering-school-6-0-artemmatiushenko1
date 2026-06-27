@@ -1,0 +1,62 @@
+import { DomainEvent } from '../../../shared-kernel/index.js';
+import type { Email } from './email.js';
+import type { RepoPath } from './repo-path.js';
+import type { SubscriptionToken } from './subscription-token.js';
+
+type SubscriptionConfirmedEventPayload = {
+  repoPath: RepoPath;
+};
+
+export class SubscriptionConfirmedEvent extends DomainEvent<SubscriptionConfirmedEventPayload> {
+  constructor(
+    aggregateId: string,
+    payload: SubscriptionConfirmedEventPayload,
+    occurredAt: Date,
+  ) {
+    super(aggregateId, payload, occurredAt, 'SubscriptionConfirmed');
+  }
+}
+
+type SubscriptionDeactivatedEventPayload = {
+  repoPath: RepoPath;
+};
+
+export class SubscriptionDeactivatedEvent extends DomainEvent<SubscriptionDeactivatedEventPayload> {
+  constructor(
+    aggregateId: string,
+    payload: SubscriptionDeactivatedEventPayload,
+    occurredAt: Date,
+  ) {
+    super(aggregateId, payload, occurredAt, 'SubscriptionDeactivated');
+  }
+}
+
+type SubscriptionRenewedEventPayload = {
+  repoPath: RepoPath;
+};
+
+export class SubscriptionRenewedEvent extends DomainEvent<SubscriptionRenewedEventPayload> {
+  constructor(
+    aggregateId: string,
+    payload: SubscriptionRenewedEventPayload,
+    occurredAt: Date,
+  ) {
+    super(aggregateId, payload, occurredAt, 'SubscriptionRenewed');
+  }
+}
+
+type SubscriptionRequestedEventPayload = {
+  repoPath: RepoPath;
+  email: Email;
+  confirmationToken: SubscriptionToken;
+};
+
+export class SubscriptionRequestedEvent extends DomainEvent<SubscriptionRequestedEventPayload> {
+  constructor(
+    aggregateId: string,
+    payload: SubscriptionRequestedEventPayload,
+    occurredAt: Date,
+  ) {
+    super(aggregateId, payload, occurredAt, 'SubscriptionRequested');
+  }
+}

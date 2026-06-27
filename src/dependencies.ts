@@ -28,6 +28,8 @@ import type { TokenGenerator } from './modules/subscription/application/ports/to
 import type { Clock } from './shared-kernel/clock.js';
 import type { Logger } from './shared-kernel/logger.js';
 import { NodemailerEmailClient } from './modules/notification/infrastructure/nodemailer-email-client.js';
+import { InProcessEventBus } from './platform/event-bus/in-process-event-bus.js';
+import type { EventBus } from './platform/event-bus/event-bus.interface.js';
 
 export interface AppDependencies {
   db: Database;
@@ -59,6 +61,7 @@ export class AppContainer {
   private idGeneratorInstance?: IdGenerator;
   private tokenGeneratorInstance?: TokenGenerator;
   private clockInstance?: Clock;
+  private eventBusInstance?: EventBus;
 
   constructor(
     private readonly config: AppConfig,
@@ -148,6 +151,7 @@ export class AppContainer {
     return (this.notificationServiceInstance ??= new NotificationServiceImpl(
       this.emailClient,
       this.config.appUrl,
+      this.eventBus,
       this.metrics,
     ));
   }
@@ -167,16 +171,24 @@ export class AppContainer {
     this.subscriptionQueriesInstance = value;
   }
 
+  get eventBus(): EventBus {
+    return (this.eventBusInstance ??= new InProcessEventBus());
+  }
+
+  set eventBus(value: EventBus) {
+    this.eventBusInstance = value;
+  }
+
   get subscribeUseCase(): SubscribeUseCase {
     return (this.subscribeUseCaseInstance ??= new SubscribeUseCase(
       this.subscriptionRepo,
       this.githubClient,
-      this.notificationService,
       this.transactionManager,
       this.logger,
       this.idGenerator,
       this.tokenGenerator,
       this.clock,
+      this.eventBus,
     ));
   }
 

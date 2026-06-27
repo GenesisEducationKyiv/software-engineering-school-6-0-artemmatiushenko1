@@ -1,20 +1,24 @@
-import type { DomainEvent } from './domain-event.js';
+import type { DomainEventEnvelope } from './domain-event-envelope.js';
 import type { EventBus } from './event-bus.interface.js';
 
-type EventHandler = (event: DomainEvent) => void;
-
+type EventHandler = (event: DomainEventEnvelope) => void | Promise<void>;
+// TODO: what if there are mutliple subscibers per event type?
 export class InProcessEventBus implements EventBus {
   private readonly subscribers: Map<string, EventHandler> = new Map();
 
-  publish<T>(event: DomainEvent<T>): Promise<void> {
-    this.subscribers.get(event.type)?.(event);
-    return Promise.resolve();
+  async publish(events: DomainEventEnvelope[]): Promise<void> {
+    for (const event of events) {
+      const handler = this.subscribers.get(event.type);
+      if (handler) {
+        await handler(event);
+      }
+    }
   }
 
-  subscribe<T>(
-    event: DomainEvent<T>,
-    callback: (event: DomainEvent<T>) => void,
+  subscribe<T extends DomainEventEnvelope>(
+    eventType: T['type'],
+    callback: (event: T) => void | Promise<void>,
   ): void {
-    this.subscribers.set(event.type, callback as EventHandler);
+    this.subscribers.set(eventType, callback as EventHandler);
   }
 }

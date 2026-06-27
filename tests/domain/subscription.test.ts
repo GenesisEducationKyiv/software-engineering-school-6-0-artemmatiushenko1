@@ -46,7 +46,13 @@ const issueUnsubscribeToken = (
   });
 
 const requestSubscription = () =>
-  Subscription.request(SUBSCRIPTION_ID, EMAIL, REPO_PATH, issueConfirmToken());
+  Subscription.request(
+    SUBSCRIPTION_ID,
+    EMAIL,
+    REPO_PATH,
+    issueConfirmToken(),
+    ISSUED_AT,
+  );
 
 const confirmSubscription = (subscription = requestSubscription()) => {
   subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueUnsubscribeToken());
@@ -70,6 +76,7 @@ describe('Subscription', () => {
         EMAIL,
         REPO_PATH,
         subscriptionToken,
+        ISSUED_AT,
       );
 
       expect(subscription.id).toBe(SUBSCRIPTION_ID);
@@ -87,6 +94,7 @@ describe('Subscription', () => {
           EMAIL,
           REPO_PATH,
           issueUnsubscribeToken(),
+          ISSUED_AT,
         ),
       ).toThrow(WrongTokenScopeError);
       expect(() =>
@@ -95,6 +103,7 @@ describe('Subscription', () => {
           EMAIL,
           REPO_PATH,
           issueUnsubscribeToken(),
+          ISSUED_AT,
         ),
       ).toThrow('Wrong token scope: expected confirm, got unsubscribe');
     });
@@ -211,7 +220,7 @@ describe('Subscription', () => {
         value: RENEWED_CONFIRM_TOKEN_UUID,
       });
 
-      subscription.renewConfirmation(renewedToken);
+      subscription.renewConfirmation(renewedToken, NOW);
 
       expect(subscription.status).toBe(SubscriptionStatus.Pending);
       expect(subscription.confirmationToken).toEqual(renewedToken);
@@ -222,10 +231,10 @@ describe('Subscription', () => {
       const subscription = requestSubscription();
 
       expect(() =>
-        subscription.renewConfirmation(issueUnsubscribeToken()),
+        subscription.renewConfirmation(issueUnsubscribeToken(), NOW),
       ).toThrow(WrongTokenScopeError);
       expect(() =>
-        subscription.renewConfirmation(issueUnsubscribeToken()),
+        subscription.renewConfirmation(issueUnsubscribeToken(), NOW),
       ).toThrow('Wrong token scope: expected confirm, got unsubscribe');
     });
 
@@ -235,11 +244,13 @@ describe('Subscription', () => {
       expect(() =>
         subscription.renewConfirmation(
           issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+          NOW,
         ),
       ).toThrow(SubscriptionAlreadyConfirmedError);
       expect(() =>
         subscription.renewConfirmation(
           issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+          NOW,
         ),
       ).toThrow('Subscription already confirmed');
     });
@@ -251,11 +262,13 @@ describe('Subscription', () => {
       expect(() =>
         subscription.renewConfirmation(
           issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+          NOW,
         ),
       ).toThrow(SubscriptionAlreadyDeactivatedError);
       expect(() =>
         subscription.renewConfirmation(
           issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+          NOW,
         ),
       ).toThrow('Subscription already deactivated');
     });
@@ -268,7 +281,7 @@ describe('Subscription', () => {
         value: RENEWED_CONFIRM_TOKEN_UUID,
       });
 
-      subscription.reactivate(reactivationToken);
+      subscription.reactivate(reactivationToken, NOW);
 
       expect(subscription.status).toBe(SubscriptionStatus.Pending);
       expect(subscription.confirmationToken).toBe(reactivationToken);
@@ -278,12 +291,12 @@ describe('Subscription', () => {
     it('should throw WrongTokenScopeError when new token has wrong scope', () => {
       const subscription = unsubscribedSubscription();
 
-      expect(() => subscription.reactivate(issueUnsubscribeToken())).toThrow(
-        WrongTokenScopeError,
-      );
-      expect(() => subscription.reactivate(issueUnsubscribeToken())).toThrow(
-        'Wrong token scope: expected confirm, got unsubscribe',
-      );
+      expect(() =>
+        subscription.reactivate(issueUnsubscribeToken(), NOW),
+      ).toThrow(WrongTokenScopeError);
+      expect(() =>
+        subscription.reactivate(issueUnsubscribeToken(), NOW),
+      ).toThrow('Wrong token scope: expected confirm, got unsubscribe');
     });
 
     it('should throw IllegalStateTransitionError when already confirmed', () => {
@@ -292,11 +305,13 @@ describe('Subscription', () => {
       expect(() =>
         subscription.reactivate(
           issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+          NOW,
         ),
       ).toThrow(IllegalStateTransitionError);
       expect(() =>
         subscription.reactivate(
           issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+          NOW,
         ),
       ).toThrow('Illegal state transition from confirmed to pending');
     });
@@ -307,11 +322,13 @@ describe('Subscription', () => {
       expect(() =>
         subscription.reactivate(
           issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+          NOW,
         ),
       ).toThrow(IllegalStateTransitionError);
       expect(() =>
         subscription.reactivate(
           issueConfirmToken({ value: RENEWED_CONFIRM_TOKEN_UUID }),
+          NOW,
         ),
       ).toThrow('Illegal state transition from pending to pending');
     });

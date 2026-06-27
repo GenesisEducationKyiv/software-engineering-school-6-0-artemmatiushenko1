@@ -4,6 +4,7 @@ import {
   Subscription,
   SubscriptionToken,
   RepoPath,
+  SubscriptionStatus,
 } from '../domain/index.js';
 
 export const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
@@ -13,16 +14,19 @@ export const CONFIRM_TOKEN_EXPIRES_AT = new Date('2026-01-01T12:01:00Z');
 export const createPendingSubscription = (
   overrides: { id?: string; email?: string; repo?: string } = {},
 ) =>
-  Subscription.request(
-    overrides.id ?? '1',
-    Email.fromString(overrides.email ?? 'test@example.com'),
-    RepoPath.fromString(overrides.repo ?? 'owner/repo'),
-    SubscriptionToken.rehydrate({
+  Subscription.rehydrate({
+    id: overrides.id ?? '1',
+    email: Email.fromString(overrides.email ?? 'test@example.com'),
+    repoPath: RepoPath.fromString(overrides.repo ?? 'owner/repo'),
+    status: SubscriptionStatus.Pending,
+    lastSeenTag: null,
+    confirmationToken: SubscriptionToken.rehydrate({
       value: '550e8400-e29b-41d4-a716-446655440000',
       scope: SubscriptionTokenScope.Confirm,
       expiresAt: TOKEN_EXPIRES_AT,
     }),
-  );
+    unsubscribeToken: null,
+  });
 
 export const createConfirmedSubscription = (
   overrides: { id?: string; email?: string; repo?: string } = {},
