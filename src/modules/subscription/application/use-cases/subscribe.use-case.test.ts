@@ -206,7 +206,7 @@ describe('SubscribeUseCase', () => {
     );
     expect(eventBusMock.publish).toHaveBeenCalledWith([
       {
-        type: SubscriptionEventType.Requested,
+        type: SubscriptionEventType.Reactivated,
         aggregateId: existingDomainSubscription.id,
         occurredAt: FIXED_NOW,
         payload: {

@@ -13,6 +13,7 @@ import { SubscriptionStatus } from './subscription-status.js';
 import type { DomainEvent } from '../../../shared-kernel/domain-event.js';
 import {
   SubscriptionConfirmationRenewedEvent,
+  SubscriptionReactivatedEvent,
   SubscriptionRequestedEvent,
 } from './events.js';
 
@@ -195,9 +196,8 @@ export class Subscription {
     this._unsubscribeToken = null;
     this._status = SubscriptionStatus.Pending;
 
-    // TODO: is this the right event to push?
     this.events.push(
-      new SubscriptionRequestedEvent(
+      new SubscriptionReactivatedEvent(
         this.id,
         {
           repoPath: this.repoPath,
