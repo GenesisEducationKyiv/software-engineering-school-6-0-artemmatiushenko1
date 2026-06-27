@@ -2,6 +2,7 @@ import type { DomainEventEnvelope } from '../../../platform/event-bus/domain-eve
 
 export const SubscriptionEventType = {
   Requested: 'SubscriptionRequested',
+  ConfirmationRenewed: 'SubscriptionConfirmationRenewed',
   Confirmed: 'SubscriptionConfirmed',
   Deactivated: 'SubscriptionDeactivated',
   Renewed: 'SubscriptionRenewed',
@@ -14,6 +15,15 @@ export type SubscriptionRequestedEvent = DomainEventEnvelope<
     confirmationToken: string;
   },
   typeof SubscriptionEventType.Requested
+>;
+
+export type SubscriptionConfirmationRenewedEvent = DomainEventEnvelope<
+  {
+    email: string;
+    repo: string;
+    confirmationToken: string;
+  },
+  typeof SubscriptionEventType.ConfirmationRenewed
 >;
 
 export type SubscriptionConfirmedEvent = DomainEventEnvelope<
@@ -39,6 +49,7 @@ export type SubscriptionRenewedEvent = DomainEventEnvelope<
 
 export type SubscriptionPublicApiEvent =
   | SubscriptionRequestedEvent
+  | SubscriptionConfirmationRenewedEvent
   | SubscriptionConfirmedEvent
   | SubscriptionDeactivatedEvent
   | SubscriptionRenewedEvent;

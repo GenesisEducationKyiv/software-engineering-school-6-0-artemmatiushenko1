@@ -4,6 +4,7 @@ import {
   type SubscriptionPublicApiEvent,
 } from '../api/events.js';
 import {
+  SubscriptionConfirmationRenewedEvent,
   SubscriptionConfirmedEvent,
   SubscriptionDeactivatedEvent,
   SubscriptionRenewedEvent,
@@ -18,6 +19,19 @@ const toPublicApiEvent = (event: DomainEvent): SubscriptionPublicApiEvent => {
   if (event instanceof SubscriptionRequestedEvent) {
     return {
       type: SubscriptionEventType.Requested,
+      aggregateId: event.aggregateId,
+      occurredAt: event.occurredAt,
+      payload: {
+        email: event.payload.email.value,
+        repo: event.payload.repoPath.toString(),
+        confirmationToken: event.payload.confirmationToken.value,
+      },
+    };
+  }
+
+  if (event instanceof SubscriptionConfirmationRenewedEvent) {
+    return {
+      type: SubscriptionEventType.ConfirmationRenewed,
       aggregateId: event.aggregateId,
       occurredAt: event.occurredAt,
       payload: {

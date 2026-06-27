@@ -163,7 +163,7 @@ describe('SubscribeUseCase', () => {
     expect(tx).toEqual(expect.anything());
     expect(eventBusMock.publish).toHaveBeenCalledWith([
       {
-        type: SubscriptionEventType.Requested,
+        type: SubscriptionEventType.ConfirmationRenewed,
         aggregateId: existingDomainSubscription.id,
         occurredAt: FIXED_NOW,
         payload: {

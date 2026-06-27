@@ -31,6 +31,22 @@ export class SubscriptionDeactivatedEvent extends DomainEvent<SubscriptionDeacti
   }
 }
 
+type SubscriptionConfirmationRenewedEventPayload = {
+  repoPath: RepoPath;
+  email: Email;
+  confirmationToken: SubscriptionToken;
+};
+
+export class SubscriptionConfirmationRenewedEvent extends DomainEvent<SubscriptionConfirmationRenewedEventPayload> {
+  constructor(
+    aggregateId: string,
+    payload: SubscriptionConfirmationRenewedEventPayload,
+    occurredAt: Date,
+  ) {
+    super(aggregateId, payload, occurredAt);
+  }
+}
+
 type SubscriptionRenewedEventPayload = {
   repoPath: RepoPath;
 };

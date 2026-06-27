@@ -18,7 +18,9 @@ import type { NotificationMetrics } from './ports/notification-metrics.js';
 import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
 import { SubscriptionEventType } from '../../subscription/api/events.js';
 import type { SubscriptionRequestedEvent } from '../../subscription/api/events.js';
+import type { SubscriptionConfirmationRenewedEvent } from '../../subscription/api/events.js';
 import { SubscriptionRequestedSubscriber } from './subscribers/subscription-requested.subscriber.js';
+import { SubscriptionConfirmationRenewedSubscriber } from './subscribers/subscription-confirmation-renewed.subscriber.js';
 
 export class NotificationServiceImpl implements NotificationService {
   constructor(
@@ -34,11 +36,19 @@ export class NotificationServiceImpl implements NotificationService {
     const subscriptionRequestedSubscriber = new SubscriptionRequestedSubscriber(
       this,
     );
+    const subscriptionConfirmationRenewedSubscriber =
+      new SubscriptionConfirmationRenewedSubscriber(this);
 
     eventBus.subscribe(
       SubscriptionEventType.Requested,
       (event: SubscriptionRequestedEvent) =>
         subscriptionRequestedSubscriber.handle(event),
+    );
+
+    eventBus.subscribe(
+      SubscriptionEventType.ConfirmationRenewed,
+      (event: SubscriptionConfirmationRenewedEvent) =>
+        subscriptionConfirmationRenewedSubscriber.handle(event),
     );
   }
 

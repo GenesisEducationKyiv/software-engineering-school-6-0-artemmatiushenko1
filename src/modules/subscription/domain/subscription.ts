@@ -11,7 +11,10 @@ import type { ReleaseTag } from './release-tag.js';
 import type { RepoPath } from './repo-path.js';
 import { SubscriptionStatus } from './subscription-status.js';
 import type { DomainEvent } from '../../../shared-kernel/domain-event.js';
-import { SubscriptionRequestedEvent } from './events.js';
+import {
+  SubscriptionConfirmationRenewedEvent,
+  SubscriptionRequestedEvent,
+} from './events.js';
 
 export class Subscription {
   private readonly events: DomainEvent[] = [];
@@ -160,9 +163,8 @@ export class Subscription {
 
     this._confirmationToken = newToken;
 
-    // TODO: is this the right event to push?
     this.events.push(
-      new SubscriptionRequestedEvent(
+      new SubscriptionConfirmationRenewedEvent(
         this.id,
         {
           repoPath: this.repoPath,
