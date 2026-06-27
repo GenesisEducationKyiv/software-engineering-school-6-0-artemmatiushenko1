@@ -2,12 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import type { NotificationService } from '../../api/notification.service.js';
 import { SubscriptionEventType } from '../../../subscription/api/events.js';
-import { SubscriptionRequestedHandler } from './subscription-requested.handler.js';
+import { SubscriptionRequestedSubscriber } from './subscription-requested.subscriber.js';
 
-describe('SubscriptionRequestedHandler', () => {
+describe('SubscriptionRequestedSubscriber', () => {
   it('sends a subscription confirmation email', async () => {
     const notificationService = mock<NotificationService>();
-    const handler = new SubscriptionRequestedHandler(notificationService);
+    const handler = new SubscriptionRequestedSubscriber(notificationService);
 
     await handler.handle({
       type: SubscriptionEventType.Requested,

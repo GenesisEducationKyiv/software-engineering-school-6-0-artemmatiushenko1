@@ -1,8 +1,7 @@
 import type { NotificationService } from '../../api/notification.service.js';
 import type { SubscriptionRequestedEvent } from '../../../subscription/api/events.js';
 
-// TODO: rename to subscriber
-export class SubscriptionRequestedHandler {
+export class SubscriptionRequestedSubscriber {
   constructor(private readonly notificationService: NotificationService) {}
 
   async handle(event: SubscriptionRequestedEvent): Promise<void> {

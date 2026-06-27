@@ -18,7 +18,7 @@ import type { NotificationMetrics } from './ports/notification-metrics.js';
 import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
 import { SubscriptionEventType } from '../../subscription/api/events.js';
 import type { SubscriptionRequestedEvent } from '../../subscription/api/events.js';
-import { SubscriptionRequestedHandler } from './handlers/subscription-requested.handler.js';
+import { SubscriptionRequestedSubscriber } from './subscribers/subscription-requested.subscriber.js';
 
 export class NotificationServiceImpl implements NotificationService {
   constructor(
@@ -27,16 +27,18 @@ export class NotificationServiceImpl implements NotificationService {
     eventBus: EventBus,
     private metrics?: NotificationMetrics,
   ) {
-    this.registerEventHandlers(eventBus);
+    this.registerSubscribers(eventBus);
   }
 
-  private registerEventHandlers(eventBus: EventBus): void {
-    const subscriptionRequestedHandler = new SubscriptionRequestedHandler(this);
+  private registerSubscribers(eventBus: EventBus): void {
+    const subscriptionRequestedSubscriber = new SubscriptionRequestedSubscriber(
+      this,
+    );
 
     eventBus.subscribe(
       SubscriptionEventType.Requested,
       (event: SubscriptionRequestedEvent) =>
-        subscriptionRequestedHandler.handle(event),
+        subscriptionRequestedSubscriber.handle(event),
     );
   }
 
