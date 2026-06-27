@@ -1,7 +1,6 @@
 import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
 import type { EmailClient } from './ports/email-client.js';
 import type {
-  NotificationService,
   NewReleaseNotificationContext,
   SubscriptionConfirmationContext,
   SubscriptionConfirmedContext,
@@ -29,7 +28,7 @@ import { SubscriptionReactivatedSubscriber } from './subscribers/subscription-re
 import { SubscriptionConfirmedSubscriber } from './subscribers/subscription-confirmed.subscriber.js';
 import { NewReleaseDetectedSubscriber } from './subscribers/new-release-detected.subscriber.js';
 
-export class NotificationServiceImpl implements NotificationService {
+export class NotificationService {
   constructor(
     private readonly emailClient: EmailClient,
     private readonly appUrl: string,

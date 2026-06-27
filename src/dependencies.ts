@@ -5,7 +5,7 @@ import { OctokitGithubClient } from './modules/github/infrastructure/octokit.cli
 import { CachedOctokitGithubClient } from './modules/github/infrastructure/cached-octokit.client.js';
 import { DrizzleSubscriptionRepository } from './modules/subscription/infrastructure/subscription.repository.js';
 import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-manager.js';
-import { NotificationServiceImpl } from './modules/notification/application/notification.service.js';
+import { NotificationService } from './modules/notification/application/notification.service.js';
 import { ScanUseCase } from './modules/scanner/application/scan.use-case.js';
 import { SubscribeUseCase } from './modules/subscription/application/use-cases/subscribe.use-case.js';
 import { ConfirmUseCase } from './modules/subscription/application/use-cases/confirm.use-case.js';
@@ -18,7 +18,6 @@ import { FastifyLogger } from './platform/logger/fastify-logger.js';
 import type { FastifyBaseLogger } from 'fastify';
 import type { GithubClient } from './modules/github/api/github-client.interface.js';
 import type { EmailClient } from './modules/notification/application/ports/email-client.js';
-import type { NotificationService } from './modules/notification/api/notification.service.js';
 import type { SubscriptionQueries } from './modules/subscription/api/subscription-queries.interface.js';
 import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
@@ -149,7 +148,7 @@ export class AppContainer {
   }
 
   get notificationService(): NotificationService {
-    return (this.notificationServiceInstance ??= new NotificationServiceImpl(
+    return (this.notificationServiceInstance ??= new NotificationService(
       this.emailClient,
       this.config.appUrl,
       this.metrics,

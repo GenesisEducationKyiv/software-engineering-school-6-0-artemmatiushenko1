@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { mock } from 'vitest-mock-extended';
-import type { NotificationService } from '../../api/notification.service.js';
+import type { NotificationService } from '../notification.service.js';
 import { ScannerEventType } from '../../../scanner/api/events.js';
 import { NewReleaseDetectedSubscriber } from './new-release-detected.subscriber.js';
 

@@ -1,4 +1,4 @@
-import type { NotificationService } from '../../api/notification.service.js';
+import type { NotificationService } from '../notification.service.js';
 import type { SubscriptionReactivatedEvent } from '../../../subscription/api/events.js';
 
 export class SubscriptionReactivatedSubscriber {

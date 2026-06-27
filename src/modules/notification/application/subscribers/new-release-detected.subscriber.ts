@@ -1,4 +1,4 @@
-import type { NotificationService } from '../../api/notification.service.js';
+import type { NotificationService } from '../notification.service.js';
 import type { NewReleaseDetectedEvent } from '../../../scanner/api/events.js';
 
 export class NewReleaseDetectedSubscriber {

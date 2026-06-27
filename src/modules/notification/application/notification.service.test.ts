@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NotificationServiceImpl } from './notification.service.js';
+import { NotificationService } from './notification.service.js';
 import type { NewReleaseNotificationContext } from '../api/notification.service.js';
 import type { EmailClient } from './ports/email-client.js';
 import { mock } from 'vitest-mock-extended';
@@ -8,8 +8,8 @@ import type { EventBus } from '../../../platform/event-bus/event-bus.interface.j
 import { SubscriptionEventType } from '../../subscription/api/events.js';
 import { ScannerEventType } from '../../scanner/api/events.js';
 
-describe('NotificationServiceImpl', () => {
-  let notificationService: NotificationServiceImpl;
+describe('NotificationService', () => {
+  let notificationService: NotificationService;
   const emailClientMock = mock<EmailClient>();
   const appUrl = 'http://localhost:3000';
   const metricsMock = mock<NotificationMetrics>();
@@ -17,7 +17,7 @@ describe('NotificationServiceImpl', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
-    notificationService = new NotificationServiceImpl(
+    notificationService = new NotificationService(
       emailClientMock,
       appUrl,
       metricsMock,
