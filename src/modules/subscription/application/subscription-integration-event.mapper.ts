@@ -1,7 +1,7 @@
 import type { DomainEvent } from '../../../shared-kernel/domain-event.js';
 import {
   SubscriptionEventType,
-  type SubscriptionIntegrationEvent,
+  type SubscriptionPublicApiEvent,
 } from '../api/events.js';
 import {
   SubscriptionConfirmedEvent,
@@ -10,14 +10,11 @@ import {
   SubscriptionRequestedEvent,
 } from '../domain/events.js';
 
-// TODO: rename to toPublicApiEvents
-export const toIntegrationEvents = (
+export const toPublicApiEvents = (
   domainEvents: DomainEvent[],
-): SubscriptionIntegrationEvent[] => domainEvents.map(toIntegrationEvent);
+): SubscriptionPublicApiEvent[] => domainEvents.map(toPublicApiEvent);
 
-const toIntegrationEvent = (
-  event: DomainEvent,
-): SubscriptionIntegrationEvent => {
+const toPublicApiEvent = (event: DomainEvent): SubscriptionPublicApiEvent => {
   if (event instanceof SubscriptionRequestedEvent) {
     return {
       type: SubscriptionEventType.Requested,

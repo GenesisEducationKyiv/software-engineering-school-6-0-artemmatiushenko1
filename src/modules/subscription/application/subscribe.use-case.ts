@@ -17,7 +17,7 @@ import type {
   TransactionManager,
 } from '../../../shared-kernel/index.js';
 import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
-import { toIntegrationEvents } from './subscription-integration-event.mapper.js';
+import { toPublicApiEvents } from './subscription-integration-event.mapper.js';
 
 export class SubscribeUseCase {
   private static readonly CONFIRMATION_TTL_MS = 60_000;
@@ -86,7 +86,7 @@ export class SubscribeUseCase {
       await this.subscriptionRepo.save(subscription, tx);
     });
 
-    const integrationEvents = toIntegrationEvents(subscription.pullEvents());
+    const integrationEvents = toPublicApiEvents(subscription.pullEvents());
     if (integrationEvents.length > 0) {
       await this.eventBus.publish(integrationEvents);
     }

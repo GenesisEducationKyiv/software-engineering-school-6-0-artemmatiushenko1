@@ -45,7 +45,7 @@ export type SubscriptionRenewedEvent =
     type: typeof SubscriptionEventType.Renewed;
   };
 
-export type SubscriptionIntegrationEvent =
+export type SubscriptionPublicApiEvent =
   | SubscriptionRequestedEvent
   | SubscriptionConfirmedEvent
   | SubscriptionDeactivatedEvent

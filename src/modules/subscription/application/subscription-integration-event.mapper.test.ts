@@ -3,7 +3,7 @@ import { Email } from '../domain/email.js';
 import { RepoPath } from '../domain/repo-path.js';
 import { SubscriptionRequestedEvent } from '../domain/events.js';
 import { SubscriptionEventType } from '../api/events.js';
-import { toIntegrationEvents } from './subscription-integration-event.mapper.js';
+import { toPublicApiEvents } from './subscription-integration-event.mapper.js';
 import { SubscriptionToken } from '../domain/subscription-token.js';
 import { SubscriptionTokenScope } from '../domain/subscription-token-scope.js';
 
@@ -25,7 +25,7 @@ describe('toIntegrationEvents', () => {
       occurredAt,
     );
 
-    expect(toIntegrationEvents([domainEvent])).toEqual([
+    expect(toPublicApiEvents([domainEvent])).toEqual([
       {
         type: SubscriptionEventType.Requested,
         aggregateId: 'sub-1',
