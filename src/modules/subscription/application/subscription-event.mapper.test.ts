@@ -3,11 +3,11 @@ import { Email } from '../domain/email.js';
 import { RepoPath } from '../domain/repo-path.js';
 import { SubscriptionRequestedEvent } from '../domain/events.js';
 import { SubscriptionEventType } from '../api/events.js';
-import { toPublicApiEvents } from './subscription-integration-event.mapper.js';
+import { toPublicApiEvents } from './subscription-event.mapper.js';
 import { SubscriptionToken } from '../domain/subscription-token.js';
 import { SubscriptionTokenScope } from '../domain/subscription-token-scope.js';
 
-describe('toIntegrationEvents', () => {
+describe('toPublicApiEvents', () => {
   it('maps SubscriptionRequested domain event to integration event', () => {
     const occurredAt = new Date('2026-01-01T12:00:00Z');
 

@@ -17,7 +17,7 @@ import type {
   TransactionManager,
 } from '../../../shared-kernel/index.js';
 import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
-import { toPublicApiEvents } from './subscription-integration-event.mapper.js';
+import { toPublicApiEvents } from './subscription-event.mapper.js';
 
 export class SubscribeUseCase {
   private static readonly CONFIRMATION_TTL_MS = 60_000;
