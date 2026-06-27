@@ -5,7 +5,7 @@ import { OctokitGithubClient } from './modules/github/infrastructure/octokit.cli
 import { CachedOctokitGithubClient } from './modules/github/infrastructure/cached-octokit.client.js';
 import { DrizzleSubscriptionRepository } from './modules/subscription/infrastructure/subscription.repository.js';
 import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-manager.js';
-import { NotificationService } from './modules/notification/application/notification.service.js';
+import { NotificationEventSubscribers } from './modules/notification/application/notification-event-subscribers.js';
 import { ScanUseCase } from './modules/scanner/application/scan.use-case.js';
 import { SubscribeUseCase } from './modules/subscription/application/use-cases/subscribe.use-case.js';
 import { ConfirmUseCase } from './modules/subscription/application/use-cases/confirm.use-case.js';
@@ -50,7 +50,7 @@ export class AppContainer {
   private emailClientInstance?: EmailClient;
   private subscriptionRepoInstance?: DrizzleSubscriptionRepository;
   private transactionManagerInstance?: DrizzleTransactionManager;
-  private notificationServiceInstance?: NotificationService;
+  private notificationEventSubscribersInstance?: NotificationEventSubscribers;
   private scanUseCaseInstance?: ScanUseCase;
   private subscriptionQueriesInstance?: SubscriptionQueries;
   private subscribeUseCaseInstance?: SubscribeUseCase;
@@ -147,16 +147,17 @@ export class AppContainer {
     this.transactionManagerInstance = value;
   }
 
-  get notificationService(): NotificationService {
-    return (this.notificationServiceInstance ??= new NotificationService(
-      this.emailClient,
-      this.config.appUrl,
-      this.metrics,
-    ));
+  get notificationEventSubscribers(): NotificationEventSubscribers {
+    return (this.notificationEventSubscribersInstance ??=
+      new NotificationEventSubscribers(
+        this.emailClient,
+        this.config.appUrl,
+        this.metrics,
+      ));
   }
 
-  set notificationService(value: NotificationService) {
-    this.notificationServiceInstance = value;
+  set notificationEventSubscribers(value: NotificationEventSubscribers) {
+    this.notificationEventSubscribersInstance = value;
   }
 
   get subscriptionQueries(): SubscriptionQueries {
@@ -276,7 +277,7 @@ export class AppContainer {
       return;
     }
 
-    this.notificationService.registerEventSubscribers(this.eventBus);
+    this.notificationEventSubscribers.register(this.eventBus);
     this.eventSubscribersRegistered = true;
   }
 

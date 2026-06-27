@@ -1,14 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { mock } from 'vitest-mock-extended';
-import type { NotificationService } from '../notification.service.js';
+import type { EmailClient } from '../ports/email-client.js';
 import { SubscriptionEventType } from '../../../subscription/api/events.js';
 import { SubscriptionConfirmationRenewedSubscriber } from './subscription-confirmation-renewed.subscriber.js';
 
 describe('SubscriptionConfirmationRenewedSubscriber', () => {
   it('sends a subscription confirmation email', async () => {
-    const notificationService = mock<NotificationService>();
+    const emailClient = mock<EmailClient>();
     const subscriber = new SubscriptionConfirmationRenewedSubscriber(
-      notificationService,
+      emailClient,
+      'http://localhost:3000',
     );
 
     await subscriber.handle({
@@ -22,12 +23,11 @@ describe('SubscriptionConfirmationRenewedSubscriber', () => {
       },
     });
 
-    expect(
-      notificationService.notifySubscriptionConfirmation,
-    ).toHaveBeenCalledWith({
-      email: 'test@example.com',
-      repo: 'owner/repo',
-      confirmToken: 'token-123',
-    });
+    expect(emailClient.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'test@example.com',
+        subject: 'Confirm subscription: owner/repo',
+      }),
+    );
   });
 });

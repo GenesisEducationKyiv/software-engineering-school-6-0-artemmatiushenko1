@@ -1,16 +1,33 @@
-import type { NotificationService } from '../notification.service.js';
 import type { NewReleaseDetectedEvent } from '../../../scanner/api/events.js';
+import { buildUnsubscribeUrl } from '../../infrastructure/links.js';
+import { newReleaseNotificationTemplate } from '../../infrastructure/templates.js';
+import type { EmailClient } from '../ports/email-client.js';
+import type { NotificationMetrics } from '../ports/notification-metrics.js';
 
 export class NewReleaseDetectedSubscriber {
-  constructor(private readonly notificationService: NotificationService) {}
+  constructor(
+    private readonly emailClient: EmailClient,
+    private readonly appUrl: string,
+    private readonly metrics?: NotificationMetrics,
+  ) {}
 
   async handle(event: NewReleaseDetectedEvent): Promise<void> {
-    await this.notificationService.notifyNewRelease({
-      email: event.payload.email,
-      repo: event.payload.repo,
-      tag: event.payload.tag,
-      releaseName: event.payload.releaseName,
-      unsubscribeToken: event.payload.unsubscribeToken,
+    const unsubscribeUrl = buildUnsubscribeUrl(
+      this.appUrl,
+      event.payload.unsubscribeToken,
+    );
+    const template = newReleaseNotificationTemplate(
+      event.payload.repo,
+      event.payload.tag,
+      event.payload.releaseName,
+      unsubscribeUrl,
+    );
+
+    await this.emailClient.sendEmail({
+      to: event.payload.email,
+      ...template,
     });
+
+    this.metrics?.incrementNotificationsSent();
   }
 }
