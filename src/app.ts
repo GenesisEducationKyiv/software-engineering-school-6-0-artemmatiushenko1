@@ -166,17 +166,15 @@ export class App {
 
     await this.fastify.register(
       (fastify) => {
-        const {
-          subscribeUseCase,
-          confirmUseCase,
-          unsubscribeUseCase,
-          getSubscriptionsByEmailUseCase,
-        } = this.deps;
+        const { subscription } = this.deps;
 
-        registerSubscribeRoute(fastify, subscribeUseCase);
-        registerListSubscriptionsRoute(fastify, getSubscriptionsByEmailUseCase);
-        registerConfirmRoute(fastify, confirmUseCase);
-        registerUnsubscribeRoute(fastify, unsubscribeUseCase);
+        registerSubscribeRoute(fastify, subscription.subscribeUseCase);
+        registerListSubscriptionsRoute(
+          fastify,
+          subscription.getSubscriptionsByEmailUseCase,
+        );
+        registerConfirmRoute(fastify, subscription.confirmUseCase);
+        registerUnsubscribeRoute(fastify, subscription.unsubscribeUseCase);
       },
       { prefix: this.config.apiPrefix },
     );
@@ -185,7 +183,7 @@ export class App {
   startScannerCron() {
     this.scanCron = new ScanCron(
       this.config.scannerCron,
-      this.deps.scanUseCase,
+      this.deps.scanner.scanUseCase,
       this.deps.logger,
     );
     this.scanCron.start();

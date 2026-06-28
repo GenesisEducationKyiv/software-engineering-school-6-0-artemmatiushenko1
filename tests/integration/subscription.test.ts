@@ -28,6 +28,8 @@ import { SubscriptionsResponseDtoSchema } from '../../src/modules/subscription/i
 import { AppContainer } from '../../src/dependencies.js';
 import type { GithubClient } from '../../src/modules/github/api/github-client.interface.js';
 import type { EmailClient } from '../../src/modules/notification/application/ports/email-client.js';
+import { FastifyLogger } from '../../src/platform/logger/fastify-logger.js';
+import { PrometheusMetrics } from '../../src/platform/metrics/prometheus-metrics.js';
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
 import { TEST_APP_CONFIG } from './constants.js';
@@ -35,6 +37,8 @@ import { createFastifyServerOptions } from '../../src/platform/fastify/create-fa
 import { randomUUID } from 'node:crypto';
 import type { Clock } from '../../src/shared-kernel/clock.js';
 import { SubscriptionTokenScope } from '../../src/modules/subscription/domain/subscription-token-scope.js';
+import { CryptoIdGenerator } from '../../src/modules/subscription/infrastructure/crypto-id-generator.js';
+import { CryptoTokenGenerator } from '../../src/modules/subscription/infrastructure/crypto-token-generator.js';
 
 const subscriptionId = () => randomUUID();
 const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
@@ -162,11 +166,17 @@ describe('Subscription Routes Integration with PGlite', () => {
 
     const fastify = Fastify(createFastifyServerOptions(TEST_APP_CONFIG));
 
-    const container = new AppContainer(TEST_APP_CONFIG, fastify.log, db);
-    container.githubClient = githubMock;
-    container.emailClient = emailMock;
-    container.redis = redisMock;
-    container.clock = clockMock;
+    const container = new AppContainer(TEST_APP_CONFIG, {
+      db,
+      logger: new FastifyLogger(fastify.log),
+      metrics: new PrometheusMetrics(),
+      redis: redisMock,
+      githubClient: githubMock,
+      emailClient: emailMock,
+      clock: clockMock,
+      idGenerator: new CryptoIdGenerator(),
+      tokenGenerator: new CryptoTokenGenerator(),
+    });
 
     container.registerEventSubscribers();
     const deps = container.build();

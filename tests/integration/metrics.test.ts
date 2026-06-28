@@ -2,6 +2,9 @@ import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import Fastify from 'fastify';
 import { App } from '../../src/app.js';
 import { AppContainer } from '../../src/dependencies.js';
+import { FastifyLogger } from '../../src/platform/logger/fastify-logger.js';
+import { PrometheusMetrics } from '../../src/platform/metrics/prometheus-metrics.js';
+import { SystemClock } from '../../src/modules/subscription/infrastructure/system-clock.js';
 import { mock } from 'vitest-mock-extended';
 import { Redis } from 'ioredis';
 import { PGlite } from '@electric-sql/pglite';
@@ -15,6 +18,10 @@ import type { Database } from '../../src/platform/db/types.js';
 import { register } from 'prom-client';
 import { TEST_APP_CONFIG } from './constants.js';
 import { createFastifyServerOptions } from '../../src/platform/fastify/create-fastify-server-options.js';
+import type { GithubClient } from '../../src/modules/github/api/github-client.interface.js';
+import type { EmailClient } from '../../src/modules/notification/application/ports/email-client.js';
+import { CryptoTokenGenerator } from '../../src/modules/subscription/infrastructure/crypto-token-generator.js';
+import { CryptoIdGenerator } from '../../src/modules/subscription/infrastructure/crypto-id-generator.js';
 
 describe('Metrics Routes', () => {
   let app: App;
@@ -30,9 +37,20 @@ describe('Metrics Routes', () => {
 
     const fastify = Fastify(createFastifyServerOptions(TEST_APP_CONFIG));
     const redisMock = mock<Redis>();
+    const githubMock = mock<GithubClient>();
+    const emailMock = mock<EmailClient>();
 
-    const container = new AppContainer(TEST_APP_CONFIG, fastify.log, db);
-    container.redis = redisMock;
+    const container = new AppContainer(TEST_APP_CONFIG, {
+      db,
+      logger: new FastifyLogger(fastify.log),
+      metrics: new PrometheusMetrics(),
+      clock: new SystemClock(),
+      redis: redisMock,
+      githubClient: githubMock,
+      emailClient: emailMock,
+      idGenerator: new CryptoIdGenerator(),
+      tokenGenerator: new CryptoTokenGenerator(),
+    });
 
     const deps = container.build();
     app = await App.create(TEST_APP_CONFIG, deps, fastify);
