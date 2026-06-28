@@ -1,6 +1,6 @@
 import type { SubscriptionConfirmedEvent } from '../../../subscription/api/events.js';
-import { buildUnsubscribeUrl } from '../../infrastructure/links.js';
-import { subscriptionConfirmedTemplate } from '../../infrastructure/templates.js';
+import { buildUnsubscribeUrl } from '../links.js';
+import { subscriptionConfirmedTemplate } from '../templates.js';
 import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 
