@@ -3,7 +3,7 @@ import type { SubscriptionRepository } from '../ports/subscription.repository.js
 import { Email } from '../../../../shared-kernel/index.js';
 
 export class GetSubscriptionsByEmailUseCase {
-  constructor(private subscriptionRepo: SubscriptionRepository) {}
+  constructor(private readonly subscriptionRepo: SubscriptionRepository) {}
 
   async execute(email: string): Promise<Subscription[]> {
     return this.subscriptionRepo.findConfirmedSubscriptionsByEmail(

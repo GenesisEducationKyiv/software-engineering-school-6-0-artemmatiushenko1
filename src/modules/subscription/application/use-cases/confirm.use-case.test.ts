@@ -84,7 +84,6 @@ describe('ConfirmUseCase', () => {
       expect.objectContaining({
         id: '10',
         status: SubscriptionStatus.Confirmed,
-        lastSeenTag: expect.objectContaining({ value: 'v1.0.0' }),
       }),
       expect.anything(),
     );
@@ -116,12 +115,6 @@ describe('ConfirmUseCase', () => {
 
     await confirmUseCase.execute(tokenValue);
 
-    expect(repoMock.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        lastSeenTag: null,
-      }),
-      expect.anything(),
-    );
     expect(eventBusMock.publish).toHaveBeenCalledWith([
       expect.objectContaining({
         payload: expect.objectContaining({

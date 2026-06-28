@@ -4,7 +4,6 @@ import {
   Email,
   RepoPath,
   SubscriptionToken,
-  ReleaseTag,
   SubscriptionTokenScope,
   SubscriptionStatus,
 } from '../domain/index.js';
@@ -29,10 +28,6 @@ export class SubscriptionRowMapper {
   toDomain(row: SubscriptionRow): Subscription {
     const email = Email.fromString(row.email);
     const repoPath = RepoPath.fromString(row.repo);
-    const lastSeenTag = row.lastSeenTag
-      ? ReleaseTag.fromString(row.lastSeenTag)
-      : null;
-
     const subscriptionToken = SubscriptionToken.rehydrate({
       value: row.confirmToken,
       scope: SubscriptionTokenScope.Confirm,
@@ -55,7 +50,6 @@ export class SubscriptionRowMapper {
       email,
       repoPath,
       status: row.status,
-      lastSeenTag,
       confirmationToken: subscriptionToken,
       unsubscribeToken,
     });
@@ -70,7 +64,7 @@ export class SubscriptionRowMapper {
       email: subscription.email.value,
       repo: subscription.repoPath.toString(),
       status: subscription.status,
-      lastSeenTag: subscription.lastSeenTag?.value ?? null,
+      lastSeenTag: null,
       confirmToken: subscriptionToken.value,
       confirmExpiresAt: subscriptionToken.expiresAt,
       confirmUsedAt: subscriptionToken.consumedAt,

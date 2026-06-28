@@ -29,7 +29,6 @@ export class Subscription {
     public readonly email: Email,
     public readonly repoPath: RepoPath,
     private _status: SubscriptionStatus,
-    private _lastSeenTag: ReleaseTag | null,
     private _confirmationToken: SubscriptionToken,
     private _unsubscribeToken: SubscriptionToken | null,
   ) {}
@@ -39,7 +38,6 @@ export class Subscription {
     email: Email;
     repoPath: RepoPath;
     status: SubscriptionStatus;
-    lastSeenTag: ReleaseTag | null;
     confirmationToken: SubscriptionToken;
     unsubscribeToken: SubscriptionToken | null;
   }): Subscription {
@@ -57,7 +55,6 @@ export class Subscription {
       params.email,
       params.repoPath,
       params.status,
-      params.lastSeenTag,
       params.confirmationToken,
       params.unsubscribeToken,
     );
@@ -82,7 +79,6 @@ export class Subscription {
       email,
       repoPath,
       SubscriptionStatus.Pending,
-      null,
       confirmationToken,
       null,
     );
@@ -154,7 +150,6 @@ export class Subscription {
     this._confirmationToken = this._confirmationToken.consume(now);
     this._unsubscribeToken = unsubscribeToken;
     this._status = SubscriptionStatus.Confirmed;
-    this._lastSeenTag = baselineTag;
 
     this.events.push(
       new SubscriptionConfirmedEvent(
@@ -168,13 +163,6 @@ export class Subscription {
         now,
       ),
     );
-  }
-
-  observeRelease(tag: ReleaseTag) {
-    if (this.status !== SubscriptionStatus.Confirmed) return;
-    if (this.lastSeenTag && this.lastSeenTag.equals(tag)) return;
-
-    this._lastSeenTag = tag;
   }
 
   renewConfirmation(newToken: SubscriptionToken, now: Date): void {
@@ -242,10 +230,6 @@ export class Subscription {
 
   get status(): SubscriptionStatus {
     return this._status;
-  }
-
-  get lastSeenTag(): ReleaseTag | null {
-    return this._lastSeenTag;
   }
 
   get confirmationToken(): SubscriptionToken {

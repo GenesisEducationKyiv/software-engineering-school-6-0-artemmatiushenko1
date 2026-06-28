@@ -19,7 +19,6 @@ export const createPendingSubscription = (
     email: Email.fromString(overrides.email ?? 'test@example.com'),
     repoPath: RepoPath.fromString(overrides.repo ?? 'owner/repo'),
     status: SubscriptionStatus.Pending,
-    lastSeenTag: null,
     confirmationToken: SubscriptionToken.rehydrate({
       value: '550e8400-e29b-41d4-a716-446655440000',
       scope: SubscriptionTokenScope.Confirm,

@@ -464,8 +464,15 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
       assert(updatedSubscription);
       expect(updatedSubscription.status).toBe('confirmed');
-      expect(updatedSubscription.lastSeenTag).toBe('v1.0.0');
+      expect(updatedSubscription.lastSeenTag).toBeNull();
       expect(githubMock.getLatestRelease).toHaveBeenCalledWith('owner', 'repo');
+
+      const watcher = await db.query.repoWatchers.findFirst({
+        where: (watchers, { eq }) =>
+          eq(watchers.subscriptionId, subscription.id),
+      });
+      assert(watcher);
+      expect(watcher.lastNotifiedTag).toBe('v1.0.0');
 
       const consumedSubscribeToken = await findSubscriptionToken(
         subscription.id,

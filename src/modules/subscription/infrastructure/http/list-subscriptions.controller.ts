@@ -19,7 +19,7 @@ export function registerListSubscriptionsRoute(
             email: subscription.email.value,
             repo: subscription.repoPath.toString(),
             confirmed: subscription.status === SubscriptionStatus.Confirmed,
-            lastSeenTag: subscription.lastSeenTag?.value ?? null,
+            lastSeenTag: null,
           })),
         ),
       );

@@ -10,7 +10,10 @@ import {
   SubscriptionAlreadyDeactivatedError,
   WrongTokenScopeError,
 } from '../../src/modules/subscription/domain/errors.js';
-import { SubscriptionDeactivatedEvent } from '../../src/modules/subscription/domain/events.js';
+import {
+  SubscriptionDeactivatedEvent,
+  SubscriptionConfirmedEvent,
+} from '../../src/modules/subscription/domain/events.js';
 
 const SUBSCRIPTION_ID = 'sub-1';
 const EMAIL = Email.fromString('test@example.com');
@@ -90,7 +93,6 @@ describe('Subscription', () => {
       expect(subscription.email).toBe(EMAIL);
       expect(subscription.repoPath).toBe(REPO_PATH);
       expect(subscription.status).toBe(SubscriptionStatus.Pending);
-      expect(subscription.lastSeenTag).toBeNull();
       expect(subscription.confirmationToken).toBe(subscriptionToken);
     });
 
@@ -125,7 +127,6 @@ describe('Subscription', () => {
         email: EMAIL,
         repoPath: REPO_PATH,
         status: SubscriptionStatus.Pending,
-        lastSeenTag: null,
         confirmationToken,
         unsubscribeToken: null,
       });
@@ -134,12 +135,10 @@ describe('Subscription', () => {
       expect(subscription.email).toBe(EMAIL);
       expect(subscription.repoPath).toBe(REPO_PATH);
       expect(subscription.status).toBe(SubscriptionStatus.Pending);
-      expect(subscription.lastSeenTag).toBeNull();
       expect(subscription.confirmationToken).toBe(confirmationToken);
     });
 
     it('should restore a confirmed subscription with an unsubscribe token', () => {
-      const lastSeenTag = ReleaseTag.fromString('v1.0.0');
       const unsubscribeToken = issueUnsubscribeToken();
       const confirmationToken = issueConfirmToken();
 
@@ -148,7 +147,6 @@ describe('Subscription', () => {
         email: EMAIL,
         repoPath: REPO_PATH,
         status: SubscriptionStatus.Confirmed,
-        lastSeenTag,
         confirmationToken,
         unsubscribeToken,
       });
@@ -157,7 +155,6 @@ describe('Subscription', () => {
       expect(subscription.email).toBe(EMAIL);
       expect(subscription.repoPath).toBe(REPO_PATH);
       expect(subscription.status).toBe(SubscriptionStatus.Confirmed);
-      expect(subscription.lastSeenTag?.equals(lastSeenTag)).toBe(true);
       expect(subscription.unsubscribeToken).toBe(unsubscribeToken);
       expect(subscription.confirmationToken).toBe(confirmationToken);
     });
@@ -169,7 +166,6 @@ describe('Subscription', () => {
           email: EMAIL,
           repoPath: REPO_PATH,
           status: SubscriptionStatus.Confirmed,
-          lastSeenTag: null,
           confirmationToken: issueConfirmToken(),
           unsubscribeToken: null,
         }),
@@ -233,8 +229,9 @@ describe('Subscription', () => {
       ).toThrow('Subscription already confirmed');
     });
 
-    it('should set lastSeenTag from baselineTag on confirm', () => {
+    it('should include baselineTag in SubscriptionConfirmed event', () => {
       const subscription = requestSubscription();
+      subscription.pullEvents();
       const baselineTag = ReleaseTag.fromString('v1.0.0');
 
       subscription.confirm(
@@ -244,7 +241,11 @@ describe('Subscription', () => {
         baselineTag,
       );
 
-      expect(subscription.lastSeenTag).toEqual(baselineTag);
+      const [event] = subscription.pullEvents();
+      expect(event).toBeInstanceOf(SubscriptionConfirmedEvent);
+      expect((event as SubscriptionConfirmedEvent).payload.baselineTag).toEqual(
+        baselineTag,
+      );
     });
 
     it('should throw WrongTokenScopeError when unsubscribe token has wrong scope', () => {
@@ -449,46 +450,6 @@ describe('Subscription', () => {
       expect(() =>
         subscription.unsubscribe(UNSUBSCRIBE_TOKEN_UUID, NOW),
       ).toThrow('Illegal state transition from unsubscribed to unsubscribed');
-    });
-  });
-
-  describe('observeRelease', () => {
-    it('should record the release tag for a confirmed subscription', () => {
-      const subscription = confirmSubscription();
-      const tag = ReleaseTag.fromString('v1.0.0');
-
-      subscription.observeRelease(tag);
-
-      expect(subscription.lastSeenTag?.equals(tag)).toBe(true);
-    });
-
-    it('should ignore releases when the subscription is not confirmed', () => {
-      const subscription = requestSubscription();
-      const tag = ReleaseTag.fromString('v1.0.0');
-
-      subscription.observeRelease(tag);
-
-      expect(subscription.lastSeenTag).toBeNull();
-    });
-
-    it('should ignore duplicate release tags', () => {
-      const subscription = confirmSubscription();
-      const firstTag = ReleaseTag.fromString('v1.0.0');
-      const duplicateTag = ReleaseTag.fromString('v1.0.0');
-
-      subscription.observeRelease(firstTag);
-      subscription.observeRelease(duplicateTag);
-
-      expect(subscription.lastSeenTag).toBe(firstTag);
-    });
-
-    it('should update the release tag when a new tag is observed', () => {
-      const subscription = confirmSubscription();
-
-      subscription.observeRelease(ReleaseTag.fromString('v1.0.0'));
-      subscription.observeRelease(ReleaseTag.fromString('v1.0.1'));
-
-      expect(subscription.lastSeenTag?.value).toBe('v1.0.1');
     });
   });
 });
