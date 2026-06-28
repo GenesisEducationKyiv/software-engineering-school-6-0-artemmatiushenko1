@@ -1,7 +1,8 @@
 import type { GithubClient } from '../../github/api/github-client.interface.js';
-import type { Subscription } from '../../subscription/domain/index.js';
-import type { SubscriptionQueries } from '../../subscription/api/subscription-queries.interface.js';
 import type { Clock, Logger } from '../../../shared-kernel/index.js';
+import { ReleaseTag, type MonitoredRepo } from '../domain/index.js';
+import type { MonitoredRepoRepository } from './ports/monitored-repo.repository.js';
+import type { TransactionManager } from '../../../shared-kernel/transaction.js';
 import { GithubRateLimitError } from '../../github/domain/errors.js';
 import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
 import { msToSeconds } from '../../../utils/time.utils.js';
@@ -10,12 +11,13 @@ import { ScannerEventType } from '../api/events.js';
 
 export class ScanUseCase {
   constructor(
-    private subscriptionQueries: SubscriptionQueries,
-    private githubClient: GithubClient,
-    private logger: Logger,
-    private clock: Clock,
-    private metrics: ScannerMetrics,
-    private eventBus: EventBus,
+    private readonly monitoredRepoRepository: MonitoredRepoRepository,
+    private readonly transactionManager: TransactionManager,
+    private readonly githubClient: GithubClient,
+    private readonly logger: Logger,
+    private readonly clock: Clock,
+    private readonly metrics: ScannerMetrics,
+    private readonly eventBus: EventBus,
   ) {}
 
   async execute(): Promise<void> {
@@ -23,15 +25,14 @@ export class ScanUseCase {
     this.metrics.incrementScanTotal();
 
     try {
-      const activeSubscriptions =
-        await this.subscriptionQueries.findAllConfirmedSubscriptions();
+      const monitoredRepos = await this.monitoredRepoRepository.findAll();
 
-      this.logger.info('Active subscriptions found for scan', {
-        count: activeSubscriptions.length,
+      this.logger.info('Monitored repos found for scan', {
+        count: monitoredRepos.length,
       });
 
-      for (const sub of activeSubscriptions) {
-        await this.safeScanSubscription(sub);
+      for (const monitoredRepo of monitoredRepos) {
+        await this.safeScanRepo(monitoredRepo);
       }
     } finally {
       this.metrics.recordScanDuration(
@@ -40,46 +41,40 @@ export class ScanUseCase {
     }
   }
 
-  private async safeScanSubscription(sub: Subscription): Promise<void> {
+  private async safeScanRepo(monitoredRepo: MonitoredRepo): Promise<void> {
+    const repo = monitoredRepo.repo.toString();
+
     try {
-      await this.processSubscription(sub);
+      await this.processRepo(monitoredRepo);
     } catch (error) {
       this.metrics.incrementScanFailures();
 
       if (error instanceof GithubRateLimitError) {
         this.logger.warn(
-          'GitHub API rate limit exceeded while scanning single subscription.',
+          'GitHub API rate limit exceeded while scanning a repository.',
         );
         throw error;
       }
+
       this.logger.error(
-        'Error scanning subscription',
+        'Error scanning repository',
         error instanceof Error ? error : new Error(String(error)),
-        {
-          repo: sub.repoPath.toString(),
-          subscriptionId: sub.id,
-        },
+        { repo },
       );
     }
   }
 
-  private async processSubscription(sub: Subscription): Promise<void> {
-    if (!sub.unsubscribeToken) {
-      throw new Error('Unsubscribe token not found');
-    }
+  private async processRepo(monitoredRepo: MonitoredRepo): Promise<void> {
+    const repo = monitoredRepo.repo.toString();
 
-    const repo = sub.repoPath.toString();
-    const lastSeenTag = sub.lastSeenTag?.value ?? null;
-
-    this.logger.info('Processing subscription', {
-      subscriptionId: sub.id,
+    this.logger.info('Processing monitored repo', {
       repo,
-      email: sub.email.value,
+      watcherCount: monitoredRepo.watchers.length,
     });
 
     const latestRelease = await this.githubClient.getLatestRelease(
-      sub.repoPath.owner,
-      sub.repoPath.repo,
+      monitoredRepo.repo.owner,
+      monitoredRepo.repo.repo,
     );
 
     if (!latestRelease) {
@@ -87,37 +82,64 @@ export class ScanUseCase {
       return;
     }
 
-    if (latestRelease.tag !== lastSeenTag) {
-      this.logger.info('New release detected', {
+    const latestTag = ReleaseTag.fromString(latestRelease.tag);
+
+    if (!monitoredRepo.hasNewRelease(latestTag)) {
+      this.logger.info('No new releases', {
         repo,
-        tag: latestRelease.tag,
-        previousTag: lastSeenTag,
+        currentTag: monitoredRepo.lastSeenTag?.value ?? null,
       });
+      return;
+    }
 
-      await this.subscriptionQueries.observeNewRelease(
-        sub.id,
-        latestRelease.tag,
-      );
+    this.logger.info('New release detected', {
+      repo,
+      tag: latestRelease.tag,
+      previousTag: monitoredRepo.lastSeenTag?.value ?? null,
+    });
 
+    const eligibleWatchers = monitoredRepo.eligibleWatchers(latestTag);
+
+    if (eligibleWatchers.length === 0) {
+      await this.markReleaseSeen(monitoredRepo, latestTag);
+      return;
+    }
+
+    for (const watcher of eligibleWatchers) {
+      // TODO: I guess it should be emitted by domain, markWatcherNotified should have different name
       await this.eventBus.publish([
         {
           type: ScannerEventType.NewReleaseDetected,
-          aggregateId: sub.id,
+          aggregateId: watcher.subscriptionId,
           occurredAt: this.clock.now(),
           payload: {
-            email: sub.email.value,
+            email: watcher.email.value,
             repo,
             tag: latestRelease.tag,
             releaseName: latestRelease.name,
-            unsubscribeToken: sub.unsubscribeToken.value,
+            unsubscribeToken: watcher.unsubscribeToken,
           },
         },
       ]);
-    } else {
-      this.logger.info('No new releases', {
-        repo,
-        currentTag: lastSeenTag,
-      });
+
+      monitoredRepo.markWatcherNotified(watcher.subscriptionId, latestTag);
+      await this.saveMonitoredRepo(monitoredRepo);
     }
+
+    await this.markReleaseSeen(monitoredRepo, latestTag);
+  }
+
+  private async markReleaseSeen(
+    monitoredRepo: MonitoredRepo,
+    latestTag: ReleaseTag,
+  ): Promise<void> {
+    monitoredRepo.markReleaseSeen(latestTag);
+    await this.saveMonitoredRepo(monitoredRepo);
+  }
+
+  private async saveMonitoredRepo(monitoredRepo: MonitoredRepo): Promise<void> {
+    await this.transactionManager.run(async (tx) => {
+      await this.monitoredRepoRepository.save(monitoredRepo, tx);
+    });
   }
 }

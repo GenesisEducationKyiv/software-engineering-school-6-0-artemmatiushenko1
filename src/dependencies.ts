@@ -262,7 +262,8 @@ export class AppContainer {
 
   get scanUseCase(): ScanUseCase {
     return (this.scanUseCaseInstance ??= new ScanUseCase(
-      this.subscriptionQueries,
+      this.monitoredRepoRepository,
+      this.transactionManager,
       this.githubClient,
       this.logger,
       this.clock,

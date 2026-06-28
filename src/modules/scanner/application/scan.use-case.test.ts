@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ScanUseCase } from './scan.use-case.js';
-import type { SubscriptionQueries } from '../../subscription/api/subscription-queries.interface.js';
+import type { MonitoredRepoRepository } from './ports/monitored-repo.repository.js';
+import type { TransactionManager } from '../../../shared-kernel/transaction.js';
 import type { GithubClient } from '../../github/api/github-client.interface.js';
 import type { Logger } from '../../../shared-kernel/logger.js';
 import type { Clock } from '../../../shared-kernel/index.js';
@@ -9,55 +10,71 @@ import { GithubRateLimitError } from '../../github/domain/errors.js';
 import { ScannerEventType } from '../api/events.js';
 import { mock } from 'vitest-mock-extended';
 import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
-import { Subscription } from '../../subscription/domain/index.js';
-import { SubscriptionTokenScope } from '../../subscription/domain/subscription-token-scope.js';
-import { Email, RepoPath, ReleaseTag } from '../../../shared-kernel/index.js';
-import { SubscriptionToken } from '../../subscription/domain/subscription-token.js';
+import {
+  Email,
+  MonitoredRepo,
+  ReleaseTag,
+  RepoPath,
+  RepoWatcher,
+} from '../domain/index.js';
 
 const UNSUBSCRIBE_TOKEN = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
-const TOKEN_EXPIRES_AT = new Date('2026-01-01T13:00:00Z');
 
-const createConfirmedDomainSubscription = (overrides: {
-  id?: string;
-  email?: string;
+const createWatcher = (
+  subscriptionId: string,
+  email: string,
+  lastNotifiedTag: string | null = null,
+) =>
+  RepoWatcher.create({
+    subscriptionId,
+    email: Email.fromString(email),
+    unsubscribeToken: UNSUBSCRIBE_TOKEN,
+    lastNotifiedTag: lastNotifiedTag
+      ? ReleaseTag.fromString(lastNotifiedTag)
+      : null,
+  });
+
+const createMonitoredRepo = (options: {
   repo?: string;
   lastSeenTag?: string | null;
+  watchers?: Array<{
+    subscriptionId: string;
+    email: string;
+    lastNotifiedTag?: string | null;
+  }>;
 }) => {
-  const subscription = Subscription.request(
-    overrides.id ?? '1',
-    Email.fromString(overrides.email ?? 'test@example.com'),
-    RepoPath.fromString(overrides.repo ?? 'owner/repo'),
-    SubscriptionToken.rehydrate({
-      value: '550e8400-e29b-41d4-a716-446655440000',
-      scope: SubscriptionTokenScope.Confirm,
-      expiresAt: TOKEN_EXPIRES_AT,
-    }),
-    FIXED_NOW,
+  const monitoredRepo = MonitoredRepo.create(
+    RepoPath.fromString(options.repo ?? 'owner/repo'),
   );
 
-  subscription.confirm(
-    '550e8400-e29b-41d4-a716-446655440000',
-    FIXED_NOW,
-    SubscriptionToken.rehydrate({
-      value: UNSUBSCRIBE_TOKEN,
-      scope: SubscriptionTokenScope.Unsubscribe,
-      expiresAt: TOKEN_EXPIRES_AT,
-    }),
-    null,
-  );
-  subscription.pullEvents();
-
-  if (overrides.lastSeenTag) {
-    subscription.observeRelease(ReleaseTag.fromString(overrides.lastSeenTag));
+  for (const watcher of options.watchers ?? [
+    {
+      subscriptionId: '1',
+      email: 'test@example.com',
+      lastNotifiedTag: options.lastSeenTag ?? null,
+    },
+  ]) {
+    monitoredRepo.addWatcher(
+      createWatcher(
+        watcher.subscriptionId,
+        watcher.email,
+        watcher.lastNotifiedTag ?? null,
+      ),
+    );
   }
 
-  return subscription;
+  if (options.lastSeenTag) {
+    monitoredRepo.markReleaseSeen(ReleaseTag.fromString(options.lastSeenTag));
+  }
+
+  return monitoredRepo;
 };
 
 describe('ScanUseCase', () => {
   let scanUseCase: ScanUseCase;
-  const subscriptionQueriesMock = mock<SubscriptionQueries>();
+  const monitoredRepoRepositoryMock = mock<MonitoredRepoRepository>();
+  const transactionManagerMock = mock<TransactionManager>();
   const githubClientMock = mock<GithubClient>();
   const loggerMock = mock<Logger>();
   const clockMock = mock<Clock>();
@@ -69,9 +86,13 @@ describe('ScanUseCase', () => {
 
     clockMock.now.mockReturnValue(FIXED_NOW);
     eventBusMock.publish.mockResolvedValue(undefined);
+    transactionManagerMock.run.mockImplementation(async (work) =>
+      work({} as never),
+    );
 
     scanUseCase = new ScanUseCase(
-      subscriptionQueriesMock,
+      monitoredRepoRepositoryMock,
+      transactionManagerMock,
       githubClientMock,
       loggerMock,
       clockMock,
@@ -81,9 +102,16 @@ describe('ScanUseCase', () => {
   });
 
   describe('execute', () => {
-    it('should notify and update tag when a new release is found', async () => {
-      const sub = createConfirmedDomainSubscription({
+    it('should notify and update watcher tag when a new release is found', async () => {
+      const monitoredRepo = createMonitoredRepo({
         lastSeenTag: 'v1.0.0',
+        watchers: [
+          {
+            subscriptionId: '1',
+            email: 'test@example.com',
+            lastNotifiedTag: 'v1.0.0',
+          },
+        ],
       });
 
       const latestRelease = {
@@ -92,43 +120,47 @@ describe('ScanUseCase', () => {
         publishedAt: new Date().toISOString(),
       };
 
-      subscriptionQueriesMock.findAllConfirmedSubscriptions.mockResolvedValue([
-        sub,
-      ]);
+      monitoredRepoRepositoryMock.findAll.mockResolvedValue([monitoredRepo]);
       githubClientMock.getLatestRelease.mockResolvedValue(latestRelease);
 
       await scanUseCase.execute();
 
-      expect(subscriptionQueriesMock.observeNewRelease).toHaveBeenCalledWith(
-        '1',
-        'v1.1.0',
-      );
       expect(eventBusMock.publish).toHaveBeenCalledWith([
         {
           type: ScannerEventType.NewReleaseDetected,
           aggregateId: '1',
           occurredAt: FIXED_NOW,
           payload: {
-            email: sub.email.value,
-            repo: sub.repoPath.toString(),
+            email: 'test@example.com',
+            repo: 'owner/repo',
             tag: latestRelease.tag,
             releaseName: latestRelease.name,
             unsubscribeToken: UNSUBSCRIBE_TOKEN,
           },
         },
       ]);
+      expect(monitoredRepoRepositoryMock.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lastSeenTag: ReleaseTag.fromString('v1.1.0'),
+          watchers: [
+            expect.objectContaining({
+              subscriptionId: '1',
+              lastNotifiedTag: ReleaseTag.fromString('v1.1.0'),
+            }),
+          ],
+        }),
+        expect.anything(),
+      );
     });
 
-    it('should continue scanning other subscriptions when one fails', async () => {
-      const sub1 = createConfirmedDomainSubscription({
-        id: '1',
-        email: 'fail@example.com',
+    it('should continue scanning other repos when one fails', async () => {
+      const failingRepo = createMonitoredRepo({
         repo: 'owner/fail',
+        watchers: [{ subscriptionId: '1', email: 'fail@example.com' }],
       });
-      const sub2 = createConfirmedDomainSubscription({
-        id: '2',
-        email: 'ok@example.com',
+      const okRepo = createMonitoredRepo({
         repo: 'owner/ok',
+        watchers: [{ subscriptionId: '2', email: 'ok@example.com' }],
       });
 
       const latestRelease = {
@@ -137,9 +169,9 @@ describe('ScanUseCase', () => {
         publishedAt: new Date().toISOString(),
       };
 
-      subscriptionQueriesMock.findAllConfirmedSubscriptions.mockResolvedValue([
-        sub1,
-        sub2,
+      monitoredRepoRepositoryMock.findAll.mockResolvedValue([
+        failingRepo,
+        okRepo,
       ]);
       githubClientMock.getLatestRelease
         .mockRejectedValueOnce(new Error('GitHub unavailable'))
@@ -153,8 +185,8 @@ describe('ScanUseCase', () => {
           aggregateId: '2',
           occurredAt: FIXED_NOW,
           payload: {
-            email: sub2.email.value,
-            repo: sub2.repoPath.toString(),
+            email: 'ok@example.com',
+            repo: 'owner/ok',
             tag: latestRelease.tag,
             releaseName: latestRelease.name,
             unsubscribeToken: UNSUBSCRIBE_TOKEN,
@@ -164,13 +196,18 @@ describe('ScanUseCase', () => {
     });
 
     it('should not notify when the latest release tag is unchanged', async () => {
-      const sub = createConfirmedDomainSubscription({
+      const monitoredRepo = createMonitoredRepo({
         lastSeenTag: 'v1.0.0',
+        watchers: [
+          {
+            subscriptionId: '1',
+            email: 'test@example.com',
+            lastNotifiedTag: 'v1.0.0',
+          },
+        ],
       });
 
-      subscriptionQueriesMock.findAllConfirmedSubscriptions.mockResolvedValue([
-        sub,
-      ]);
+      monitoredRepoRepositoryMock.findAll.mockResolvedValue([monitoredRepo]);
       githubClientMock.getLatestRelease.mockResolvedValue({
         tag: 'v1.0.0',
         name: 'Same Release',
@@ -180,20 +217,110 @@ describe('ScanUseCase', () => {
       await scanUseCase.execute();
 
       expect(eventBusMock.publish).not.toHaveBeenCalled();
-      expect(subscriptionQueriesMock.observeNewRelease).not.toHaveBeenCalled();
+      expect(monitoredRepoRepositoryMock.save).not.toHaveBeenCalled();
+    });
+
+    it('should skip watchers already notified for the latest tag', async () => {
+      const monitoredRepo = createMonitoredRepo({
+        lastSeenTag: null,
+        watchers: [
+          {
+            subscriptionId: '1',
+            email: 'alice@example.com',
+            lastNotifiedTag: 'v1.0.0',
+          },
+          {
+            subscriptionId: '2',
+            email: 'bob@example.com',
+            lastNotifiedTag: 'v0.9.0',
+          },
+        ],
+      });
+
+      monitoredRepoRepositoryMock.findAll.mockResolvedValue([monitoredRepo]);
+      githubClientMock.getLatestRelease.mockResolvedValue({
+        tag: 'v1.0.0',
+        name: 'Current Release',
+        publishedAt: new Date().toISOString(),
+      });
+
+      await scanUseCase.execute();
+
+      expect(eventBusMock.publish).toHaveBeenCalledTimes(1);
+      expect(eventBusMock.publish).toHaveBeenCalledWith([
+        expect.objectContaining({
+          aggregateId: '2',
+        }),
+      ]);
+    });
+
+    it('should advance repo cursor without notifying when all watchers are already acked', async () => {
+      const monitoredRepo = createMonitoredRepo({
+        lastSeenTag: null,
+        watchers: [
+          {
+            subscriptionId: '1',
+            email: 'alice@example.com',
+            lastNotifiedTag: 'v1.0.0',
+          },
+        ],
+      });
+
+      monitoredRepoRepositoryMock.findAll.mockResolvedValue([monitoredRepo]);
+      githubClientMock.getLatestRelease.mockResolvedValue({
+        tag: 'v1.0.0',
+        name: 'Current Release',
+        publishedAt: new Date().toISOString(),
+      });
+
+      await scanUseCase.execute();
+
+      expect(eventBusMock.publish).not.toHaveBeenCalled();
+      expect(monitoredRepoRepositoryMock.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lastSeenTag: ReleaseTag.fromString('v1.0.0'),
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('should notify multiple watchers for the same repo with one GitHub call', async () => {
+      const monitoredRepo = createMonitoredRepo({
+        lastSeenTag: 'v1.0.0',
+        watchers: [
+          {
+            subscriptionId: '1',
+            email: 'alice@example.com',
+            lastNotifiedTag: 'v1.0.0',
+          },
+          {
+            subscriptionId: '2',
+            email: 'bob@example.com',
+            lastNotifiedTag: 'v1.0.0',
+          },
+        ],
+      });
+
+      monitoredRepoRepositoryMock.findAll.mockResolvedValue([monitoredRepo]);
+      githubClientMock.getLatestRelease.mockResolvedValue({
+        tag: 'v1.1.0',
+        name: 'New Release',
+        publishedAt: new Date().toISOString(),
+      });
+
+      await scanUseCase.execute();
+
+      expect(githubClientMock.getLatestRelease).toHaveBeenCalledTimes(1);
+      expect(eventBusMock.publish).toHaveBeenCalledTimes(2);
     });
 
     it('should stop scanning if rate limit is exceeded', async () => {
-      const sub = createConfirmedDomainSubscription({
-        id: '1',
-        email: 'user1@example.com',
+      const monitoredRepo = createMonitoredRepo({
         repo: 'owner/repo1',
         lastSeenTag: 'v1.0.0',
       });
 
-      subscriptionQueriesMock.findAllConfirmedSubscriptions.mockResolvedValue([
-        sub,
-      ]);
+      monitoredRepoRepositoryMock.findAll.mockResolvedValue([monitoredRepo]);
       githubClientMock.getLatestRelease.mockRejectedValueOnce(
         new GithubRateLimitError(),
       );
