@@ -15,7 +15,7 @@ import { SubscriptionConfirmationRenewedSubscriber } from './subscribers/subscri
 import { SubscriptionReactivatedSubscriber } from './subscribers/subscription-reactivated.subscriber.js';
 import { SubscriptionConfirmedSubscriber } from './subscribers/subscription-confirmed.subscriber.js';
 import { NewReleaseDetectedSubscriber } from './subscribers/new-release-detected.subscriber.js';
-import { SubscriptionDeactivatedProjectionSubscriber } from './subscribers/projection/subscription-deactivated-projection.subscriber.js';
+import { SubscriptionDeactivatedSubscriber } from './subscribers/subscription-deactivated.subscriber.js';
 
 export class NotificationEventSubscribers {
   constructor(
@@ -27,7 +27,7 @@ export class NotificationEventSubscribers {
 
   register(eventBus: EventBus): void {
     const subscriptionDeactivatedProjectionSubscriber =
-      new SubscriptionDeactivatedProjectionSubscriber(this.recipientRepository);
+      new SubscriptionDeactivatedSubscriber(this.recipientRepository);
 
     const subscriptionRequestedSubscriber = new SubscriptionRequestedSubscriber(
       this.emailClient,
