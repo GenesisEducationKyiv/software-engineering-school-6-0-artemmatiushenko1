@@ -13,14 +13,12 @@ import { SubscribeUseCase } from './modules/subscription/application/use-cases/s
 import { ConfirmUseCase } from './modules/subscription/application/use-cases/confirm.use-case.js';
 import { UnsubscribeUseCase } from './modules/subscription/application/use-cases/unsubscribe.use-case.js';
 import { GetSubscriptionsByEmailUseCase } from './modules/subscription/application/use-cases/get-subscriptions-by-email.use-case.js';
-import { SubscriptionQueriesImpl } from './modules/subscription/application/subscription-queries.js';
 import { PrometheusMetrics } from './platform/metrics/prometheus-metrics.js';
 import type { Metrics } from './platform/metrics/metrics.interface.js';
 import { FastifyLogger } from './platform/logger/fastify-logger.js';
 import type { FastifyBaseLogger } from 'fastify';
 import type { GithubClient } from './modules/github/api/github-client.interface.js';
 import type { EmailClient } from './modules/notification/application/ports/email-client.js';
-import type { SubscriptionQueries } from './modules/subscription/api/subscription-queries.interface.js';
 import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
 import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
@@ -56,7 +54,6 @@ export class AppContainer {
   private notificationEventSubscribersInstance?: NotificationEventSubscribers;
   private scannerEventSubscribersInstance?: ScannerEventSubscribers;
   private scanUseCaseInstance?: ScanUseCase;
-  private subscriptionQueriesInstance?: SubscriptionQueries;
   private subscribeUseCaseInstance?: SubscribeUseCase;
   private confirmUseCaseInstance?: ConfirmUseCase;
   private unsubscribeUseCaseInstance?: UnsubscribeUseCase;
@@ -183,17 +180,6 @@ export class AppContainer {
 
   set scannerEventSubscribers(value: ScannerEventSubscribers) {
     this.scannerEventSubscribersInstance = value;
-  }
-
-  get subscriptionQueries(): SubscriptionQueries {
-    return (this.subscriptionQueriesInstance ??= new SubscriptionQueriesImpl(
-      this.subscriptionRepo,
-      this.transactionManager,
-    ));
-  }
-
-  set subscriptionQueries(value: SubscriptionQueries) {
-    this.subscriptionQueriesInstance = value;
   }
 
   get eventBus(): EventBus {

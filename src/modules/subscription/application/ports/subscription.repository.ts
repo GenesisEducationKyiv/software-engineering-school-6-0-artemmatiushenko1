@@ -22,6 +22,4 @@ export interface SubscriptionRepository {
   save(subscription: Subscription, tx?: DomainTransaction): Promise<void>;
 
   findConfirmedSubscriptionsByEmail(email: Email): Promise<Subscription[]>;
-
-  findAllConfirmedSubscriptions(): Promise<Subscription[]>;
 }

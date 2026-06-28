@@ -108,13 +108,4 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
 
     return results.map((row) => this.toDomain(row));
   }
-
-  async findAllConfirmedSubscriptions(): Promise<Subscription[]> {
-    const results = await this.getDb()
-      .select()
-      .from(subscriptions)
-      .where(eq(subscriptions.status, SubscriptionStatus.Confirmed));
-
-    return results.map((row) => this.toDomain(row));
-  }
 }
