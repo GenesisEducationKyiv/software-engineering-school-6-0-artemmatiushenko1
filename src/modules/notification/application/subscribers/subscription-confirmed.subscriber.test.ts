@@ -1,29 +1,41 @@
 import { describe, it, expect } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import type { EmailClient } from '../ports/email-client.js';
+import type { RecipientRepository } from '../ports/recipient.repository.js';
 import { SubscriptionEventType } from '../../../subscription/api/events.js';
 import { SubscriptionConfirmedSubscriber } from './subscription-confirmed.subscriber.js';
 
 describe('SubscriptionConfirmedSubscriber', () => {
-  it('sends a subscription confirmed email', async () => {
+  const event = {
+    type: SubscriptionEventType.Confirmed,
+    aggregateId: 'sub-1',
+    occurredAt: new Date('2024-01-01T00:00:00.000Z'),
+    payload: {
+      email: 'test@example.com',
+      repo: 'owner/repo',
+      unsubscribeToken: 'unsub-token',
+      baselineTag: null,
+    },
+  } as const;
+
+  it('saves the recipient and sends a subscription confirmed email', async () => {
+    const recipientRepository = mock<RecipientRepository>();
     const emailClient = mock<EmailClient>();
     const subscriber = new SubscriptionConfirmedSubscriber(
+      recipientRepository,
       emailClient,
       'http://localhost:3000',
     );
 
-    await subscriber.handle({
-      type: SubscriptionEventType.Confirmed,
-      aggregateId: 'sub-1',
-      occurredAt: new Date('2024-01-01T00:00:00.000Z'),
-      payload: {
-        email: 'test@example.com',
-        repo: 'owner/repo',
-        unsubscribeToken: 'unsub-token',
-        baselineTag: null,
-      },
-    });
+    await subscriber.handle(event);
 
+    expect(recipientRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subscriptionId: 'sub-1',
+        email: expect.objectContaining({ value: 'test@example.com' }),
+        unsubscribeToken: 'unsub-token',
+      }),
+    );
     expect(emailClient.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: 'test@example.com',

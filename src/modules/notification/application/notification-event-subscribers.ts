@@ -15,7 +15,6 @@ import { SubscriptionConfirmationRenewedSubscriber } from './subscribers/subscri
 import { SubscriptionReactivatedSubscriber } from './subscribers/subscription-reactivated.subscriber.js';
 import { SubscriptionConfirmedSubscriber } from './subscribers/subscription-confirmed.subscriber.js';
 import { NewReleaseDetectedSubscriber } from './subscribers/new-release-detected.subscriber.js';
-import { SubscriptionConfirmedProjectionSubscriber } from './subscribers/projection/subscription-confirmed-projection.subscriber.js';
 import { SubscriptionDeactivatedProjectionSubscriber } from './subscribers/projection/subscription-deactivated-projection.subscriber.js';
 
 export class NotificationEventSubscribers {
@@ -27,8 +26,6 @@ export class NotificationEventSubscribers {
   ) {}
 
   register(eventBus: EventBus): void {
-    const subscriptionConfirmedProjectionSubscriber =
-      new SubscriptionConfirmedProjectionSubscriber(this.recipientRepository);
     const subscriptionDeactivatedProjectionSubscriber =
       new SubscriptionDeactivatedProjectionSubscriber(this.recipientRepository);
 
@@ -50,6 +47,7 @@ export class NotificationEventSubscribers {
         this.metrics,
       );
     const subscriptionConfirmedSubscriber = new SubscriptionConfirmedSubscriber(
+      this.recipientRepository,
       this.emailClient,
       this.appUrl,
       this.metrics,
@@ -81,10 +79,8 @@ export class NotificationEventSubscribers {
 
     eventBus.subscribe(
       SubscriptionEventType.Confirmed,
-      async (event: SubscriptionConfirmedEvent) => {
-        await subscriptionConfirmedProjectionSubscriber.handle(event);
-        await subscriptionConfirmedSubscriber.handle(event);
-      },
+      (event: SubscriptionConfirmedEvent) =>
+        subscriptionConfirmedSubscriber.handle(event),
     );
 
     eventBus.subscribe(
