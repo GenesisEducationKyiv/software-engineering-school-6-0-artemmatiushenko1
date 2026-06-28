@@ -6,8 +6,10 @@ import { ScanUseCase } from './application/scan.use-case.js';
 import type { ScannerMetrics } from './application/ports/scanner-metrics.interface.js';
 import { DrizzleMonitoredRepoRepository } from './infrastructure/monitored-repo.repository.js';
 import { DrizzleTransactionManager } from '../../platform/db/drizzle-transaction-manager.js';
-import { ScannerEventSubscribers } from './application/scanner-event-subscribers.js';
 import type { EventBus } from '../../platform/event-bus/event-bus.interface.js';
+import { registerEventSubscribers } from '../../platform/event-bus/event-subscriber.js';
+import { SubscriptionConfirmedSubscriber } from './application/subscribers/subscription-confirmed.subscriber.js';
+import { SubscriptionDeactivatedSubscriber } from './application/subscribers/subscription-deactivated.subscriber.js';
 
 export interface ScannerModuleDeps {
   db: Database;
@@ -21,29 +23,35 @@ export interface ScannerModuleDeps {
 export class ScannerModule {
   readonly scanUseCase: ScanUseCase;
 
-  private readonly eventSubscribers: ScannerEventSubscribers;
+  private readonly monitoredRepoRepository: DrizzleMonitoredRepoRepository;
+  private readonly transactionManager: DrizzleTransactionManager;
 
   private constructor(private readonly deps: ScannerModuleDeps) {
-    const monitoredRepoRepository = new DrizzleMonitoredRepoRepository(deps.db);
-    const transactionManager = new DrizzleTransactionManager(deps.db);
+    this.monitoredRepoRepository = new DrizzleMonitoredRepoRepository(deps.db);
+    this.transactionManager = new DrizzleTransactionManager(deps.db);
 
     this.scanUseCase = new ScanUseCase(
-      monitoredRepoRepository,
-      transactionManager,
+      this.monitoredRepoRepository,
+      this.transactionManager,
       deps.githubClient,
       deps.logger,
       deps.clock,
       deps.metrics,
       deps.eventBus,
     );
-    this.eventSubscribers = new ScannerEventSubscribers(
-      monitoredRepoRepository,
-      transactionManager,
-    );
   }
 
   registerEventSubscribers(eventBus: EventBus): void {
-    this.eventSubscribers.register(eventBus);
+    registerEventSubscribers(eventBus, [
+      new SubscriptionConfirmedSubscriber(
+        this.monitoredRepoRepository,
+        this.transactionManager,
+      ),
+      new SubscriptionDeactivatedSubscriber(
+        this.monitoredRepoRepository,
+        this.transactionManager,
+      ),
+    ]);
   }
 
   static create(deps: ScannerModuleDeps): ScannerModule {

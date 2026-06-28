@@ -1,22 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import { mock } from 'vitest-mock-extended';
-import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
-import { SubscriptionEventType } from '../../subscription/api/events.js';
-import { ScannerEventType } from '../../scanner/api/events.js';
-import type { EmailClient } from './ports/email-client.js';
-import type { RecipientRepository } from './ports/recipient.repository.js';
-import { NotificationEventSubscribers } from './notification-event-subscribers.js';
+import type { EventBus } from '../../platform/event-bus/event-bus.interface.js';
+import { SubscriptionEventType } from '../subscription/api/events.js';
+import { ScannerEventType } from '../scanner/api/events.js';
+import type { EmailClient } from './application/ports/email-client.js';
+import type { Database } from '../../platform/db/types.js';
+import { NotificationModule } from './notification.module.js';
 
-describe('NotificationEventSubscribers', () => {
+describe('NotificationModule', () => {
   it('registers all notification event handlers on the event bus', () => {
     const eventBus = mock<EventBus>();
-    const subscribers = new NotificationEventSubscribers(
-      mock<RecipientRepository>(),
-      mock<EmailClient>(),
-      'http://localhost:3000',
-    );
+    const module = NotificationModule.create({
+      db: mock<Database>(),
+      emailClient: mock<EmailClient>(),
+      appUrl: 'http://localhost:3000',
+    });
 
-    subscribers.register(eventBus);
+    module.registerEventSubscribers(eventBus);
 
     expect(eventBus.subscribe).toHaveBeenCalledTimes(6);
     expect(eventBus.subscribe).toHaveBeenCalledWith(
