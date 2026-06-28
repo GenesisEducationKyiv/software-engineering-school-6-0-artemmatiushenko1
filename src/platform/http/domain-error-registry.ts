@@ -1,10 +1,12 @@
 import {
   InvalidEmailError,
   InvalidRepoFormatError,
+  InvalidReleaseTagError,
+} from '../../shared-kernel/errors.js';
+import {
   InvalidTokenError,
   TokenAlreadyUsedError,
   TokenExpiredError,
-  InvalidReleaseTagError,
   IllegalStateTransitionError,
   WrongTokenScopeError,
   SubscriptionAlreadyDeactivatedError,

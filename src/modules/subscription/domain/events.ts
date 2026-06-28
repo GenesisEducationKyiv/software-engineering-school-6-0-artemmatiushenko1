@@ -1,6 +1,5 @@
 import { DomainEvent } from '../../../shared-kernel/index.js';
-import type { Email } from './email.js';
-import type { RepoPath } from './repo-path.js';
+import type { Email, RepoPath } from '../../../shared-kernel/index.js';
 import type { SubscriptionToken } from './subscription-token.js';
 
 type SubscriptionConfirmedEventPayload = {

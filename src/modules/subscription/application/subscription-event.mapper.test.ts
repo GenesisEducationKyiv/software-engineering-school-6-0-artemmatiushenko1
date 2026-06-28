@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Email } from '../domain/email.js';
-import { RepoPath } from '../domain/repo-path.js';
+import { Email, RepoPath } from '../../../shared-kernel/index.js';
 import { SubscriptionRequestedEvent } from '../domain/events.js';
 import { SubscriptionConfirmationRenewedEvent } from '../domain/events.js';
 import { SubscriptionReactivatedEvent } from '../domain/events.js';

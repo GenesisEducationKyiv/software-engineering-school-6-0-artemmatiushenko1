@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest';
 import {
   InvalidRepoFormatError,
   InvalidEmailError,
+  InvalidReleaseTagError,
+} from '../../shared-kernel/errors.js';
+import {
   InvalidTokenError,
   WrongTokenScopeError,
   IllegalStateTransitionError,
   TokenExpiredError,
   TokenAlreadyUsedError,
-  InvalidReleaseTagError,
   SubscriptionAlreadyConfirmedError,
   SubscriptionAlreadyDeactivatedError,
 } from '../../modules/subscription/domain/errors.js';

@@ -7,7 +7,7 @@ Scanner-owned, repo-centric read model that decouples release polling from the s
 - Scanner owns **what to poll** via a repo-centric read model (`MonitoredRepo`).
 - Scanner no longer queries subscription BC on cron (`findAllConfirmedSubscriptions`).
 - Subscription BC owns **lifecycle only** (subscribe / confirm / unsubscribe).
-- Baseline tag set **at confirm** (inline GitHub call), no separate “initial scan” subscriber.
+- Per-watcher `lastNotifiedTag`: silent ack at confirm (inline GitHub call), updated after each successful release email.
 - Keep existing event-driven notification flow (`NewReleaseDetected` → email).
 
 ## Non-goals (this iteration)
@@ -43,7 +43,7 @@ flowchart TB
     NS[NotificationService]
   end
 
-  ConfirmUC -->|SubscriptionConfirmed + baselineTag| EB
+  ConfirmUC -->|SubscriptionConfirmed + lastNotifiedTag| EB
   UnsubUC -->|SubscriptionDeactivated| EB
   EB --> ConfSub --> Proj
   EB --> DeactSub --> Proj
@@ -58,7 +58,9 @@ flowchart TB
 ScanUseCase
   → MonitoredRepoProjection.findAll()
   → for each MonitoredRepo: one GitHub call
-  → if latestTag ≠ repo.lastSeenTag: notify eligible watchers, update repo.lastSeenTag
+  → if latestTag ≠ repo.lastSeenTag: notify eligible watchers
+  → after each successful email: watcher.lastNotifiedTag = latestTag
+  → then repo.lastSeenTag = latestTag
 ```
 
 ---
@@ -74,31 +76,30 @@ ScanUseCase
 
 ### `RepoWatcher` — one subscriber watching a repo
 
-| Field              | Purpose                                                      |
-| ------------------ | ------------------------------------------------------------ |
-| `subscriptionId`   | Link back to subscription aggregate                          |
-| `email`            | For notification payload                                     |
-| `unsubscribeToken` | For notification payload                                     |
-| `baselineTag`      | Tag at confirm — don’t notify for releases at or before this |
+| Field              | Purpose                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| `subscriptionId`   | Link back to subscription aggregate                                                           |
+| `email`            | For notification payload                                                                      |
+| `unsubscribeToken` | For notification payload                                                                      |
+| `lastNotifiedTag`  | Per-watcher cursor — set at confirm (silent ack), updated after each successful release email |
 
-**Notify rule** when `latestTag` is new for the repo:
+**Lifecycle:**
 
-```
-notify watcher if latestTag ≠ watcher.baselineTag
-```
-
-After processing: `MonitoredRepo.lastSeenTag = latestTag`.
+1. **Confirm** — `ConfirmUseCase` fetches latest GitHub tag; scanner sets `lastNotifiedTag` to that tag (or `null` if no releases). No release email sent.
+2. **Scan** — when `latestTag ≠ repo.lastSeenTag`, notify watchers where `latestTag ≠ watcher.lastNotifiedTag`.
+3. **After successful email** — `watcher.lastNotifiedTag = latestTag`.
+4. **After all eligible watchers processed** — `repo.lastSeenTag = latestTag`.
 
 ### Multiple subscriptions for the same repo
 
 One `MonitoredRepo` for `golang/go`, multiple watchers:
 
-| Watcher | baselineTag (at confirm) |
-| ------- | ------------------------ |
-| Alice   | v1.22                    |
-| Bob     | v1.25                    |
+| Watcher | lastNotifiedTag (silent ack at confirm) |
+| ------- | --------------------------------------- |
+| Alice   | v1.22                                   |
+| Bob     | v1.25                                   |
 
-When **v1.26** ships: one GitHub call, notify Alice and Bob, set `MonitoredRepo.lastSeenTag = v1.26`.
+When **v1.26** ships: one GitHub call, notify Alice and Bob, set each watcher’s `lastNotifiedTag = v1.26`, then `MonitoredRepo.lastSeenTag = v1.26`.
 
 ---
 
@@ -111,7 +112,7 @@ When **v1.26** ships: one GitHub call, notify Alice and Bob, set `MonitoredRepo.
   email: string;
   repo: string;
   unsubscribeToken: string;
-  baselineTag: string | null; // latest GitHub tag at confirm, or null if no releases
+  lastNotifiedTag: string | null; // silent ack: latest GitHub tag at confirm, or null if no releases
 }
 ```
 
@@ -133,12 +134,12 @@ Unchanged; scanner publishes per watcher notified. Notification BC handles email
 
 ### Phase 0 — Prerequisites
 
-| Task                                                               | Files / notes                                         |
-| ------------------------------------------------------------------ | ----------------------------------------------------- |
-| Emit `SubscriptionDeactivated` from aggregate                      | `subscription/domain/subscription.ts`                 |
-| Publish from `UnsubscribeUseCase`                                  | `unsubscribe.use-case.ts`, tests                      |
-| Extend `ConfirmUseCase` with GitHub fetch + `baselineTag` in event | `confirm.use-case.ts`, mapper, `api/events.ts`, tests |
-| Update integration tests for confirm                               | `tests/integration/subscription.test.ts`              |
+| Task                                                                   | Files / notes                                         |
+| ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| Emit `SubscriptionDeactivated` from aggregate                          | `subscription/domain/subscription.ts`                 |
+| Publish from `UnsubscribeUseCase`                                      | `unsubscribe.use-case.ts`, tests                      |
+| Extend `ConfirmUseCase` with GitHub fetch + `lastNotifiedTag` in event | `confirm.use-case.ts`, mapper, `api/events.ts`, tests |
+| Update integration tests for confirm                                   | `tests/integration/subscription.test.ts`              |
 
 **Deliverable:** events complete; scanner can subscribe without changing cron yet.
 
@@ -146,13 +147,13 @@ Unchanged; scanner publishes per watcher notified. Notification BC handles email
 
 ### Phase 1 — `MonitoredRepo` projection
 
-| Task         | Details                                                                                                                   |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| Port         | `MonitoredRepoProjection` in `scanner/application/ports/` — `addWatcher`, `removeWatcher`, `findAll`, `updateLastSeenTag` |
-| Domain types | `MonitoredRepo`, `RepoWatcher` in `scanner/domain/`                                                                       |
-| Storage      | Postgres — `monitored_repos` + `repo_watchers` tables                                                                     |
-| Repository   | `DrizzleMonitoredRepoProjection` in `scanner/infrastructure/`                                                             |
-| Bootstrap    | On app startup: seed from confirmed subscriptions if projection empty                                                     |
+| Task         | Details                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Port         | `MonitoredRepoProjection` in `scanner/application/ports/` — `addWatcher`, `removeWatcher`, `findAll`, `updateLastSeenTag`, `markWatcherNotified` |
+| Domain types | `MonitoredRepo`, `RepoWatcher` in `scanner/domain/`                                                                                              |
+| Storage      | Postgres — `monitored_repos` + `repo_watchers` tables                                                                                            |
+| Repository   | `DrizzleMonitoredRepoProjection` in `scanner/infrastructure/`                                                                                    |
+| Bootstrap    | On app startup: seed from confirmed subscriptions if projection empty                                                                            |
 
 **Schema sketch:**
 
@@ -167,7 +168,7 @@ CREATE TABLE repo_watchers (
   repo TEXT NOT NULL REFERENCES monitored_repos(repo) ON DELETE CASCADE,
   email TEXT NOT NULL,
   unsubscribe_token TEXT NOT NULL,
-  baseline_tag TEXT
+  last_notified_tag TEXT
 );
 ```
 
@@ -177,12 +178,12 @@ CREATE TABLE repo_watchers (
 
 Mirror `NotificationService.registerEventSubscribers`:
 
-| Subscriber                          | On event                  | Action                                                       |
-| ----------------------------------- | ------------------------- | ------------------------------------------------------------ |
-| `SubscriptionConfirmedSubscriber`   | `SubscriptionConfirmed`   | Upsert `MonitoredRepo`, add `RepoWatcher` with `baselineTag` |
-| `SubscriptionDeactivatedSubscriber` | `SubscriptionDeactivated` | Remove watcher; delete repo row if no watchers left          |
+| Subscriber                          | On event                  | Action                                                                        |
+| ----------------------------------- | ------------------------- | ----------------------------------------------------------------------------- |
+| `SubscriptionConfirmedSubscriber`   | `SubscriptionConfirmed`   | Upsert `MonitoredRepo`, add `RepoWatcher` with `lastNotifiedTag` (silent ack) |
+| `SubscriptionDeactivatedSubscriber` | `SubscriptionDeactivated` | Remove watcher; delete repo row if no watchers left                           |
 
-New **`ScannerService`** class with `registerEventSubscribers(eventBus)`.
+New `**ScannerService**` class with `registerEventSubscribers(eventBus)`.
 
 Wire in `AppContainer.registerEventSubscribers()` alongside notification.
 
@@ -219,8 +220,10 @@ scanner/
 
 ```ts
 if (latestTag !== monitoredRepo.lastSeenTag) {
-  for (const watcher of eligibleWatchers) {
+  for (const watcher of monitoredRepo.eligibleWatchers(latestTag)) {
     await eventBus.publish([{ type: NewReleaseDetected, ... }]);
+    // in-process bus: publish completes when email subscriber succeeds
+    await projection.markWatcherNotified(watcher.subscriptionId, latestTag);
   }
   await projection.updateLastSeenTag(repo, latestTag);
 }
@@ -238,7 +241,7 @@ Remove `SubscriptionQueries` dependency from `ScanUseCase`.
 | `observeNewRelease`           | Remove                                                                                 |
 | `Subscription.observeRelease` | Remove or keep only for API writes                                                     |
 | `subscriptions.last_seen_tag` | Keep for swagger `GET /api/subscriptions`, populate at confirm or join from projection |
-| README                        | Update “initial scan” → “baseline set at confirm”                                      |
+| README                        | Update “initial scan” → “silent ack at confirm”                                        |
 
 ---
 
@@ -260,14 +263,14 @@ Startup order: `registerEventSubscribers()` → `build()` (unchanged).
 
 ## Testing plan
 
-| Layer                  | Cases                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Projection             | add/remove watcher; empty repo cleanup; update lastSeenTag                                                               |
-| Confirmed subscriber   | creates repo + watcher; second watcher same repo                                                                         |
-| Deactivated subscriber | removes watcher; removes repo when last watcher gone                                                                     |
-| ScanUseCase            | one GitHub call per repo; notify only when tag changes; skip watcher with matching baseline; multiple watchers same repo |
-| ConfirmUseCase         | sets baselineTag from GitHub; null when no releases                                                                      |
-| Integration            | confirm → cron does not notify for current tag; new release after confirm → email                                        |
+| Layer                  | Cases                                                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Projection             | add/remove watcher; empty repo cleanup; update lastSeenTag                                                                |
+| Confirmed subscriber   | creates repo + watcher; second watcher same repo                                                                          |
+| Deactivated subscriber | removes watcher; removes repo when last watcher gone                                                                      |
+| ScanUseCase            | one GitHub call per repo; notify only when tag changes; skip watcher already notified; update lastNotifiedTag after email |
+| ConfirmUseCase         | sets lastNotifiedTag from GitHub (silent ack); null when no releases                                                      |
+| Integration            | confirm → cron does not notify for current tag; new release after confirm → email                                         |
 
 ---
 
@@ -279,33 +282,33 @@ Current e2e stack (`docker-compose.e2e.yaml` + Playwright):
 - **GitHub mock** — static latest release `v18.2.0` for `facebook/react` (`tests/e2e/mocks/github/`)
 - **Mailpit** — real SMTP + HTTP API to read emails (`tests/e2e/utils/email.ts`)
 - **Postgres** — tests can query/delete `subscriptions` directly
-- **Scanner cron** — runs in the `api` container (`SCANNER_CRON=*/10 * * * *`); not covered by e2e today
+- **Scanner cron** — runs in the `api` container (`SCANNER_CRON=*/10 * * * `\*); not covered by e2e today
 
 After `MonitoredRepo`, e2e becomes the best place to prove the **full pipeline**: confirm → projection updated → scan → email.
 
 ### Enablers (likely needed first)
 
-| Enabler                    | Why                                                 | Options                                                                                                                                                  |
-| -------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Trigger scan on demand** | Waiting 10 minutes for cron is impractical          | `POST /internal/test/scan` (test env only), or `SCANNER_CRON=* * * * *` in e2e compose, or Playwright calls `scanUseCase.execute()` via a thin test hook |
-| **Mutable GitHub mock**    | Need to simulate “new release appeared”             | `PUT /mock/releases/latest?tag=vX` on github-mock, or stateful in-memory tag the mock returns                                                            |
-| **Projection DB access**   | Assert watcher rows without white-box unit tests    | Query `monitored_repos` / `repo_watchers` from e2e (same pattern as `db.delete(subscriptions)` today)                                                    |
-| **Mailpit helpers**        | Assert release emails, not just confirm/unsubscribe | Extend `tests/e2e/utils/email.ts`: `getEmailBySubject()`, `waitForEmail()`, `assertNoEmail()`                                                            |
+| Enabler                    | Why                                                 | Options                                                                                                                                                   |
+| -------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Trigger scan on demand** | Waiting 10 minutes for cron is impractical          | `POST /internal/test/scan` (test env only), or `SCANNER_CRON=* * * * `\* in e2e compose, or Playwright calls `scanUseCase.execute()` via a thin test hook |
+| **Mutable GitHub mock**    | Need to simulate “new release appeared”             | `PUT /mock/releases/latest?tag=vX` on github-mock, or stateful in-memory tag the mock returns                                                             |
+| **Projection DB access**   | Assert watcher rows without white-box unit tests    | Query `monitored_repos` / `repo_watchers` from e2e (same pattern as `db.delete(subscriptions)` today)                                                     |
+| **Mailpit helpers**        | Assert release emails, not just confirm/unsubscribe | Extend `tests/e2e/utils/email.ts`: `getEmailBySubject()`, `waitForEmail()`, `assertNoEmail()`                                                             |
 
 ### High-value e2e scenarios
 
-#### 1. Baseline at confirm — no immediate release email
+#### 1. Silent ack at confirm — no immediate release email
 
 **Flow:** subscribe → confirm → check Mailpit
 
 **Assert:**
 
 - Welcome / confirmed email arrives (existing behaviour)
-- **No** “New release” email for `v18.2.0` (baseline equals current mock tag)
-- `repo_watchers.baseline_tag = 'v18.2.0'` (or mock’s current tag)
-- `monitored_repos.last_seen_tag` is null or equals baseline after first scan
+- **No** “New release” email for `v18.2.0` (lastNotifiedTag equals current mock tag)
+- `repo_watchers.last_notified_tag = 'v18.2.0'` (or mock’s current tag)
+- `monitored_repos.last_seen_tag` is null until first scan processes a newer tag
 
-**Proves:** confirm-time baseline + `MonitoredRepo` subscriber wiring.
+**Proves:** confirm-time silent ack + `MonitoredRepo` subscriber wiring.
 
 ---
 
@@ -338,7 +341,7 @@ After `MonitoredRepo`, e2e becomes the best place to prove the **full pipeline**
 
 ---
 
-#### 4. Late joiner — different baseline
+#### 4. Late joiner — different lastNotifiedTag
 
 **Flow:**
 
@@ -350,15 +353,15 @@ After `MonitoredRepo`, e2e becomes the best place to prove the **full pipeline**
 **Assert:**
 
 - Bob does **not** get a release email on step 4
-- Bob’s `baseline_tag = 'v19.0.0'`
+- Bob’s `last_notified_tag = 'v19.0.0'`
 
-5. Bump mock to `v20.0.0`, scan
+1. Bump mock to `v20.0.0`, scan
 
 **Assert:**
 
 - Both Alice and Bob get email
 
-**Proves:** `baselineTag` per watcher, not shared per-repo notify state.
+**Proves:** `lastNotifiedTag` per watcher, not shared per-repo notify state.
 
 ---
 
@@ -397,10 +400,10 @@ After `MonitoredRepo`, e2e becomes the best place to prove the **full pipeline**
 
 **Assert:**
 
-- `baseline_tag` is null at confirm
-- First scan after `v1.0.0` appears does **not** notify (establishes baseline) OR notifies depending on open-question decision — document expected behaviour in test
+- `last_notified_tag` is null at confirm
+- First scan after `v1.0.0` appears **notifies** (user opted in before any release existed)
 
-**Proves:** edge case for confirm-time GitHub fetch.
+**Proves:** edge case for confirm-time GitHub fetch with null silent ack.
 
 ---
 
@@ -440,7 +443,7 @@ tests/e2e/
 | **API** (`request.post('/api/subscribe')`) | Scan/notify scenarios with many setup steps     | Faster; skips UI unless testing links     |
 | **Hybrid**                                 | API subscribe + Mailpit confirm link in browser | Balance of speed and realistic token flow |
 
-Recommendation: keep subscription UI tests as-is; add **`release-notification.spec.ts`** using **API + Mailpit + scan trigger** for scanner/projection coverage. Use browser only where token links matter.
+Recommendation: keep subscription UI tests as-is; add `**release-notification.spec.ts`** using **API + Mailpit + scan trigger\*\* for scanner/projection coverage. Use browser only where token links matter.
 
 ### What not to e2e (keep in integration/unit)
 
@@ -462,7 +465,7 @@ Recommendation: keep subscription UI tests as-is; add **`release-notification.sp
 
 Existing confirmed subscriptions need projection rows before first cron.
 
-**Recommended:** startup bootstrap — group confirmed subs by repo, insert watchers + baseline from `subscriptions.last_seen_tag` (or fetch GitHub if null).
+**Recommended:** startup bootstrap — group confirmed subs by repo, insert watchers + `lastNotifiedTag` from `subscriptions.last_seen_tag` (or fetch GitHub if null).
 
 **Alternative:** one-off SQL migration from `subscriptions WHERE status = 'confirmed'`.
 
@@ -471,20 +474,16 @@ Existing confirmed subscriptions need projection rows before first cron.
 ## Open questions
 
 1. **Storage:** Postgres tables (recommended) vs in-memory first? Assignment requires DB persistence.
-
-2. **`subscriptions.last_seen_tag`:** Keep column and sync from projection for swagger, or derive at read time from `repo_watchers.baseline_tag` / `monitored_repos.last_seen_tag`?
-
-3. **Watcher eligibility after notify:** Is `baselineTag` enough, or do we need `lastNotifiedTag` per watcher if notify fails for one watcher but repo cursor moves?
-
-4. **Confirm failure:** If GitHub is down at confirm, fail the request or confirm with `baselineTag: null` and let first cron set it silently?
-
+2. **`subscriptions.last_seen_tag`:** Keep column and sync from projection for swagger, or derive at read time from `repo_watchers.last_notified_tag` / `monitored_repos.last_seen_tag`?
+3. **Partial notify failure:** If email fails for one watcher but others succeed, only advance `lastNotifiedTag` for successful watchers; defer `repo.lastSeenTag` until all eligible watchers are notified (or document best-effort).
+4. **Confirm failure:** If GitHub is down at confirm, fail the request or confirm with `lastNotifiedTag: null` and let first scan notify on first release?
 5. **Naming:** `ScannerService` vs `MonitoredRepoService` for the class that registers subscribers?
 
 ---
 
 ## Suggested PR split
 
-1. **PR 1:** `SubscriptionDeactivated` + confirm `baselineTag` (Phase 0)
+1. **PR 1:** `SubscriptionDeactivated` + confirm `lastNotifiedTag` (Phase 0)
 2. **PR 2:** DB schema + projection + subscribers (Phases 1–2)
 3. **PR 3:** `ScanUseCase` refactor + remove scanner → subscription coupling (Phase 3)
 4. **PR 4:** Cleanup + README (Phase 4)
@@ -493,10 +492,10 @@ Existing confirmed subscriptions need projection rows before first cron.
 
 ## Summary
 
-| Concern                                  | Owner                                      |
-| ---------------------------------------- | ------------------------------------------ |
-| Subscribe / confirm / unsubscribe        | Subscription BC                            |
-| Who watches which repo                   | Scanner `MonitoredRepo` projection         |
-| Repo release cursor                      | `MonitoredRepo.lastSeenTag`                |
-| Per-user “don’t notify for old releases” | `RepoWatcher.baselineTag` (set at confirm) |
-| Send email                               | Notification BC (unchanged)                |
+| Concern                           | Owner                                                                      |
+| --------------------------------- | -------------------------------------------------------------------------- |
+| Subscribe / confirm / unsubscribe | Subscription BC                                                            |
+| Who watches which repo            | Scanner `MonitoredRepo` projection                                         |
+| Repo release cursor               | `MonitoredRepo.lastSeenTag`                                                |
+| Per-user release cursor           | `RepoWatcher.lastNotifiedTag` (silent ack at confirm, updated after email) |
+| Send email                        | Notification BC (unchanged)                                                |

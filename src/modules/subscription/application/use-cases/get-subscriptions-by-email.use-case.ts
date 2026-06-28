@@ -1,6 +1,6 @@
 import type { Subscription } from '../../domain/subscription.js';
 import type { SubscriptionRepository } from '../ports/subscription.repository.js';
-import { Email } from '../../domain/email.js';
+import { Email } from '../../../../shared-kernel/index.js';
 
 export class GetSubscriptionsByEmailUseCase {
   constructor(private subscriptionRepo: SubscriptionRepository) {}

@@ -1,9 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { Email } from '../../src/modules/subscription/domain/email.js';
-import { RepoPath } from '../../src/modules/subscription/domain/repo-path.js';
+import { Email, RepoPath, ReleaseTag } from '../../src/shared-kernel/index.js';
 import { SubscriptionToken } from '../../src/modules/subscription/domain/subscription-token.js';
 import { SubscriptionTokenScope } from '../../src/modules/subscription/domain/subscription-token-scope.js';
-import { ReleaseTag } from '../../src/modules/subscription/domain/release-tag.js';
 import { Subscription } from '../../src/modules/subscription/domain/subscription.js';
 import { SubscriptionStatus } from '../../src/modules/subscription/domain/subscription-status.js';
 import {

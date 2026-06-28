@@ -1,7 +1,7 @@
 import type { SubscriptionQueries } from '../api/subscription-queries.interface.js';
 import type { SubscriptionRepository } from './ports/subscription.repository.js';
 import { SubscriptionNotFoundError } from './errors.js';
-import { ReleaseTag } from '../domain/release-tag.js';
+import { ReleaseTag } from '../../../shared-kernel/index.js';
 import type { TransactionManager } from '../../../shared-kernel/index.js';
 
 export class SubscriptionQueriesImpl implements SubscriptionQueries {

@@ -1,14 +1,16 @@
 import type { SubscriptionToken } from './subscription-token.js';
 import { SubscriptionTokenScope } from './subscription-token-scope.js';
-import type { Email } from './email.js';
+import type {
+  Email,
+  ReleaseTag,
+  RepoPath,
+} from '../../../shared-kernel/index.js';
 import {
   IllegalStateTransitionError,
   SubscriptionAlreadyConfirmedError,
   SubscriptionAlreadyDeactivatedError,
   WrongTokenScopeError,
 } from './errors.js';
-import type { ReleaseTag } from './release-tag.js';
-import type { RepoPath } from './repo-path.js';
 import { SubscriptionStatus } from './subscription-status.js';
 import type { DomainEvent } from '../../../shared-kernel/domain-event.js';
 import {

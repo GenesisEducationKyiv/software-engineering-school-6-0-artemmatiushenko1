@@ -11,9 +11,7 @@ import { mock } from 'vitest-mock-extended';
 import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
 import { Subscription } from '../../subscription/domain/index.js';
 import { SubscriptionTokenScope } from '../../subscription/domain/subscription-token-scope.js';
-import { Email } from '../../subscription/domain/email.js';
-import { RepoPath } from '../../subscription/domain/repo-path.js';
-import { ReleaseTag } from '../../subscription/domain/release-tag.js';
+import { Email, RepoPath, ReleaseTag } from '../../../shared-kernel/index.js';
 import { SubscriptionToken } from '../../subscription/domain/subscription-token.js';
 
 const UNSUBSCRIBE_TOKEN = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';

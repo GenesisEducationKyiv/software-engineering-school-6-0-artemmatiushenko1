@@ -7,7 +7,7 @@ export class ReleaseTag {
 
   static fromString(value: string): ReleaseTag {
     if (value.length === 0) {
-      throw new InvalidReleaseTagError(`Invalid release tag: ${value}`);
+      throw new InvalidReleaseTagError(value);
     }
 
     return new ReleaseTag(value);
