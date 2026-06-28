@@ -1,4 +1,4 @@
-import { EmptyMonitoredRepoError, RepoWatcherNotFoundError } from './errors.js';
+import { EmptyMonitoredRepoError } from './errors.js';
 import { RepoWatcher } from './repo-watcher.js';
 import type { RepoPath } from '../../../shared-kernel/index.js';
 import type { ReleaseTag } from './release-tag.js';
@@ -84,15 +84,9 @@ export class MonitoredRepo {
     this._lastSeenTag = latestTag;
   }
 
-  markWatcherNotified(subscriptionId: string, tag: ReleaseTag): void {
-    const watcher = this._watchers.find(
-      (existing) => existing.subscriptionId === subscriptionId,
-    );
-
-    if (!watcher) {
-      throw new RepoWatcherNotFoundError(subscriptionId, this.repo.toString());
+  markWatcherNotified(watchers: RepoWatcher[], tag: ReleaseTag): void {
+    for (const watcher of watchers) {
+      watcher.markNotified(tag);
     }
-
-    watcher.markNotified(tag);
   }
 }

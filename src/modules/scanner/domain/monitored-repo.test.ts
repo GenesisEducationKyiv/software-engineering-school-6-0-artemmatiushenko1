@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Email, RepoPath, ReleaseTag } from './index.js';
-import { EmptyMonitoredRepoError, RepoWatcherNotFoundError } from './errors.js';
+import { EmptyMonitoredRepoError } from './errors.js';
 import { MonitoredRepo } from './monitored-repo.js';
 import { RepoWatcher } from './repo-watcher.js';
 
@@ -140,28 +140,32 @@ describe('MonitoredRepo', () => {
     expect(repo.hasNewRelease(tag('v1.26'))).toBe(false);
   });
 
-  it('updates watcher last notified tag', () => {
+  it('updates watcher last notified tags', () => {
+    const alice = watcher('alice', 'v1.22');
     const repo = MonitoredRepo.rehydrate({
       repo: repoPath('golang/go'),
       lastSeenTag: null,
-      watchers: [watcher('alice', 'v1.22')],
+      watchers: [alice],
     });
 
-    repo.markWatcherNotified('alice', tag('v1.26'));
+    repo.markWatcherNotified([alice], tag('v1.26'));
 
     expect(repo.watchers[0]?.lastNotifiedTag?.value).toBe('v1.26');
     expect(repo.watchers[0]?.shouldNotifyFor(tag('v1.26'))).toBe(false);
   });
 
-  it('throws when marking notification for unknown watcher', () => {
+  it('updates multiple watchers in one call', () => {
+    const alice = watcher('alice', 'v1.22');
+    const bob = watcher('bob', 'v1.22');
     const repo = MonitoredRepo.rehydrate({
       repo: repoPath('golang/go'),
       lastSeenTag: null,
-      watchers: [watcher('alice', 'v1.22')],
+      watchers: [alice, bob],
     });
 
-    expect(() => repo.markWatcherNotified('bob', tag('v1.26'))).toThrow(
-      RepoWatcherNotFoundError,
-    );
+    repo.markWatcherNotified([alice, bob], tag('v1.26'));
+
+    expect(alice.lastNotifiedTag?.value).toBe('v1.26');
+    expect(bob.lastNotifiedTag?.value).toBe('v1.26');
   });
 });

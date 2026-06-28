@@ -8,6 +8,7 @@ import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
 import { msToSeconds } from '../../../utils/time.utils.js';
 import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
 import { ScannerEventType } from '../api/events.js';
+import type { DomainEventEnvelope } from '../../../platform/event-bus/domain-event-envelope.js';
 
 export class ScanUseCase {
   constructor(
@@ -100,44 +101,30 @@ export class ScanUseCase {
 
     const eligibleWatchers = monitoredRepo.eligibleWatchers(latestTag);
 
-    if (eligibleWatchers.length === 0) {
-      await this.markReleaseSeen(monitoredRepo, latestTag);
-      return;
-    }
+    const newReleaseEvents: DomainEventEnvelope[] = [];
 
     for (const watcher of eligibleWatchers) {
-      // TODO: I guess it should be emitted by domain, markWatcherNotified should have different name
-      await this.eventBus.publish([
-        {
-          type: ScannerEventType.NewReleaseDetected,
-          aggregateId: watcher.subscriptionId,
-          occurredAt: this.clock.now(),
-          payload: {
-            email: watcher.email.value,
-            repo,
-            tag: latestRelease.tag,
-            releaseName: latestRelease.name,
-            unsubscribeToken: watcher.unsubscribeToken,
-          },
+      newReleaseEvents.push({
+        type: ScannerEventType.NewReleaseDetected,
+        aggregateId: watcher.subscriptionId,
+        occurredAt: this.clock.now(),
+        payload: {
+          email: watcher.email.value,
+          repo,
+          tag: latestRelease.tag,
+          releaseName: latestRelease.name ?? latestRelease.tag,
+          unsubscribeToken: watcher.unsubscribeToken,
         },
-      ]);
-
-      monitoredRepo.markWatcherNotified(watcher.subscriptionId, latestTag);
-      await this.saveMonitoredRepo(monitoredRepo);
+      });
     }
 
-    await this.markReleaseSeen(monitoredRepo, latestTag);
-  }
+    if (newReleaseEvents.length > 0) {
+      await this.eventBus.publish(newReleaseEvents);
+    }
 
-  private async markReleaseSeen(
-    monitoredRepo: MonitoredRepo,
-    latestTag: ReleaseTag,
-  ): Promise<void> {
     monitoredRepo.markReleaseSeen(latestTag);
-    await this.saveMonitoredRepo(monitoredRepo);
-  }
+    monitoredRepo.markWatcherNotified(eligibleWatchers, latestTag);
 
-  private async saveMonitoredRepo(monitoredRepo: MonitoredRepo): Promise<void> {
     await this.transactionManager.run(async (tx) => {
       await this.monitoredRepoRepository.save(monitoredRepo, tx);
     });

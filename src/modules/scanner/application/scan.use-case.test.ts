@@ -311,7 +311,11 @@ describe('ScanUseCase', () => {
       await scanUseCase.execute();
 
       expect(githubClientMock.getLatestRelease).toHaveBeenCalledTimes(1);
-      expect(eventBusMock.publish).toHaveBeenCalledTimes(2);
+      expect(eventBusMock.publish).toHaveBeenCalledTimes(1);
+      expect(eventBusMock.publish).toHaveBeenCalledWith([
+        expect.objectContaining({ aggregateId: '1' }),
+        expect.objectContaining({ aggregateId: '2' }),
+      ]);
     });
 
     it('should stop scanning if rate limit is exceeded', async () => {

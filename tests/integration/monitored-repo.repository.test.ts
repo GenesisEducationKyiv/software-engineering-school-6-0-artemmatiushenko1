@@ -78,7 +78,10 @@ describe('MonitoredRepoRepository', () => {
     await save(monitoredRepo);
 
     monitoredRepo.markReleaseSeen(ReleaseTag.fromString('v2.0.0'));
-    monitoredRepo.markWatcherNotified('sub-1', ReleaseTag.fromString('v2.0.0'));
+    monitoredRepo.markWatcherNotified(
+      [...monitoredRepo.watchers],
+      ReleaseTag.fromString('v2.0.0'),
+    );
     await save(monitoredRepo);
 
     const [loaded] = await repository.findAll();
