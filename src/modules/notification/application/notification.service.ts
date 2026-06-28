@@ -9,11 +9,8 @@ import {
   newReleaseNotificationTemplate,
   subscriptionConfirmationTemplate,
   subscriptionConfirmedTemplate,
-} from '../infrastructure/templates.js';
-import {
-  buildConfirmUrl,
-  buildUnsubscribeUrl,
-} from '../infrastructure/links.js';
+} from './templates.js';
+import { buildConfirmUrl, buildUnsubscribeUrl } from './links.js';
 import type { NotificationMetrics } from './ports/notification-metrics.js';
 
 export class NotificationServiceImpl implements NotificationService {
