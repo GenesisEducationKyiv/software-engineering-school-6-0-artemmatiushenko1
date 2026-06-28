@@ -41,7 +41,6 @@ const issueUnsubscribeToken = (
     value: UNSUBSCRIBE_TOKEN_UUID,
     scope: SubscriptionTokenScope.Unsubscribe,
     issuedAt: ISSUED_AT,
-    ttlMs: TTL_MS,
     ...overrides,
   });
 

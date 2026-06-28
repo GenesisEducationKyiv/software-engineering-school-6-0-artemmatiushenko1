@@ -26,9 +26,6 @@ export const subscriptions = pgTable(
     }).notNull(),
     confirmUsedAt: timestamp('confirm_used_at', { withTimezone: true }),
     unsubscribeToken: text('unsubscribe_token'),
-    unsubscribeExpiresAt: timestamp('unsubscribe_expires_at', {
-      withTimezone: true,
-    }),
     unsubscribeUsedAt: timestamp('unsubscribe_used_at', {
       withTimezone: true,
     }),

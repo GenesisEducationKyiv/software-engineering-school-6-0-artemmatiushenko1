@@ -13,7 +13,7 @@ const isUuid = (value: string): boolean => UUID_REGEX.test(value);
 export class SubscriptionToken {
   private constructor(
     public readonly value: string,
-    public readonly expiresAt: Date,
+    public readonly expiresAt: Date | null,
     public readonly scope: SubscriptionTokenScope,
     public readonly consumedAt: Date | null,
   ) {
@@ -23,7 +23,7 @@ export class SubscriptionToken {
   static rehydrate(params: {
     value: string;
     scope: SubscriptionTokenScope;
-    expiresAt: Date;
+    expiresAt: Date | null;
     consumedAt?: Date | null;
   }): SubscriptionToken {
     return new SubscriptionToken(
@@ -38,7 +38,7 @@ export class SubscriptionToken {
     value: string;
     scope: SubscriptionTokenScope;
     issuedAt: Date;
-    ttlMs: number;
+    ttlMs?: number;
   }): SubscriptionToken {
     if (!isUuid(params.value)) {
       throw new InvalidTokenError(
@@ -46,18 +46,34 @@ export class SubscriptionToken {
       );
     }
 
-    if (params.ttlMs <= 0) {
+    if (
+      params.scope === SubscriptionTokenScope.Confirm &&
+      params.ttlMs === undefined
+    ) {
+      throw new InvalidTokenError('TTL is required for confirm tokens.');
+    }
+
+    if (
+      params.scope === SubscriptionTokenScope.Unsubscribe &&
+      params.ttlMs !== undefined
+    ) {
       throw new InvalidTokenError(
-        `Invalid TTL: ${params.ttlMs}. Expected a positive number.`,
+        'TTL must not be specified for unsubscribe tokens.',
       );
     }
 
-    return new SubscriptionToken(
-      params.value,
-      new Date(params.issuedAt.getTime() + params.ttlMs),
-      params.scope,
-      null,
-    );
+    let expiresAt: Date | null = null;
+    if (params.ttlMs !== undefined) {
+      if (params.ttlMs <= 0) {
+        throw new InvalidTokenError(
+          `Invalid TTL: ${params.ttlMs}. Expected a positive number.`,
+        );
+      }
+
+      expiresAt = new Date(params.issuedAt.getTime() + params.ttlMs);
+    }
+
+    return new SubscriptionToken(params.value, expiresAt, params.scope, null);
   }
 
   consume(now: Date): SubscriptionToken {
@@ -65,7 +81,7 @@ export class SubscriptionToken {
       throw new TokenAlreadyUsedError();
     }
 
-    if (this.expiresAt < now) {
+    if (this.expiresAt !== null && this.expiresAt < now) {
       throw new TokenExpiredError();
     }
 
@@ -76,7 +92,8 @@ export class SubscriptionToken {
     return (
       this.value === other.value &&
       this.scope === other.scope &&
-      this.expiresAt.getTime() === other.expiresAt.getTime() &&
+      (this.expiresAt?.getTime() ?? null) ===
+        (other.expiresAt?.getTime() ?? null) &&
       (this.consumedAt?.getTime() ?? null) ===
         (other.consumedAt?.getTime() ?? null)
     );

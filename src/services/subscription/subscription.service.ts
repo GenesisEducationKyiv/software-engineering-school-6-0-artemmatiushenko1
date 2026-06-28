@@ -26,7 +26,6 @@ import type {
 
 export class SubscriptionServiceImpl implements SubscriptionService {
   private static readonly CONFIRMATION_TTL_MS = 60_000;
-  private static readonly UNSUBSCRIBE_TTL_MS = 24 * 60 * 60 * 1000;
 
   constructor(
     private subscriptionRepo: SubscriptionRepository,
@@ -148,7 +147,6 @@ export class SubscriptionServiceImpl implements SubscriptionService {
       value: this.tokenGenerator.generate(),
       scope: SubscriptionTokenScope.Unsubscribe,
       issuedAt: now,
-      ttlMs: SubscriptionServiceImpl.UNSUBSCRIBE_TTL_MS,
     });
 
     subscription.confirm(token, now, unsubscribeToken);

@@ -42,7 +42,7 @@ const createConfirmedDomainSubscription = (overrides: {
     SubscriptionToken.rehydrate({
       value: UNSUBSCRIBE_TOKEN,
       scope: SubscriptionTokenScope.Unsubscribe,
-      expiresAt: TOKEN_EXPIRES_AT,
+      expiresAt: null,
     }),
   );
 

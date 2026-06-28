@@ -33,13 +33,69 @@ describe('SubscriptionToken', () => {
       expect(token.expiresAt).toEqual(new Date(ISSUED_AT.getTime() + TTL_MS));
     });
 
-    it.each([
-      SubscriptionTokenScope.Confirm,
-      SubscriptionTokenScope.Unsubscribe,
-    ])('should accept valid scope: %s', (scope) => {
-      const token = issueToken({ scope });
+    it('should create a non-expiring token when ttlMs is omitted', () => {
+      const token = SubscriptionToken.issue({
+        value: VALID_UUID,
+        scope: SubscriptionTokenScope.Unsubscribe,
+        issuedAt: ISSUED_AT,
+      });
 
-      expect(token.scope).toBe(scope);
+      expect(token.expiresAt).toBeNull();
+    });
+
+    it('should throw InvalidTokenError when unsubscribe token is issued with TTL', () => {
+      expect(() =>
+        SubscriptionToken.issue({
+          value: VALID_UUID,
+          scope: SubscriptionTokenScope.Unsubscribe,
+          issuedAt: ISSUED_AT,
+          ttlMs: TTL_MS,
+        }),
+      ).toThrow(InvalidTokenError);
+      expect(() =>
+        SubscriptionToken.issue({
+          value: VALID_UUID,
+          scope: SubscriptionTokenScope.Unsubscribe,
+          issuedAt: ISSUED_AT,
+          ttlMs: TTL_MS,
+        }),
+      ).toThrow(
+        'Invalid token: TTL must not be specified for unsubscribe tokens.',
+      );
+    });
+
+    it('should throw InvalidTokenError when confirm token is issued without TTL', () => {
+      expect(() =>
+        SubscriptionToken.issue({
+          value: VALID_UUID,
+          scope: SubscriptionTokenScope.Confirm,
+          issuedAt: ISSUED_AT,
+          ttlMs: 0,
+        }),
+      ).toThrow(InvalidTokenError);
+      expect(() =>
+        SubscriptionToken.issue({
+          value: VALID_UUID,
+          scope: SubscriptionTokenScope.Confirm,
+          issuedAt: ISSUED_AT,
+        }),
+      ).toThrow('Invalid token: TTL is required for confirm tokens.');
+    });
+
+    it('should accept confirm scope', () => {
+      const token = issueToken({ scope: SubscriptionTokenScope.Confirm });
+
+      expect(token.scope).toBe(SubscriptionTokenScope.Confirm);
+    });
+
+    it('should accept unsubscribe scope', () => {
+      const token = SubscriptionToken.issue({
+        value: VALID_UUID,
+        scope: SubscriptionTokenScope.Unsubscribe,
+        issuedAt: ISSUED_AT,
+      });
+
+      expect(token.scope).toBe(SubscriptionTokenScope.Unsubscribe);
     });
 
     it.each(['not-a-uuid', '', '123'])(
@@ -82,7 +138,7 @@ describe('SubscriptionToken', () => {
       const token = issueToken();
       const expiresAt = token.expiresAt;
 
-      expect(() => token.consume(expiresAt)).not.toThrow();
+      expect(() => token.consume(expiresAt!)).not.toThrow();
     });
 
     it('should throw TokenExpiredError when the token has expired', () => {
@@ -94,6 +150,18 @@ describe('SubscriptionToken', () => {
       expect(() =>
         token.consume(new Date(ISSUED_AT.getTime() + 1_001)),
       ).toThrow('Token is expired');
+    });
+
+    it('should not expire when expiresAt is null', () => {
+      const token = SubscriptionToken.issue({
+        value: VALID_UUID,
+        scope: SubscriptionTokenScope.Unsubscribe,
+        issuedAt: ISSUED_AT,
+      });
+
+      expect(() =>
+        token.consume(new Date('2099-01-01T00:00:00Z')),
+      ).not.toThrow();
     });
 
     it('should throw TokenAlreadyUsedError when the token was already consumed', () => {
@@ -125,7 +193,11 @@ describe('SubscriptionToken', () => {
 
     it('should return false when scope differs', () => {
       const first = issueToken({ scope: SubscriptionTokenScope.Confirm });
-      const second = issueToken({ scope: SubscriptionTokenScope.Unsubscribe });
+      const second = SubscriptionToken.issue({
+        value: VALID_UUID,
+        scope: SubscriptionTokenScope.Unsubscribe,
+        issuedAt: ISSUED_AT,
+      });
 
       expect(first.equals(second)).toBe(false);
     });
