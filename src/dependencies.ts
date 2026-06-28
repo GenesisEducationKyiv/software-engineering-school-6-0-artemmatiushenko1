@@ -7,6 +7,7 @@ import { DrizzleSubscriptionRepository } from './modules/subscription/infrastruc
 import { MonitoredRepoRepository } from './modules/scanner/infrastructure/monitored-repo.repository.js';
 import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-manager.js';
 import { NotificationEventSubscribers } from './modules/notification/application/notification-event-subscribers.js';
+import { ScannerEventSubscribers } from './modules/scanner/application/scanner-event-subscribers.js';
 import { ScanUseCase } from './modules/scanner/application/scan.use-case.js';
 import { SubscribeUseCase } from './modules/subscription/application/use-cases/subscribe.use-case.js';
 import { ConfirmUseCase } from './modules/subscription/application/use-cases/confirm.use-case.js';
@@ -53,6 +54,7 @@ export class AppContainer {
   private monitoredRepoRepositoryInstance?: MonitoredRepoRepository;
   private transactionManagerInstance?: DrizzleTransactionManager;
   private notificationEventSubscribersInstance?: NotificationEventSubscribers;
+  private scannerEventSubscribersInstance?: ScannerEventSubscribers;
   private scanUseCaseInstance?: ScanUseCase;
   private subscriptionQueriesInstance?: SubscriptionQueries;
   private subscribeUseCaseInstance?: SubscribeUseCase;
@@ -169,6 +171,18 @@ export class AppContainer {
 
   set notificationEventSubscribers(value: NotificationEventSubscribers) {
     this.notificationEventSubscribersInstance = value;
+  }
+
+  get scannerEventSubscribers(): ScannerEventSubscribers {
+    return (this.scannerEventSubscribersInstance ??=
+      new ScannerEventSubscribers(
+        this.monitoredRepoRepository,
+        this.transactionManager,
+      ));
+  }
+
+  set scannerEventSubscribers(value: ScannerEventSubscribers) {
+    this.scannerEventSubscribersInstance = value;
   }
 
   get subscriptionQueries(): SubscriptionQueries {
@@ -291,6 +305,7 @@ export class AppContainer {
     }
 
     this.notificationEventSubscribers.register(this.eventBus);
+    this.scannerEventSubscribers.register(this.eventBus);
     this.eventSubscribersRegistered = true;
   }
 

@@ -124,6 +124,29 @@ describe('MonitoredRepoRepository', () => {
     expect(loaded?.watchers[0]?.subscriptionId).toBe('sub-1');
   });
 
+  it('loads a monitored repo by repo path', async () => {
+    const monitoredRepo = MonitoredRepo.create(
+      RepoPath.fromString('owner/repo'),
+    );
+    monitoredRepo.addWatcher(createWatcher('sub-1', 'alice@example.com'));
+    await save(monitoredRepo);
+
+    const loaded = await repository.findByRepo(
+      RepoPath.fromString('owner/repo'),
+    );
+
+    expect(loaded?.repo.toString()).toBe('owner/repo');
+    expect(loaded?.watchers).toHaveLength(1);
+  });
+
+  it('returns null when the repo is not monitored', async () => {
+    const loaded = await repository.findByRepo(
+      RepoPath.fromString('missing/repo'),
+    );
+
+    expect(loaded).toBeNull();
+  });
+
   it('deletes the repo when the last watcher is removed', async () => {
     const monitoredRepo = MonitoredRepo.create(
       RepoPath.fromString('owner/repo'),

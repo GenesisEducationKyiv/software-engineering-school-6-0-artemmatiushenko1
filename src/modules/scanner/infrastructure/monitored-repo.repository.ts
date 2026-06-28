@@ -6,7 +6,7 @@ import type {
 } from '../../../platform/db/types.js';
 import type { DomainTransaction } from '../../../shared-kernel/transaction.js';
 import type { MonitoredRepoRepository as MonitoredRepoRepositoryPort } from '../application/ports/monitored-repo.repository.js';
-import type { MonitoredRepo } from '../domain/index.js';
+import type { MonitoredRepo, RepoPath } from '../domain/index.js';
 import {
   MonitoredRepoRowMapper,
   MonitoredRepoRowSchema,
@@ -20,6 +20,38 @@ export class MonitoredRepoRepository implements MonitoredRepoRepositoryPort {
 
   private getDb(tx: DomainTransaction): DrizzleTransaction {
     return tx as unknown as DrizzleTransaction;
+  }
+
+  async findByRepo(
+    repo: RepoPath,
+    tx?: DomainTransaction,
+  ): Promise<MonitoredRepo | null> {
+    const db = tx ? this.getDb(tx) : this.db;
+    const repoKey = repo.toString();
+
+    const [repoRow] = await db
+      .select()
+      .from(monitoredRepos)
+      .where(eq(monitoredRepos.repo, repoKey))
+      .limit(1);
+
+    if (!repoRow) {
+      return null;
+    }
+
+    const watcherRows = await db
+      .select()
+      .from(repoWatchers)
+      .where(eq(repoWatchers.repo, repoKey));
+
+    if (watcherRows.length === 0) {
+      return null;
+    }
+
+    return this.mapper.toDomain(
+      MonitoredRepoRowSchema.parse(repoRow),
+      watcherRows.map((row) => RepoWatcherRowSchema.parse(row)),
+    );
   }
 
   async findAll(): Promise<MonitoredRepo[]> {
