@@ -16,9 +16,13 @@ describe('ScannerEventSubscribers', () => {
 
     subscribers.register(eventBus);
 
-    expect(eventBus.subscribe).toHaveBeenCalledTimes(1);
+    expect(eventBus.subscribe).toHaveBeenCalledTimes(2);
     expect(eventBus.subscribe).toHaveBeenCalledWith(
       SubscriptionEventType.Confirmed,
+      expect.any(Function),
+    );
+    expect(eventBus.subscribe).toHaveBeenCalledWith(
+      SubscriptionEventType.Deactivated,
       expect.any(Function),
     );
   });
