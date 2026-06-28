@@ -1,12 +1,5 @@
 import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
-import { SubscriptionEventType } from '../../subscription/api/events.js';
-import type { SubscriptionRequestedEvent } from '../../subscription/api/events.js';
-import type { SubscriptionConfirmationRenewedEvent } from '../../subscription/api/events.js';
-import type { SubscriptionReactivatedEvent } from '../../subscription/api/events.js';
-import type { SubscriptionConfirmedEvent } from '../../subscription/api/events.js';
-import type { SubscriptionDeactivatedEvent } from '../../subscription/api/events.js';
-import { ScannerEventType } from '../../scanner/api/events.js';
-import type { NewReleaseDetectedEvent } from '../../scanner/api/events.js';
+import { registerEventSubscribers } from '../../../platform/event-bus/event-subscriber.js';
 import type { EmailClient } from './ports/email-client.js';
 import type { NotificationMetrics } from './ports/notification-metrics.js';
 import type { RecipientRepository } from './ports/recipient.repository.js';
@@ -26,73 +19,35 @@ export class NotificationEventSubscribers {
   ) {}
 
   register(eventBus: EventBus): void {
-    const subscriptionDeactivatedProjectionSubscriber =
-      new SubscriptionDeactivatedSubscriber(this.recipientRepository);
-
-    const subscriptionRequestedSubscriber = new SubscriptionRequestedSubscriber(
-      this.emailClient,
-      this.appUrl,
-      this.metrics,
-    );
-    const subscriptionConfirmationRenewedSubscriber =
+    registerEventSubscribers(eventBus, [
+      new SubscriptionRequestedSubscriber(
+        this.emailClient,
+        this.appUrl,
+        this.metrics,
+      ),
       new SubscriptionConfirmationRenewedSubscriber(
         this.emailClient,
         this.appUrl,
         this.metrics,
-      );
-    const subscriptionReactivatedSubscriber =
+      ),
       new SubscriptionReactivatedSubscriber(
         this.emailClient,
         this.appUrl,
         this.metrics,
-      );
-    const subscriptionConfirmedSubscriber = new SubscriptionConfirmedSubscriber(
-      this.recipientRepository,
-      this.emailClient,
-      this.appUrl,
-      this.metrics,
-    );
-    const newReleaseDetectedSubscriber = new NewReleaseDetectedSubscriber(
-      this.recipientRepository,
-      this.emailClient,
-      this.appUrl,
-      this.metrics,
-    );
-
-    eventBus.subscribe(
-      SubscriptionEventType.Requested,
-      (event: SubscriptionRequestedEvent) =>
-        subscriptionRequestedSubscriber.handle(event),
-    );
-
-    eventBus.subscribe(
-      SubscriptionEventType.ConfirmationRenewed,
-      (event: SubscriptionConfirmationRenewedEvent) =>
-        subscriptionConfirmationRenewedSubscriber.handle(event),
-    );
-
-    eventBus.subscribe(
-      SubscriptionEventType.Reactivated,
-      (event: SubscriptionReactivatedEvent) =>
-        subscriptionReactivatedSubscriber.handle(event),
-    );
-
-    eventBus.subscribe(
-      SubscriptionEventType.Confirmed,
-      (event: SubscriptionConfirmedEvent) =>
-        subscriptionConfirmedSubscriber.handle(event),
-    );
-
-    eventBus.subscribe(
-      SubscriptionEventType.Deactivated,
-      (event: SubscriptionDeactivatedEvent) =>
-        subscriptionDeactivatedProjectionSubscriber.handle(event),
-    );
-
-    eventBus.subscribe(
-      ScannerEventType.NewReleaseDetected,
-      (event: NewReleaseDetectedEvent) =>
-        newReleaseDetectedSubscriber.handle(event),
-    );
+      ),
+      new SubscriptionConfirmedSubscriber(
+        this.recipientRepository,
+        this.emailClient,
+        this.appUrl,
+        this.metrics,
+      ),
+      new SubscriptionDeactivatedSubscriber(this.recipientRepository),
+      new NewReleaseDetectedSubscriber(
+        this.recipientRepository,
+        this.emailClient,
+        this.appUrl,
+        this.metrics,
+      ),
+    ]);
   }
 }

@@ -4,15 +4,22 @@ import {
   RepoPath,
   RepoWatcher,
 } from '../../domain/index.js';
-import type { SubscriptionConfirmedEvent } from '../../../subscription/api/events.js';
+import {
+  SubscriptionEventType,
+  type SubscriptionConfirmedEvent,
+} from '../../../subscription/api/events.js';
+import { EventSubscriber } from '../../../../platform/event-bus/event-subscriber.js';
 import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
 
-export class SubscriptionConfirmedSubscriber {
+export class SubscriptionConfirmedSubscriber extends EventSubscriber<SubscriptionConfirmedEvent> {
+  readonly eventType = SubscriptionEventType.Confirmed;
   constructor(
     private readonly monitoredRepoRepository: MonitoredRepoRepository,
     private readonly transactionManager: TransactionManager,
-  ) {}
+  ) {
+    super();
+  }
 
   async handle(event: SubscriptionConfirmedEvent): Promise<void> {
     const repo = RepoPath.fromString(event.payload.repo);
