@@ -4,6 +4,7 @@ import {
   timestamp,
   pgEnum,
   uniqueIndex,
+  index,
 } from 'drizzle-orm/pg-core';
 
 export const subscriptionStatusEnum = pgEnum('subscription_status', [
@@ -33,4 +34,23 @@ export const subscriptions = pgTable(
     uniqueIndex('confirm_token_unique').on(table.confirmToken),
     uniqueIndex('unsubscribe_token_unique').on(table.unsubscribeToken),
   ],
+);
+
+export const monitoredRepos = pgTable('monitored_repos', {
+  repo: text('repo').primaryKey(),
+  lastSeenTag: text('last_seen_tag'),
+});
+
+export const repoWatchers = pgTable(
+  'repo_watchers',
+  {
+    subscriptionId: text('subscription_id').primaryKey(),
+    repo: text('repo')
+      .notNull()
+      .references(() => monitoredRepos.repo, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    unsubscribeToken: text('unsubscribe_token').notNull(),
+    lastNotifiedTag: text('last_notified_tag'),
+  },
+  (table) => [index('repo_watchers_repo_idx').on(table.repo)],
 );
