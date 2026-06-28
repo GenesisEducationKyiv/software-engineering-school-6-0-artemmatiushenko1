@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Email, RepoPath, ReleaseTag } from '../../src/shared-kernel/index.js';
+import { Email, RepoPath } from '../../src/shared-kernel/index.js';
 import { SubscriptionToken } from '../../src/modules/subscription/domain/subscription-token.js';
 import { SubscriptionTokenScope } from '../../src/modules/subscription/domain/subscription-token-scope.js';
 import { Subscription } from '../../src/modules/subscription/domain/subscription.js';
@@ -58,7 +58,7 @@ const requestSubscription = () =>
 
 const confirmSubscription = (
   subscription = requestSubscription(),
-  baselineTag: ReleaseTag | null = null,
+  baselineTag: string | null = null,
 ) => {
   subscription.confirm(
     CONFIRM_TOKEN_UUID,
@@ -232,7 +232,7 @@ describe('Subscription', () => {
     it('should include baselineTag in SubscriptionConfirmed event', () => {
       const subscription = requestSubscription();
       subscription.pullEvents();
-      const baselineTag = ReleaseTag.fromString('v1.0.0');
+      const baselineTag = 'v1.0.0';
 
       subscription.confirm(
         CONFIRM_TOKEN_UUID,

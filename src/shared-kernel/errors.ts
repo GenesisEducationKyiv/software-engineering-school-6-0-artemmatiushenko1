@@ -15,12 +15,3 @@ export class InvalidRepoFormatError extends Error {
     this.name = 'InvalidRepoFormatError';
   }
 }
-
-export class InvalidReleaseTagError extends Error {
-  readonly code = 'INVALID_RELEASE_TAG' as const;
-
-  constructor(tag: string) {
-    super(`Invalid release tag: ${tag}`);
-    this.name = 'InvalidReleaseTagError';
-  }
-}

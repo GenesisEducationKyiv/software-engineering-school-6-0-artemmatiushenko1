@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   InvalidRepoFormatError,
   InvalidEmailError,
-  InvalidReleaseTagError,
 } from '../../shared-kernel/errors.js';
+import { InvalidReleaseTagError } from '../../modules/scanner/domain/errors.js';
 import {
   InvalidTokenError,
   WrongTokenScopeError,

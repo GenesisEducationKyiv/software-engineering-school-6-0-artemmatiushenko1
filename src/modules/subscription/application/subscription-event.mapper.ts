@@ -65,7 +65,7 @@ const toPublicApiEvent = (event: DomainEvent): SubscriptionPublicApiEvent => {
         email: event.payload.email.value,
         repo: event.payload.repoPath.toString(),
         unsubscribeToken: event.payload.unsubscribeToken.value,
-        baselineTag: event.payload.baselineTag?.value ?? null,
+        baselineTag: event.payload.baselineTag,
       },
     };
   }

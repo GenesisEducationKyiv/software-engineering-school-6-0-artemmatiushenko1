@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Email, RepoPath, ReleaseTag } from '../../../shared-kernel/index.js';
+import { Email, RepoPath } from '../../../shared-kernel/index.js';
 import { SubscriptionRequestedEvent } from '../domain/events.js';
 import { SubscriptionConfirmationRenewedEvent } from '../domain/events.js';
 import { SubscriptionReactivatedEvent } from '../domain/events.js';
@@ -117,7 +117,7 @@ describe('toPublicApiEvents', () => {
           scope: SubscriptionTokenScope.Unsubscribe,
           expiresAt: new Date('2026-01-01T13:00:00Z'),
         }),
-        baselineTag: ReleaseTag.fromString('v1.0.0'),
+        baselineTag: 'v1.0.0',
       },
       occurredAt,
     );

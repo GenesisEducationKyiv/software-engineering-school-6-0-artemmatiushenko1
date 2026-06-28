@@ -1,8 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import {
-  ReleaseTag,
-  InvalidReleaseTagError,
-} from '../../src/shared-kernel/index.js';
+import { ReleaseTag } from './release-tag.js';
+import { InvalidReleaseTagError } from './errors.js';
 
 describe('ReleaseTag', () => {
   describe('fromString', () => {

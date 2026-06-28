@@ -1,8 +1,8 @@
 import {
   InvalidEmailError,
   InvalidRepoFormatError,
-  InvalidReleaseTagError,
 } from '../../shared-kernel/errors.js';
+import { InvalidReleaseTagError } from '../../modules/scanner/domain/errors.js';
 import {
   InvalidTokenError,
   TokenAlreadyUsedError,

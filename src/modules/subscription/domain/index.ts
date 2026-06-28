@@ -1,10 +1,8 @@
 export {
   Email,
   RepoPath,
-  ReleaseTag,
   InvalidEmailError,
   InvalidRepoFormatError,
-  InvalidReleaseTagError,
 } from '../../../shared-kernel/index.js';
 export * from './errors.js';
 export * from './subscription.js';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Email, ReleaseTag, RepoPath } from '../../../shared-kernel/index.js';
+import { Email, RepoPath, ReleaseTag } from './index.js';
 import { EmptyMonitoredRepoError, RepoWatcherNotFoundError } from './errors.js';
 import { MonitoredRepo } from './monitored-repo.js';
 import { RepoWatcher } from './repo-watcher.js';

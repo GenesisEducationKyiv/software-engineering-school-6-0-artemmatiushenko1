@@ -12,7 +12,6 @@ import type {
 } from '../../../../shared-kernel/index.js';
 import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
 import type { GithubClient } from '../../../github/api/github-client.interface.js';
-import { ReleaseTag } from '../../../../shared-kernel/index.js';
 import { toPublicApiEvents } from '../subscription-event.mapper.js';
 
 export class ConfirmUseCase {
@@ -50,9 +49,7 @@ export class ConfirmUseCase {
       subscription.repoPath.owner,
       subscription.repoPath.repo,
     );
-    const baselineTag = latestRelease
-      ? ReleaseTag.fromString(latestRelease.tag)
-      : null;
+    const baselineTag = latestRelease?.tag ?? null;
 
     subscription.confirm(token, now, unsubscribeToken, baselineTag);
 

@@ -1,4 +1,5 @@
-import type { Email, ReleaseTag } from '../../../shared-kernel/index.js';
+import type { Email } from '../../../shared-kernel/index.js';
+import type { ReleaseTag } from './release-tag.js';
 
 export type RepoWatcherParams = {
   subscriptionId: string;

@@ -1,10 +1,6 @@
 import type { SubscriptionToken } from './subscription-token.js';
 import { SubscriptionTokenScope } from './subscription-token-scope.js';
-import type {
-  Email,
-  ReleaseTag,
-  RepoPath,
-} from '../../../shared-kernel/index.js';
+import type { Email, RepoPath } from '../../../shared-kernel/index.js';
 import {
   IllegalStateTransitionError,
   SubscriptionAlreadyConfirmedError,
@@ -130,7 +126,7 @@ export class Subscription {
     token: string,
     now: Date,
     unsubscribeToken: SubscriptionToken,
-    baselineTag: ReleaseTag | null,
+    baselineTag: string | null,
   ) {
     if (this.confirmationToken.value !== token) {
       throw new WrongTokenScopeError(SubscriptionTokenScope.Confirm, 'unknown');

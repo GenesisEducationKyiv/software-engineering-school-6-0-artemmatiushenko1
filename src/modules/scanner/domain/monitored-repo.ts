@@ -1,6 +1,7 @@
 import { EmptyMonitoredRepoError, RepoWatcherNotFoundError } from './errors.js';
 import { RepoWatcher } from './repo-watcher.js';
-import type { ReleaseTag, RepoPath } from '../../../shared-kernel/index.js';
+import type { RepoPath } from '../../../shared-kernel/index.js';
+import type { ReleaseTag } from './release-tag.js';
 
 export type MonitoredRepoParams = {
   repo: RepoPath;
