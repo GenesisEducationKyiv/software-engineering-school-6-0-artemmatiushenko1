@@ -6,6 +6,8 @@ import type {
   Logger,
   TransactionManager,
 } from '../../../../shared-kernel/index.js';
+import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
+import { toPublicApiEvents } from '../subscription-event.mapper.js';
 
 export class UnsubscribeUseCase {
   constructor(
@@ -13,6 +15,7 @@ export class UnsubscribeUseCase {
     private transactionManager: TransactionManager,
     private logger: Logger,
     private clock: Clock,
+    private eventBus: EventBus,
   ) {}
 
   async execute(token: string): Promise<void> {
@@ -30,6 +33,11 @@ export class UnsubscribeUseCase {
     await this.transactionManager.run(async (tx) => {
       await this.subscriptionRepo.save(subscription, tx);
     });
+
+    const integrationEvents = toPublicApiEvents(subscription.pullEvents());
+    if (integrationEvents.length > 0) {
+      await this.eventBus.publish(integrationEvents);
+    }
 
     this.logger.info('User unsubscribed', {
       subscriptionId: subscription.id,

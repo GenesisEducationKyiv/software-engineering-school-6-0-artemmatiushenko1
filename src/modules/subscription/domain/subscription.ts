@@ -16,6 +16,7 @@ import type { DomainEvent } from '../../../shared-kernel/domain-event.js';
 import {
   SubscriptionConfirmationRenewedEvent,
   SubscriptionConfirmedEvent,
+  SubscriptionDeactivatedEvent,
   SubscriptionReactivatedEvent,
   SubscriptionRequestedEvent,
 } from './events.js';
@@ -119,6 +120,14 @@ export class Subscription {
 
     this._unsubscribeToken = token.consume(now);
     this._status = SubscriptionStatus.Unsubscribed;
+
+    this.events.push(
+      new SubscriptionDeactivatedEvent(
+        this.id,
+        { repoPath: this.repoPath },
+        now,
+      ),
+    );
   }
 
   confirm(

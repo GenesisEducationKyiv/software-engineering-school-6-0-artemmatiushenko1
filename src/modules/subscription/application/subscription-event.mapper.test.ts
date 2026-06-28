@@ -4,6 +4,7 @@ import { SubscriptionRequestedEvent } from '../domain/events.js';
 import { SubscriptionConfirmationRenewedEvent } from '../domain/events.js';
 import { SubscriptionReactivatedEvent } from '../domain/events.js';
 import { SubscriptionConfirmedEvent } from '../domain/events.js';
+import { SubscriptionDeactivatedEvent } from '../domain/events.js';
 import { SubscriptionEventType } from '../api/events.js';
 import { toPublicApiEvents } from './subscription-event.mapper.js';
 import { SubscriptionToken } from '../domain/subscription-token.js';
@@ -131,6 +132,29 @@ describe('toPublicApiEvents', () => {
           repo: 'owner/repo',
           unsubscribeToken: 'unsub-token',
           baselineTag: 'v1.0.0',
+        },
+      },
+    ]);
+  });
+
+  it('maps SubscriptionDeactivated domain event to integration event', () => {
+    const occurredAt = new Date('2026-01-01T12:00:00Z');
+
+    const domainEvent = new SubscriptionDeactivatedEvent(
+      'sub-1',
+      {
+        repoPath: RepoPath.fromString('owner/repo'),
+      },
+      occurredAt,
+    );
+
+    expect(toPublicApiEvents([domainEvent])).toEqual([
+      {
+        type: SubscriptionEventType.Deactivated,
+        aggregateId: 'sub-1',
+        occurredAt,
+        payload: {
+          repo: 'owner/repo',
         },
       },
     ]);

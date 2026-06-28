@@ -10,6 +10,7 @@ import {
   SubscriptionAlreadyDeactivatedError,
   WrongTokenScopeError,
 } from '../../src/modules/subscription/domain/errors.js';
+import { SubscriptionDeactivatedEvent } from '../../src/modules/subscription/domain/events.js';
 
 const SUBSCRIPTION_ID = 'sub-1';
 const EMAIL = Email.fromString('test@example.com');
@@ -396,6 +397,24 @@ describe('Subscription', () => {
       subscription.unsubscribe(UNSUBSCRIBE_TOKEN_UUID, NOW);
 
       expect(subscription.status).toBe(SubscriptionStatus.Unsubscribed);
+    });
+
+    it('should emit SubscriptionDeactivatedEvent', () => {
+      const subscription = confirmSubscription();
+      subscription.pullEvents();
+
+      subscription.unsubscribe(UNSUBSCRIBE_TOKEN_UUID, NOW);
+
+      const events = subscription.pullEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(SubscriptionDeactivatedEvent);
+      expect(events[0]).toMatchObject({
+        aggregateId: SUBSCRIPTION_ID,
+        occurredAt: NOW,
+        payload: {
+          repoPath: REPO_PATH,
+        },
+      });
     });
 
     it('should throw WrongTokenScopeError for an invalid unsubscribe token', () => {

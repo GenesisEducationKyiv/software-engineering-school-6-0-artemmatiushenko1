@@ -218,6 +218,7 @@ export class AppContainer {
       this.transactionManager,
       this.logger,
       this.clock,
+      this.eventBus,
     ));
   }
 
