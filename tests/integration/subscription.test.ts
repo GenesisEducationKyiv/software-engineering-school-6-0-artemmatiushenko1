@@ -155,6 +155,11 @@ describe('Subscription Routes Integration with PGlite', () => {
     vi.resetAllMocks();
 
     githubMock.repositoryExists.mockResolvedValue(true);
+    githubMock.getLatestRelease.mockResolvedValue({
+      tag: 'v1.0.0',
+      name: 'v1.0.0',
+      publishedAt: null,
+    });
     clockMock.now.mockReturnValue(FIXED_NOW);
 
     const fastify = Fastify(createFastifyServerOptions(TEST_APP_CONFIG));
@@ -459,6 +464,8 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
       assert(updatedSubscription);
       expect(updatedSubscription.status).toBe('confirmed');
+      expect(updatedSubscription.lastSeenTag).toBe('v1.0.0');
+      expect(githubMock.getLatestRelease).toHaveBeenCalledWith('owner', 'repo');
 
       const consumedSubscribeToken = await findSubscriptionToken(
         subscription.id,

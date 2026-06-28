@@ -121,7 +121,12 @@ export class Subscription {
     this._status = SubscriptionStatus.Unsubscribed;
   }
 
-  confirm(token: string, now: Date, unsubscribeToken: SubscriptionToken) {
+  confirm(
+    token: string,
+    now: Date,
+    unsubscribeToken: SubscriptionToken,
+    baselineTag: ReleaseTag | null,
+  ) {
     if (this.confirmationToken.value !== token) {
       throw new WrongTokenScopeError(SubscriptionTokenScope.Confirm, 'unknown');
     }
@@ -140,6 +145,7 @@ export class Subscription {
     this._confirmationToken = this._confirmationToken.consume(now);
     this._unsubscribeToken = unsubscribeToken;
     this._status = SubscriptionStatus.Confirmed;
+    this._lastSeenTag = baselineTag;
 
     this.events.push(
       new SubscriptionConfirmedEvent(
@@ -148,6 +154,7 @@ export class Subscription {
           repoPath: this.repoPath,
           email: this.email,
           unsubscribeToken: this._unsubscribeToken,
+          baselineTag,
         },
         now,
       ),

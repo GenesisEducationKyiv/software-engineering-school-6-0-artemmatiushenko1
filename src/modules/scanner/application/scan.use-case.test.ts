@@ -44,6 +44,7 @@ const createConfirmedDomainSubscription = (overrides: {
       scope: SubscriptionTokenScope.Unsubscribe,
       expiresAt: TOKEN_EXPIRES_AT,
     }),
+    null,
   );
   subscription.pullEvents();
 

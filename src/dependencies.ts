@@ -204,6 +204,7 @@ export class AppContainer {
       this.tokenGenerator,
       this.clock,
       this.eventBus,
+      this.githubClient,
     ));
   }
 

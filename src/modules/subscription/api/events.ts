@@ -41,6 +41,7 @@ export type SubscriptionConfirmedEvent = DomainEventEnvelope<
     email: string;
     repo: string;
     unsubscribeToken: string;
+    baselineTag: string | null;
   },
   typeof SubscriptionEventType.Confirmed
 >;

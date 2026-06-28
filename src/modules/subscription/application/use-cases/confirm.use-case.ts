@@ -11,6 +11,8 @@ import type {
   TransactionManager,
 } from '../../../../shared-kernel/index.js';
 import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
+import type { GithubClient } from '../../../github/api/github-client.interface.js';
+import { ReleaseTag } from '../../../../shared-kernel/index.js';
 import { toPublicApiEvents } from '../subscription-event.mapper.js';
 
 export class ConfirmUseCase {
@@ -23,6 +25,7 @@ export class ConfirmUseCase {
     private tokenGenerator: TokenGenerator,
     private clock: Clock,
     private eventBus: EventBus,
+    private githubClient: GithubClient,
   ) {}
 
   async execute(token: string): Promise<void> {
@@ -43,7 +46,15 @@ export class ConfirmUseCase {
       ttlMs: ConfirmUseCase.UNSUBSCRIBE_TTL_MS,
     });
 
-    subscription.confirm(token, now, unsubscribeToken);
+    const latestRelease = await this.githubClient.getLatestRelease(
+      subscription.repoPath.owner,
+      subscription.repoPath.repo,
+    );
+    const baselineTag = latestRelease
+      ? ReleaseTag.fromString(latestRelease.tag)
+      : null;
+
+    subscription.confirm(token, now, unsubscribeToken, baselineTag);
 
     await this.transactionManager.run(async (tx) => {
       await this.subscriptionRepo.save(subscription, tx);

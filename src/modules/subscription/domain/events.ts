@@ -1,11 +1,16 @@
 import { DomainEvent } from '../../../shared-kernel/index.js';
-import type { Email, RepoPath } from '../../../shared-kernel/index.js';
+import type {
+  Email,
+  ReleaseTag,
+  RepoPath,
+} from '../../../shared-kernel/index.js';
 import type { SubscriptionToken } from './subscription-token.js';
 
 type SubscriptionConfirmedEventPayload = {
   repoPath: RepoPath;
   email: Email;
   unsubscribeToken: SubscriptionToken;
+  baselineTag: ReleaseTag | null;
 };
 
 export class SubscriptionConfirmedEvent extends DomainEvent<SubscriptionConfirmedEventPayload> {

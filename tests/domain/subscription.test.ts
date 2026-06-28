@@ -52,8 +52,16 @@ const requestSubscription = () =>
     ISSUED_AT,
   );
 
-const confirmSubscription = (subscription = requestSubscription()) => {
-  subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueUnsubscribeToken());
+const confirmSubscription = (
+  subscription = requestSubscription(),
+  baselineTag: ReleaseTag | null = null,
+) => {
+  subscription.confirm(
+    CONFIRM_TOKEN_UUID,
+    NOW,
+    issueUnsubscribeToken(),
+    baselineTag,
+  );
 
   return subscription;
 };
@@ -172,7 +180,12 @@ describe('Subscription', () => {
     it('should confirm a pending subscription', () => {
       const subscription = requestSubscription();
 
-      subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueUnsubscribeToken());
+      subscription.confirm(
+        CONFIRM_TOKEN_UUID,
+        NOW,
+        issueUnsubscribeToken(),
+        null,
+      );
 
       expect(subscription.status).toBe(SubscriptionStatus.Confirmed);
     });
@@ -181,10 +194,20 @@ describe('Subscription', () => {
       const subscription = requestSubscription();
 
       expect(() =>
-        subscription.confirm('invalid-token', NOW, issueUnsubscribeToken()),
+        subscription.confirm(
+          'invalid-token',
+          NOW,
+          issueUnsubscribeToken(),
+          null,
+        ),
       ).toThrow(WrongTokenScopeError);
       expect(() =>
-        subscription.confirm('invalid-token', NOW, issueUnsubscribeToken()),
+        subscription.confirm(
+          'invalid-token',
+          NOW,
+          issueUnsubscribeToken(),
+          null,
+        ),
       ).toThrow('Wrong token scope: expected confirm, got unknown');
     });
 
@@ -192,21 +215,55 @@ describe('Subscription', () => {
       const subscription = confirmSubscription();
 
       expect(() =>
-        subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueUnsubscribeToken()),
+        subscription.confirm(
+          CONFIRM_TOKEN_UUID,
+          NOW,
+          issueUnsubscribeToken(),
+          null,
+        ),
       ).toThrow(SubscriptionAlreadyConfirmedError);
       expect(() =>
-        subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueUnsubscribeToken()),
+        subscription.confirm(
+          CONFIRM_TOKEN_UUID,
+          NOW,
+          issueUnsubscribeToken(),
+          null,
+        ),
       ).toThrow('Subscription already confirmed');
+    });
+
+    it('should set lastSeenTag from baselineTag on confirm', () => {
+      const subscription = requestSubscription();
+      const baselineTag = ReleaseTag.fromString('v1.0.0');
+
+      subscription.confirm(
+        CONFIRM_TOKEN_UUID,
+        NOW,
+        issueUnsubscribeToken(),
+        baselineTag,
+      );
+
+      expect(subscription.lastSeenTag).toEqual(baselineTag);
     });
 
     it('should throw WrongTokenScopeError when unsubscribe token has wrong scope', () => {
       const subscription = requestSubscription();
 
       expect(() =>
-        subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueConfirmToken()),
+        subscription.confirm(
+          CONFIRM_TOKEN_UUID,
+          NOW,
+          issueConfirmToken(),
+          null,
+        ),
       ).toThrow(WrongTokenScopeError);
       expect(() =>
-        subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueConfirmToken()),
+        subscription.confirm(
+          CONFIRM_TOKEN_UUID,
+          NOW,
+          issueConfirmToken(),
+          null,
+        ),
       ).toThrow('Wrong token scope: expected unsubscribe, got confirm');
     });
   });
