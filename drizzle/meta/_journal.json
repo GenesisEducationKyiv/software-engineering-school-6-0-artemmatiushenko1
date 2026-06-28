@@ -57,6 +57,13 @@
       "when": 1782052000000,
       "tag": "0007_monitored_repo_projection",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782053000000,
+      "tag": "0008_drop_subscriptions_last_seen_tag",
+      "breakpoints": true
     }
   ]
 }

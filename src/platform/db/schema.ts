@@ -20,7 +20,6 @@ export const subscriptions = pgTable(
     email: text('email').notNull(),
     repo: text('repo').notNull(),
     status: subscriptionStatusEnum('status').default('pending').notNull(),
-    lastSeenTag: text('last_seen_tag'),
     confirmToken: text('confirm_token').notNull(),
     confirmExpiresAt: timestamp('confirm_expires_at').notNull(),
     confirmUsedAt: timestamp('confirm_used_at'),

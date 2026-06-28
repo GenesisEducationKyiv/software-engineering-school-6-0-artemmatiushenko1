@@ -80,7 +80,6 @@ describe('Subscription Routes Integration with PGlite', () => {
   const seedConfirmedSubscription = async (values: {
     email: string;
     repo: string;
-    lastSeenTag?: string | null;
     unsubscribeExpiresAt?: Date;
   }) => {
     const id = subscriptionId();
@@ -94,7 +93,6 @@ describe('Subscription Routes Integration with PGlite', () => {
         email: values.email,
         repo: values.repo,
         status: 'confirmed',
-        lastSeenTag: values.lastSeenTag ?? null,
         confirmToken: subscribeToken,
         confirmExpiresAt: new Date('2026-01-01T13:00:00Z'),
         confirmUsedAt: new Date('2026-01-01T12:00:00Z'),
@@ -464,7 +462,6 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
       assert(updatedSubscription);
       expect(updatedSubscription.status).toBe('confirmed');
-      expect(updatedSubscription.lastSeenTag).toBeNull();
       expect(githubMock.getLatestRelease).toHaveBeenCalledWith('owner', 'repo');
 
       const watcher = await db.query.repoWatchers.findFirst({
