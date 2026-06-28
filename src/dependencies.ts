@@ -4,6 +4,7 @@ import { type AppConfig } from './config.js';
 import { OctokitGithubClient } from './modules/github/infrastructure/octokit.client.js';
 import { CachedOctokitGithubClient } from './modules/github/infrastructure/cached-octokit.client.js';
 import { DrizzleSubscriptionRepository } from './modules/subscription/infrastructure/subscription.repository.js';
+import { MonitoredRepoRepository } from './modules/scanner/infrastructure/monitored-repo.repository.js';
 import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-manager.js';
 import { NotificationEventSubscribers } from './modules/notification/application/notification-event-subscribers.js';
 import { ScanUseCase } from './modules/scanner/application/scan.use-case.js';
@@ -49,6 +50,7 @@ export class AppContainer {
   private githubClientInstance?: GithubClient;
   private emailClientInstance?: EmailClient;
   private subscriptionRepoInstance?: DrizzleSubscriptionRepository;
+  private monitoredRepoRepositoryInstance?: MonitoredRepoRepository;
   private transactionManagerInstance?: DrizzleTransactionManager;
   private notificationEventSubscribersInstance?: NotificationEventSubscribers;
   private scanUseCaseInstance?: ScanUseCase;
@@ -135,6 +137,15 @@ export class AppContainer {
 
   set subscriptionRepo(value: DrizzleSubscriptionRepository) {
     this.subscriptionRepoInstance = value;
+  }
+
+  get monitoredRepoRepository(): MonitoredRepoRepository {
+    return (this.monitoredRepoRepositoryInstance ??=
+      new MonitoredRepoRepository(this.db));
+  }
+
+  set monitoredRepoRepository(value: MonitoredRepoRepository) {
+    this.monitoredRepoRepositoryInstance = value;
   }
 
   get transactionManager(): DrizzleTransactionManager {
