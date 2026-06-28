@@ -11,25 +11,20 @@ import { ScannerEventType } from '../api/events.js';
 import { mock } from 'vitest-mock-extended';
 import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
 import {
-  Email,
   MonitoredRepo,
   ReleaseTag,
   RepoPath,
   RepoWatcher,
 } from '../domain/index.js';
 
-const UNSUBSCRIBE_TOKEN = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
 
 const createWatcher = (
   subscriptionId: string,
-  email: string,
   lastNotifiedTag: string | null = null,
 ) =>
   RepoWatcher.create({
     subscriptionId,
-    email: Email.fromString(email),
-    unsubscribeToken: UNSUBSCRIBE_TOKEN,
     lastNotifiedTag: lastNotifiedTag
       ? ReleaseTag.fromString(lastNotifiedTag)
       : null,
@@ -40,7 +35,6 @@ const createMonitoredRepo = (options: {
   lastSeenTag?: string | null;
   watchers?: Array<{
     subscriptionId: string;
-    email: string;
     lastNotifiedTag?: string | null;
   }>;
 }) => {
@@ -51,16 +45,11 @@ const createMonitoredRepo = (options: {
   for (const watcher of options.watchers ?? [
     {
       subscriptionId: '1',
-      email: 'test@example.com',
       lastNotifiedTag: options.lastSeenTag ?? null,
     },
   ]) {
     monitoredRepo.addWatcher(
-      createWatcher(
-        watcher.subscriptionId,
-        watcher.email,
-        watcher.lastNotifiedTag ?? null,
-      ),
+      createWatcher(watcher.subscriptionId, watcher.lastNotifiedTag ?? null),
     );
   }
 
@@ -108,7 +97,6 @@ describe('ScanUseCase', () => {
         watchers: [
           {
             subscriptionId: '1',
-            email: 'test@example.com',
             lastNotifiedTag: 'v1.0.0',
           },
         ],
@@ -131,11 +119,9 @@ describe('ScanUseCase', () => {
           aggregateId: '1',
           occurredAt: FIXED_NOW,
           payload: {
-            email: 'test@example.com',
             repo: 'owner/repo',
             tag: latestRelease.tag,
             releaseName: latestRelease.name,
-            unsubscribeToken: UNSUBSCRIBE_TOKEN,
           },
         },
       ]);
@@ -156,11 +142,11 @@ describe('ScanUseCase', () => {
     it('should continue scanning other repos when one fails', async () => {
       const failingRepo = createMonitoredRepo({
         repo: 'owner/fail',
-        watchers: [{ subscriptionId: '1', email: 'fail@example.com' }],
+        watchers: [{ subscriptionId: '1' }],
       });
       const okRepo = createMonitoredRepo({
         repo: 'owner/ok',
-        watchers: [{ subscriptionId: '2', email: 'ok@example.com' }],
+        watchers: [{ subscriptionId: '2' }],
       });
 
       const latestRelease = {
@@ -185,11 +171,9 @@ describe('ScanUseCase', () => {
           aggregateId: '2',
           occurredAt: FIXED_NOW,
           payload: {
-            email: 'ok@example.com',
             repo: 'owner/ok',
             tag: latestRelease.tag,
             releaseName: latestRelease.name,
-            unsubscribeToken: UNSUBSCRIBE_TOKEN,
           },
         },
       ]);
@@ -201,7 +185,6 @@ describe('ScanUseCase', () => {
         watchers: [
           {
             subscriptionId: '1',
-            email: 'test@example.com',
             lastNotifiedTag: 'v1.0.0',
           },
         ],
@@ -226,12 +209,10 @@ describe('ScanUseCase', () => {
         watchers: [
           {
             subscriptionId: '1',
-            email: 'alice@example.com',
             lastNotifiedTag: 'v1.0.0',
           },
           {
             subscriptionId: '2',
-            email: 'bob@example.com',
             lastNotifiedTag: 'v0.9.0',
           },
         ],
@@ -260,7 +241,6 @@ describe('ScanUseCase', () => {
         watchers: [
           {
             subscriptionId: '1',
-            email: 'alice@example.com',
             lastNotifiedTag: 'v1.0.0',
           },
         ],
@@ -290,12 +270,10 @@ describe('ScanUseCase', () => {
         watchers: [
           {
             subscriptionId: '1',
-            email: 'alice@example.com',
             lastNotifiedTag: 'v1.0.0',
           },
           {
             subscriptionId: '2',
-            email: 'bob@example.com',
             lastNotifiedTag: 'v1.0.0',
           },
         ],

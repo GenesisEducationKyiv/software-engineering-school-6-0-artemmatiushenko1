@@ -4,9 +4,10 @@ import { type AppConfig } from './config.js';
 import { OctokitGithubClient } from './modules/github/infrastructure/octokit.client.js';
 import { CachedOctokitGithubClient } from './modules/github/infrastructure/cached-octokit.client.js';
 import { DrizzleSubscriptionRepository } from './modules/subscription/infrastructure/subscription.repository.js';
-import { MonitoredRepoRepository } from './modules/scanner/infrastructure/monitored-repo.repository.js';
+import { DrizzleMonitoredRepoRepository } from './modules/scanner/infrastructure/monitored-repo.repository.js';
 import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-manager.js';
 import { NotificationEventSubscribers } from './modules/notification/application/notification-event-subscribers.js';
+import { DrizzleRecipientRepository } from './modules/notification/infrastructure/recipient.repository.js';
 import { ScannerEventSubscribers } from './modules/scanner/application/scanner-event-subscribers.js';
 import { ScanUseCase } from './modules/scanner/application/scan.use-case.js';
 import { SubscribeUseCase } from './modules/subscription/application/use-cases/subscribe.use-case.js';
@@ -49,7 +50,8 @@ export class AppContainer {
   private githubClientInstance?: GithubClient;
   private emailClientInstance?: EmailClient;
   private subscriptionRepoInstance?: DrizzleSubscriptionRepository;
-  private monitoredRepoRepositoryInstance?: MonitoredRepoRepository;
+  private monitoredRepoRepositoryInstance?: DrizzleMonitoredRepoRepository;
+  private recipientRepositoryInstance?: DrizzleRecipientRepository;
   private transactionManagerInstance?: DrizzleTransactionManager;
   private notificationEventSubscribersInstance?: NotificationEventSubscribers;
   private scannerEventSubscribersInstance?: ScannerEventSubscribers;
@@ -138,13 +140,23 @@ export class AppContainer {
     this.subscriptionRepoInstance = value;
   }
 
-  get monitoredRepoRepository(): MonitoredRepoRepository {
+  get monitoredRepoRepository(): DrizzleMonitoredRepoRepository {
     return (this.monitoredRepoRepositoryInstance ??=
-      new MonitoredRepoRepository(this.db));
+      new DrizzleMonitoredRepoRepository(this.db));
   }
 
-  set monitoredRepoRepository(value: MonitoredRepoRepository) {
+  set monitoredRepoRepository(value: DrizzleMonitoredRepoRepository) {
     this.monitoredRepoRepositoryInstance = value;
+  }
+
+  get recipientRepository(): DrizzleRecipientRepository {
+    return (this.recipientRepositoryInstance ??= new DrizzleRecipientRepository(
+      this.db,
+    ));
+  }
+
+  set recipientRepository(value: DrizzleRecipientRepository) {
+    this.recipientRepositoryInstance = value;
   }
 
   get transactionManager(): DrizzleTransactionManager {
@@ -160,6 +172,7 @@ export class AppContainer {
   get notificationEventSubscribers(): NotificationEventSubscribers {
     return (this.notificationEventSubscribersInstance ??=
       new NotificationEventSubscribers(
+        this.recipientRepository,
         this.emailClient,
         this.config.appUrl,
         this.metrics,

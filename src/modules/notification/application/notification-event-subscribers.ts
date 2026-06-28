@@ -4,24 +4,34 @@ import type { SubscriptionRequestedEvent } from '../../subscription/api/events.j
 import type { SubscriptionConfirmationRenewedEvent } from '../../subscription/api/events.js';
 import type { SubscriptionReactivatedEvent } from '../../subscription/api/events.js';
 import type { SubscriptionConfirmedEvent } from '../../subscription/api/events.js';
+import type { SubscriptionDeactivatedEvent } from '../../subscription/api/events.js';
 import { ScannerEventType } from '../../scanner/api/events.js';
 import type { NewReleaseDetectedEvent } from '../../scanner/api/events.js';
 import type { EmailClient } from './ports/email-client.js';
 import type { NotificationMetrics } from './ports/notification-metrics.js';
+import type { RecipientRepository } from './ports/recipient.repository.js';
 import { SubscriptionRequestedSubscriber } from './subscribers/subscription-requested.subscriber.js';
 import { SubscriptionConfirmationRenewedSubscriber } from './subscribers/subscription-confirmation-renewed.subscriber.js';
 import { SubscriptionReactivatedSubscriber } from './subscribers/subscription-reactivated.subscriber.js';
 import { SubscriptionConfirmedSubscriber } from './subscribers/subscription-confirmed.subscriber.js';
 import { NewReleaseDetectedSubscriber } from './subscribers/new-release-detected.subscriber.js';
+import { SubscriptionConfirmedProjectionSubscriber } from './subscribers/projection/subscription-confirmed-projection.subscriber.js';
+import { SubscriptionDeactivatedProjectionSubscriber } from './subscribers/projection/subscription-deactivated-projection.subscriber.js';
 
 export class NotificationEventSubscribers {
   constructor(
+    private readonly recipientRepository: RecipientRepository,
     private readonly emailClient: EmailClient,
     private readonly appUrl: string,
     private readonly metrics?: NotificationMetrics,
   ) {}
 
   register(eventBus: EventBus): void {
+    const subscriptionConfirmedProjectionSubscriber =
+      new SubscriptionConfirmedProjectionSubscriber(this.recipientRepository);
+    const subscriptionDeactivatedProjectionSubscriber =
+      new SubscriptionDeactivatedProjectionSubscriber(this.recipientRepository);
+
     const subscriptionRequestedSubscriber = new SubscriptionRequestedSubscriber(
       this.emailClient,
       this.appUrl,
@@ -45,6 +55,7 @@ export class NotificationEventSubscribers {
       this.metrics,
     );
     const newReleaseDetectedSubscriber = new NewReleaseDetectedSubscriber(
+      this.recipientRepository,
       this.emailClient,
       this.appUrl,
       this.metrics,
@@ -70,8 +81,16 @@ export class NotificationEventSubscribers {
 
     eventBus.subscribe(
       SubscriptionEventType.Confirmed,
-      (event: SubscriptionConfirmedEvent) =>
-        subscriptionConfirmedSubscriber.handle(event),
+      async (event: SubscriptionConfirmedEvent) => {
+        await subscriptionConfirmedProjectionSubscriber.handle(event);
+        await subscriptionConfirmedSubscriber.handle(event);
+      },
+    );
+
+    eventBus.subscribe(
+      SubscriptionEventType.Deactivated,
+      (event: SubscriptionDeactivatedEvent) =>
+        subscriptionDeactivatedProjectionSubscriber.handle(event),
     );
 
     eventBus.subscribe(

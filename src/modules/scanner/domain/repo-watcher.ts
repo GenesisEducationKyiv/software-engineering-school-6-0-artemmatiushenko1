@@ -1,23 +1,16 @@
-import type { Email } from '../../../shared-kernel/index.js';
 import type { ReleaseTag } from './release-tag.js';
 
 export type RepoWatcherParams = {
   subscriptionId: string;
-  email: Email;
-  unsubscribeToken: string;
   lastNotifiedTag: ReleaseTag | null;
 };
 
 export class RepoWatcher {
   readonly subscriptionId: string;
-  readonly email: Email;
-  readonly unsubscribeToken: string;
   private _lastNotifiedTag: ReleaseTag | null;
 
   private constructor(params: RepoWatcherParams) {
     this.subscriptionId = params.subscriptionId;
-    this.email = params.email;
-    this.unsubscribeToken = params.unsubscribeToken;
     this._lastNotifiedTag = params.lastNotifiedTag;
   }
 

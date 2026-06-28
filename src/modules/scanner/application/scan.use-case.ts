@@ -109,11 +109,9 @@ export class ScanUseCase {
         aggregateId: watcher.subscriptionId,
         occurredAt: this.clock.now(),
         payload: {
-          email: watcher.email.value,
           repo,
           tag: latestRelease.tag,
           releaseName: latestRelease.name ?? latestRelease.tag,
-          unsubscribeToken: watcher.unsubscribeToken,
         },
       });
     }

@@ -64,6 +64,13 @@
       "when": 1782053000000,
       "tag": "0008_drop_subscriptions_last_seen_tag",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782054000000,
+      "tag": "0009_notification_recipients",
+      "breakpoints": true
     }
   ]
 }

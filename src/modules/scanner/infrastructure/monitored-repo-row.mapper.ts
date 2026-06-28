@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import {
-  Email,
   MonitoredRepo,
   ReleaseTag,
   RepoPath,
@@ -15,8 +14,6 @@ export const MonitoredRepoRowSchema = z.object({
 export const RepoWatcherRowSchema = z.object({
   subscriptionId: z.string(),
   repo: z.string(),
-  email: z.string(),
-  unsubscribeToken: z.string(),
   lastNotifiedTag: z.string().nullable(),
 });
 
@@ -52,8 +49,6 @@ export class MonitoredRepoRowMapper {
     return monitoredRepo.watchers.map((watcher) => ({
       subscriptionId: watcher.subscriptionId,
       repo,
-      email: watcher.email.value,
-      unsubscribeToken: watcher.unsubscribeToken,
       lastNotifiedTag: watcher.lastNotifiedTag?.value ?? null,
     }));
   }
@@ -61,8 +56,6 @@ export class MonitoredRepoRowMapper {
   private watcherToDomain(row: RepoWatcherRow): RepoWatcher {
     return RepoWatcher.create({
       subscriptionId: row.subscriptionId,
-      email: Email.fromString(row.email),
-      unsubscribeToken: row.unsubscribeToken,
       lastNotifiedTag: row.lastNotifiedTag
         ? ReleaseTag.fromString(row.lastNotifiedTag)
         : null,

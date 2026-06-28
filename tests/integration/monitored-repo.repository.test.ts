@@ -8,18 +8,17 @@ import {
 } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import { DrizzleTransactionManager } from '../../src/platform/db/drizzle-transaction-manager.js';
-import { MonitoredRepoRepository } from '../../src/modules/scanner/infrastructure/monitored-repo.repository.js';
+import { DrizzleMonitoredRepoRepository } from '../../src/modules/scanner/infrastructure/monitored-repo.repository.js';
 import {
-  Email,
   MonitoredRepo,
   ReleaseTag,
   RepoPath,
   RepoWatcher,
 } from '../../src/modules/scanner/domain/index.js';
 
-describe('MonitoredRepoRepository', () => {
+describe('DrizzleMonitoredRepoRepository', () => {
   let db: Database;
-  let repository: MonitoredRepoRepository;
+  let repository: DrizzleMonitoredRepoRepository;
   let transactionManager: DrizzleTransactionManager;
 
   const save = async (monitoredRepo: MonitoredRepo) => {
@@ -30,13 +29,10 @@ describe('MonitoredRepoRepository', () => {
 
   const createWatcher = (
     subscriptionId: string,
-    email: string,
     lastNotifiedTag: string | null = 'v1.0.0',
   ) =>
     RepoWatcher.create({
       subscriptionId,
-      email: Email.fromString(email),
-      unsubscribeToken: `unsub-${subscriptionId}`,
       lastNotifiedTag: lastNotifiedTag
         ? ReleaseTag.fromString(lastNotifiedTag)
         : null,
@@ -45,7 +41,7 @@ describe('MonitoredRepoRepository', () => {
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
     await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
-    repository = new MonitoredRepoRepository(db);
+    repository = new DrizzleMonitoredRepoRepository(db);
     transactionManager = new DrizzleTransactionManager(db);
   });
 
@@ -58,14 +54,14 @@ describe('MonitoredRepoRepository', () => {
     const monitoredRepo = MonitoredRepo.create(
       RepoPath.fromString('owner/repo'),
     );
-    monitoredRepo.addWatcher(createWatcher('sub-1', 'alice@example.com'));
+    monitoredRepo.addWatcher(createWatcher('sub-1'));
 
     await save(monitoredRepo);
 
     const [loaded] = await repository.findAll();
     expect(loaded?.repo.toString()).toBe('owner/repo');
     expect(loaded?.watchers).toHaveLength(1);
-    expect(loaded?.watchers[0]?.email.value).toBe('alice@example.com');
+    expect(loaded?.watchers[0]?.subscriptionId).toBe('sub-1');
     expect(loaded?.watchers[0]?.lastNotifiedTag?.value).toBe('v1.0.0');
     expect(loaded?.lastSeenTag).toBeNull();
   });
@@ -74,7 +70,7 @@ describe('MonitoredRepoRepository', () => {
     const monitoredRepo = MonitoredRepo.create(
       RepoPath.fromString('owner/repo'),
     );
-    monitoredRepo.addWatcher(createWatcher('sub-1', 'alice@example.com'));
+    monitoredRepo.addWatcher(createWatcher('sub-1'));
     await save(monitoredRepo);
 
     monitoredRepo.markReleaseSeen(ReleaseTag.fromString('v2.0.0'));
@@ -93,12 +89,10 @@ describe('MonitoredRepoRepository', () => {
     const monitoredRepo = MonitoredRepo.create(
       RepoPath.fromString('owner/repo'),
     );
-    monitoredRepo.addWatcher(createWatcher('sub-1', 'alice@example.com'));
+    monitoredRepo.addWatcher(createWatcher('sub-1'));
     await save(monitoredRepo);
 
-    monitoredRepo.addWatcher(
-      createWatcher('sub-2', 'bob@example.com', 'v1.5.0'),
-    );
+    monitoredRepo.addWatcher(createWatcher('sub-2', 'v1.5.0'));
     await save(monitoredRepo);
 
     const [loaded] = await repository.findAll();
@@ -113,8 +107,8 @@ describe('MonitoredRepoRepository', () => {
     const monitoredRepo = MonitoredRepo.create(
       RepoPath.fromString('owner/repo'),
     );
-    const alice = createWatcher('sub-1', 'alice@example.com');
-    const bob = createWatcher('sub-2', 'bob@example.com');
+    const alice = createWatcher('sub-1');
+    const bob = createWatcher('sub-2');
     monitoredRepo.addWatcher(alice);
     monitoredRepo.addWatcher(bob);
     await save(monitoredRepo);
@@ -131,7 +125,7 @@ describe('MonitoredRepoRepository', () => {
     const monitoredRepo = MonitoredRepo.create(
       RepoPath.fromString('owner/repo'),
     );
-    monitoredRepo.addWatcher(createWatcher('sub-1', 'alice@example.com'));
+    monitoredRepo.addWatcher(createWatcher('sub-1'));
     await save(monitoredRepo);
 
     const loaded = await repository.findByRepo(
@@ -154,7 +148,7 @@ describe('MonitoredRepoRepository', () => {
     const monitoredRepo = MonitoredRepo.create(
       RepoPath.fromString('owner/repo'),
     );
-    const watcher = createWatcher('sub-1', 'alice@example.com');
+    const watcher = createWatcher('sub-1');
     monitoredRepo.addWatcher(watcher);
     await save(monitoredRepo);
 

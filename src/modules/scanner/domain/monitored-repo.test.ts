@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Email, RepoPath, ReleaseTag } from './index.js';
+import { RepoPath, ReleaseTag } from './index.js';
 import { EmptyMonitoredRepoError } from './errors.js';
 import { MonitoredRepo } from './monitored-repo.js';
 import { RepoWatcher } from './repo-watcher.js';
@@ -12,19 +12,9 @@ function tag(value: string): ReleaseTag {
   return ReleaseTag.fromString(value);
 }
 
-function email(value: string): Email {
-  return Email.fromString(value);
-}
-
-function watcher(
-  subscriptionId: string,
-  lastNotifiedTag: string | null,
-  emailAddress = `${subscriptionId}@example.com`,
-) {
+function watcher(subscriptionId: string, lastNotifiedTag: string | null) {
   return RepoWatcher.create({
     subscriptionId,
-    email: email(emailAddress),
-    unsubscribeToken: `unsub-${subscriptionId}`,
     lastNotifiedTag: lastNotifiedTag ? tag(lastNotifiedTag) : null,
   });
 }
@@ -100,22 +90,17 @@ describe('MonitoredRepo', () => {
     repo.addWatcher(
       RepoWatcher.create({
         subscriptionId: 'sub-1',
-        email: email('old@example.com'),
-        unsubscribeToken: 'token-1',
         lastNotifiedTag: tag('v1.0.0'),
       }),
     );
     repo.addWatcher(
       RepoWatcher.create({
         subscriptionId: 'sub-1',
-        email: email('new@example.com'),
-        unsubscribeToken: 'token-2',
         lastNotifiedTag: tag('v2.0.0'),
       }),
     );
 
     expect(repo.watchers).toHaveLength(1);
-    expect(repo.watchers[0]?.email.value).toBe('new@example.com');
     expect(repo.watchers[0]?.lastNotifiedTag?.value).toBe('v2.0.0');
   });
 

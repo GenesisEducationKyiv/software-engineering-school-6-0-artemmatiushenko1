@@ -4,7 +4,6 @@ import { SubscriptionEventType } from '../../../subscription/api/events.js';
 import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
 import {
-  Email,
   MonitoredRepo,
   ReleaseTag,
   RepoPath,
@@ -29,16 +28,12 @@ describe('Scanner SubscriptionDeactivatedSubscriber', () => {
     monitoredRepo.addWatcher(
       RepoWatcher.create({
         subscriptionId: 'sub-1',
-        email: Email.fromString('alice@example.com'),
-        unsubscribeToken: 'unsub-1',
         lastNotifiedTag: ReleaseTag.fromString('v1.0.0'),
       }),
     );
     monitoredRepo.addWatcher(
       RepoWatcher.create({
         subscriptionId: 'sub-2',
-        email: Email.fromString('bob@example.com'),
-        unsubscribeToken: 'unsub-2',
         lastNotifiedTag: ReleaseTag.fromString('v1.0.0'),
       }),
     );
@@ -78,8 +73,6 @@ describe('Scanner SubscriptionDeactivatedSubscriber', () => {
     monitoredRepo.addWatcher(
       RepoWatcher.create({
         subscriptionId: 'sub-1',
-        email: Email.fromString('alice@example.com'),
-        unsubscribeToken: 'unsub-1',
         lastNotifiedTag: null,
       }),
     );
@@ -133,8 +126,6 @@ describe('Scanner SubscriptionDeactivatedSubscriber', () => {
     monitoredRepo.addWatcher(
       RepoWatcher.create({
         subscriptionId: 'sub-2',
-        email: Email.fromString('bob@example.com'),
-        unsubscribeToken: 'unsub-2',
         lastNotifiedTag: null,
       }),
     );

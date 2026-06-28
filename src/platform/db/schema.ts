@@ -47,9 +47,13 @@ export const repoWatchers = pgTable(
     repo: text('repo')
       .notNull()
       .references(() => monitoredRepos.repo, { onDelete: 'cascade' }),
-    email: text('email').notNull(),
-    unsubscribeToken: text('unsubscribe_token').notNull(),
     lastNotifiedTag: text('last_notified_tag'),
   },
   (table) => [index('repo_watchers_repo_idx').on(table.repo)],
 );
+
+export const notificationRecipients = pgTable('notification_recipients', {
+  subscriptionId: text('subscription_id').primaryKey(),
+  email: text('email').notNull(),
+  unsubscribeToken: text('unsubscribe_token').notNull(),
+});

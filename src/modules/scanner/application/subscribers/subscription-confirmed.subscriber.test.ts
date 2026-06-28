@@ -4,7 +4,6 @@ import { SubscriptionEventType } from '../../../subscription/api/events.js';
 import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
 import {
-  Email,
   MonitoredRepo,
   ReleaseTag,
   RepoPath,
@@ -51,8 +50,6 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
         watchers: [
           expect.objectContaining({
             subscriptionId: 'sub-1',
-            email: Email.fromString('alice@example.com'),
-            unsubscribeToken: 'unsub-token',
             lastNotifiedTag: ReleaseTag.fromString('v1.0.0'),
           }),
         ],
@@ -66,8 +63,6 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
     existing.addWatcher(
       RepoWatcher.create({
         subscriptionId: 'sub-0',
-        email: Email.fromString('bob@example.com'),
-        unsubscribeToken: 'unsub-0',
         lastNotifiedTag: ReleaseTag.fromString('v0.9.0'),
       }),
     );

@@ -1,4 +1,4 @@
-export { Email, RepoPath } from '../../../shared-kernel/index.js';
+export { RepoPath } from '../../../shared-kernel/index.js';
 export {
   EmptyMonitoredRepoError,
   InvalidReleaseTagError,

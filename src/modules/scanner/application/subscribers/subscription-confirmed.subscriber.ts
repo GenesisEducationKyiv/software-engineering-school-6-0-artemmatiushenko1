@@ -1,12 +1,11 @@
-import type { SubscriptionConfirmedEvent } from '../../../subscription/api/events.js';
-import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import {
-  Email,
   MonitoredRepo,
   ReleaseTag,
   RepoPath,
   RepoWatcher,
 } from '../../domain/index.js';
+import type { SubscriptionConfirmedEvent } from '../../../subscription/api/events.js';
+import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
 
 export class SubscriptionConfirmedSubscriber {
@@ -28,8 +27,6 @@ export class SubscriptionConfirmedSubscriber {
       monitoredRepo.addWatcher(
         RepoWatcher.create({
           subscriptionId: event.aggregateId,
-          email: Email.fromString(event.payload.email),
-          unsubscribeToken: event.payload.unsubscribeToken,
           lastNotifiedTag,
         }),
       );

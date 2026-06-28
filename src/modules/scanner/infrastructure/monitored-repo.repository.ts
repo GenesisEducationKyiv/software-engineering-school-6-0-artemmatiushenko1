@@ -5,7 +5,7 @@ import type {
   Transaction as DrizzleTransaction,
 } from '../../../platform/db/types.js';
 import type { DomainTransaction } from '../../../shared-kernel/transaction.js';
-import type { MonitoredRepoRepository as MonitoredRepoRepositoryPort } from '../application/ports/monitored-repo.repository.js';
+import type { MonitoredRepoRepository } from '../application/ports/monitored-repo.repository.js';
 import type { MonitoredRepo, RepoPath } from '../domain/index.js';
 import {
   MonitoredRepoRowMapper,
@@ -13,7 +13,7 @@ import {
   RepoWatcherRowSchema,
 } from './monitored-repo-row.mapper.js';
 
-export class MonitoredRepoRepository implements MonitoredRepoRepositoryPort {
+export class DrizzleMonitoredRepoRepository implements MonitoredRepoRepository {
   private readonly mapper = new MonitoredRepoRowMapper();
 
   constructor(private readonly db: Database) {}
@@ -112,8 +112,6 @@ export class MonitoredRepoRepository implements MonitoredRepoRepositoryPort {
           target: repoWatchers.subscriptionId,
           set: {
             repo: watcherRow.repo,
-            email: watcherRow.email,
-            unsubscribeToken: watcherRow.unsubscribeToken,
             lastNotifiedTag: watcherRow.lastNotifiedTag,
           },
         });

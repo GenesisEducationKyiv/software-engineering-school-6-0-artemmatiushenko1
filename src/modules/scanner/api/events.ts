@@ -6,11 +6,9 @@ export const ScannerEventType = {
 
 export type NewReleaseDetectedEvent = DomainEventEnvelope<
   {
-    email: string;
     repo: string;
     tag: string;
     releaseName: string;
-    unsubscribeToken: string;
   },
   typeof ScannerEventType.NewReleaseDetected
 >;
