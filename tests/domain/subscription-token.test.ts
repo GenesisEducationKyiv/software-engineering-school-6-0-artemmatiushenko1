@@ -119,6 +119,78 @@ describe('SubscriptionToken', () => {
     );
   });
 
+  describe('rehydrate', () => {
+    it('should rehydrate a confirm token with expiry', () => {
+      const expiresAt = new Date(ISSUED_AT.getTime() + TTL_MS);
+
+      const token = SubscriptionToken.rehydrate({
+        value: VALID_UUID,
+        scope: SubscriptionTokenScope.Confirm,
+        expiresAt,
+      });
+
+      expect(token.expiresAt).toEqual(expiresAt);
+      expect(token.consumedAt).toBeNull();
+    });
+
+    it('should rehydrate a non-expiring unsubscribe token', () => {
+      const token = SubscriptionToken.rehydrate({
+        value: VALID_UUID,
+        scope: SubscriptionTokenScope.Unsubscribe,
+        expiresAt: null,
+      });
+
+      expect(token.expiresAt).toBeNull();
+    });
+
+    it('should throw InvalidTokenError when confirm token has no expiry', () => {
+      expect(() =>
+        SubscriptionToken.rehydrate({
+          value: VALID_UUID,
+          scope: SubscriptionTokenScope.Confirm,
+          expiresAt: null,
+        }),
+      ).toThrow(InvalidTokenError);
+      expect(() =>
+        SubscriptionToken.rehydrate({
+          value: VALID_UUID,
+          scope: SubscriptionTokenScope.Confirm,
+          expiresAt: null,
+        }),
+      ).toThrow('Invalid token: Confirm tokens must have an expiry.');
+    });
+
+    it('should throw InvalidTokenError when unsubscribe token has expiry', () => {
+      expect(() =>
+        SubscriptionToken.rehydrate({
+          value: VALID_UUID,
+          scope: SubscriptionTokenScope.Unsubscribe,
+          expiresAt: new Date(ISSUED_AT.getTime() + TTL_MS),
+        }),
+      ).toThrow(InvalidTokenError);
+      expect(() =>
+        SubscriptionToken.rehydrate({
+          value: VALID_UUID,
+          scope: SubscriptionTokenScope.Unsubscribe,
+          expiresAt: new Date(ISSUED_AT.getTime() + TTL_MS),
+        }),
+      ).toThrow('Invalid token: Unsubscribe tokens must not expire.');
+    });
+
+    it.each(['not-a-uuid', '', '123'])(
+      'should throw InvalidTokenError for invalid value: %s',
+      (value) => {
+        expect(() =>
+          SubscriptionToken.rehydrate({
+            value,
+            scope: SubscriptionTokenScope.Confirm,
+            expiresAt: new Date(ISSUED_AT.getTime() + TTL_MS),
+          }),
+        ).toThrow(InvalidTokenError);
+      },
+    );
+  });
+
   describe('consume', () => {
     it('should return a consumed token without mutating the original', () => {
       const token = issueToken();

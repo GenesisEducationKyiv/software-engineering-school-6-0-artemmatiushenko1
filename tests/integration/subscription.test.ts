@@ -83,8 +83,8 @@ describe('Subscription Routes Integration with PGlite', () => {
     lastSeenTag?: string | null;
   }) => {
     const id = subscriptionId();
-    const subscribeToken = `subscribe-token-${id}`;
-    const unsubscribeToken = `unsubscribe-token-${id}`;
+    const confirmToken = randomUUID();
+    const unsubscribeToken = randomUUID();
 
     const [subscription] = await db
       .insert(schema.subscriptions)
@@ -94,7 +94,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         repo: values.repo,
         status: 'confirmed',
         lastSeenTag: values.lastSeenTag ?? null,
-        confirmToken: subscribeToken,
+        confirmToken,
         confirmExpiresAt: new Date('2026-01-01T13:00:00Z'),
         confirmUsedAt: new Date('2026-01-01T12:00:00Z'),
         unsubscribeToken,
@@ -103,7 +103,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
     assert(subscription);
 
-    return { subscription, subscribeToken, unsubscribeToken };
+    return { subscription, subscribeToken: confirmToken, unsubscribeToken };
   };
 
   const seedPendingSubscription = async (values: {
@@ -114,7 +114,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     unsubscribeToken?: string;
   }) => {
     const id = subscriptionId();
-    const confirmToken = values.confirmToken ?? `confirm-token-${id}`;
+    const confirmToken = values.confirmToken ?? randomUUID();
 
     const [subscription] = await db
       .insert(schema.subscriptions)
@@ -429,7 +429,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
   describe('GET /api/confirm/:token', () => {
     it('should return 200 and confirm the subscription for a valid token', async () => {
-      const subscribeTokenValue = 'valid-confirm-token';
+      const subscribeTokenValue = randomUUID();
       const { subscription } = await seedPendingSubscription({
         email: 'test@example.com',
         repo: 'owner/repo',
@@ -464,7 +464,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     });
 
     it('should return 409 and SUBSCRIPTION_ALREADY_CONFIRMED when reusing an already consumed token', async () => {
-      const tokenValue = 'reused-confirm-token';
+      const tokenValue = randomUUID();
       await seedPendingSubscription({
         email: 'test@example.com',
         repo: 'owner/repo',
@@ -508,7 +508,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     });
 
     it('should return 400 and TOKEN_EXPIRED when token is expired', async () => {
-      const tokenValue = 'expired-token';
+      const tokenValue = randomUUID();
       const { subscription } = await seedPendingSubscription({
         email: 'test@example.com',
         repo: 'owner/repo',
@@ -532,11 +532,11 @@ describe('Subscription Routes Integration with PGlite', () => {
     });
 
     it('should return 404 and SUBSCRIPTION_NOT_FOUND when token has wrong scope', async () => {
-      const tokenValue = 'wrong-scope-token';
+      const tokenValue = randomUUID();
       await seedPendingSubscription({
         email: 'test@example.com',
         repo: 'owner/repo',
-        confirmToken: 'subscribe-token',
+        confirmToken: randomUUID(),
         unsubscribeToken: tokenValue,
       });
 

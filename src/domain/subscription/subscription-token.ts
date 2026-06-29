@@ -17,7 +17,34 @@ export class SubscriptionToken {
     public readonly scope: SubscriptionTokenScope,
     public readonly consumedAt: Date | null,
   ) {
+    SubscriptionToken.assertValid({ value, scope, expiresAt });
     Object.freeze(this);
+  }
+
+  private static assertValid(params: {
+    value: string;
+    scope: SubscriptionTokenScope;
+    expiresAt: Date | null;
+  }): void {
+    if (!isUuid(params.value)) {
+      throw new InvalidTokenError(
+        `Invalid value: ${params.value}. Expected a valid UUID.`,
+      );
+    }
+
+    if (
+      params.scope === SubscriptionTokenScope.Confirm &&
+      params.expiresAt === null
+    ) {
+      throw new InvalidTokenError('Confirm tokens must have an expiry.');
+    }
+
+    if (
+      params.scope === SubscriptionTokenScope.Unsubscribe &&
+      params.expiresAt !== null
+    ) {
+      throw new InvalidTokenError('Unsubscribe tokens must not expire.');
+    }
   }
 
   static rehydrate(params: {
@@ -40,12 +67,6 @@ export class SubscriptionToken {
     issuedAt: Date;
     ttlMs?: number;
   }): SubscriptionToken {
-    if (!isUuid(params.value)) {
-      throw new InvalidTokenError(
-        `Invalid value: ${params.value}. Expected a valid UUID.`,
-      );
-    }
-
     if (
       params.scope === SubscriptionTokenScope.Confirm &&
       params.ttlMs === undefined
