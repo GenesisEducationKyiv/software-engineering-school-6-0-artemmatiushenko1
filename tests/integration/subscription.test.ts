@@ -84,11 +84,10 @@ describe('Subscription Routes Integration with PGlite', () => {
   const seedConfirmedSubscription = async (values: {
     email: string;
     repo: string;
-    unsubscribeExpiresAt?: Date;
   }) => {
     const id = subscriptionId();
-    const subscribeToken = `subscribe-token-${id}`;
-    const unsubscribeToken = `unsubscribe-token-${id}`;
+    const confirmToken = randomUUID();
+    const unsubscribeToken = randomUUID();
 
     const [subscription] = await db
       .insert(schema.subscriptions)
@@ -97,18 +96,16 @@ describe('Subscription Routes Integration with PGlite', () => {
         email: values.email,
         repo: values.repo,
         status: 'confirmed',
-        confirmToken: subscribeToken,
+        confirmToken,
         confirmExpiresAt: new Date('2026-01-01T13:00:00Z'),
         confirmUsedAt: new Date('2026-01-01T12:00:00Z'),
         unsubscribeToken,
-        unsubscribeExpiresAt:
-          values.unsubscribeExpiresAt ?? new Date('2026-01-01T13:00:00Z'),
       })
       .returning();
 
     assert(subscription);
 
-    return { subscription, subscribeToken, unsubscribeToken };
+    return { subscription, subscribeToken: confirmToken, unsubscribeToken };
   };
 
   const seedPendingSubscription = async (values: {
@@ -117,10 +114,9 @@ describe('Subscription Routes Integration with PGlite', () => {
     confirmToken?: string;
     confirmExpiresAt?: Date;
     unsubscribeToken?: string;
-    unsubscribeExpiresAt?: Date;
   }) => {
     const id = subscriptionId();
-    const confirmToken = values.confirmToken ?? `confirm-token-${id}`;
+    const confirmToken = values.confirmToken ?? randomUUID();
 
     const [subscription] = await db
       .insert(schema.subscriptions)
@@ -133,7 +129,6 @@ describe('Subscription Routes Integration with PGlite', () => {
         confirmExpiresAt:
           values.confirmExpiresAt ?? new Date('2026-01-01T13:00:00Z'),
         unsubscribeToken: values.unsubscribeToken,
-        unsubscribeExpiresAt: values.unsubscribeExpiresAt,
       })
       .returning();
 
@@ -448,7 +443,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
   describe('GET /api/confirm/:token', () => {
     it('should return 200 and confirm the subscription for a valid token', async () => {
-      const subscribeTokenValue = 'valid-confirm-token';
+      const subscribeTokenValue = randomUUID();
       const { subscription } = await seedPendingSubscription({
         email: 'test@example.com',
         repo: 'owner/repo',
@@ -491,7 +486,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     });
 
     it('should return 409 and SUBSCRIPTION_ALREADY_CONFIRMED when reusing an already consumed token', async () => {
-      const tokenValue = 'reused-confirm-token';
+      const tokenValue = randomUUID();
       await seedPendingSubscription({
         email: 'test@example.com',
         repo: 'owner/repo',
@@ -535,7 +530,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     });
 
     it('should return 400 and TOKEN_EXPIRED when token is expired', async () => {
-      const tokenValue = 'expired-token';
+      const tokenValue = randomUUID();
       const { subscription } = await seedPendingSubscription({
         email: 'test@example.com',
         repo: 'owner/repo',
@@ -559,13 +554,12 @@ describe('Subscription Routes Integration with PGlite', () => {
     });
 
     it('should return 404 and SUBSCRIPTION_NOT_FOUND when token has wrong scope', async () => {
-      const tokenValue = 'wrong-scope-token';
+      const tokenValue = randomUUID();
       await seedPendingSubscription({
         email: 'test@example.com',
         repo: 'owner/repo',
-        confirmToken: 'subscribe-token',
+        confirmToken: randomUUID(),
         unsubscribeToken: tokenValue,
-        unsubscribeExpiresAt: new Date('2026-01-01T13:00:00Z'),
       });
 
       const response = await app.fastify.inject({
@@ -647,29 +641,6 @@ describe('Subscription Routes Integration with PGlite', () => {
       expect(response.statusCode).toBe(404);
       const body = parseResponse(response.body, CommonErrorResponseDtoSchema);
       expect(body.code).toBe('SUBSCRIPTION_NOT_FOUND');
-    });
-
-    it('should return 400 and TOKEN_EXPIRED when token is expired', async () => {
-      const { subscription, unsubscribeToken: tokenValue } =
-        await seedConfirmedSubscription({
-          email: 'test@example.com',
-          repo: 'owner/repo',
-          unsubscribeExpiresAt: new Date('2026-01-01T11:00:00Z'),
-        });
-
-      const response = await app.fastify.inject({
-        method: 'GET',
-        url: `/api/unsubscribe/${tokenValue}`,
-      });
-
-      expect(response.statusCode).toBe(400);
-      const body = parseResponse(response.body, CommonErrorResponseDtoSchema);
-      expect(body.code).toBe('TOKEN_EXPIRED');
-
-      const existingSubscription = await db.query.subscriptions.findFirst({
-        where: (subs, { eq }) => eq(subs.id, subscription.id),
-      });
-      expect(existingSubscription?.status).toBe('confirmed');
     });
 
     it('should return 404 and SUBSCRIPTION_NOT_FOUND when token has wrong scope', async () => {

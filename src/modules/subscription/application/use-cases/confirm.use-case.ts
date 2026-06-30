@@ -15,8 +15,6 @@ import type { GithubClient } from '../../../github/api/github-client.interface.j
 import { toPublicApiEvents } from '../subscription-event.mapper.js';
 
 export class ConfirmUseCase {
-  private static readonly UNSUBSCRIBE_TTL_MS = 24 * 60 * 60 * 1000;
-
   constructor(
     private subscriptionRepo: SubscriptionRepository,
     private transactionManager: TransactionManager,
@@ -42,7 +40,6 @@ export class ConfirmUseCase {
       value: this.tokenGenerator.generate(),
       scope: SubscriptionTokenScope.Unsubscribe,
       issuedAt: now,
-      ttlMs: ConfirmUseCase.UNSUBSCRIBE_TTL_MS,
     });
 
     const latestRelease = await this.githubClient.getLatestRelease(

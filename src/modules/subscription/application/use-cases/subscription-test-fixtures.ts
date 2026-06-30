@@ -37,7 +37,7 @@ export const createConfirmedSubscription = (
     SubscriptionToken.rehydrate({
       value: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
       scope: SubscriptionTokenScope.Unsubscribe,
-      expiresAt: TOKEN_EXPIRES_AT,
+      expiresAt: null,
     }),
     null,
   );

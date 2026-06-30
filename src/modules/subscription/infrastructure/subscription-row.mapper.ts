@@ -17,7 +17,6 @@ export const SubscriptionRowSchema = z.object({
   confirmExpiresAt: z.date(),
   confirmUsedAt: z.date().nullable(),
   unsubscribeToken: z.string().nullable(),
-  unsubscribeExpiresAt: z.date().nullable(),
   unsubscribeUsedAt: z.date().nullable(),
 });
 
@@ -34,15 +33,14 @@ export class SubscriptionRowMapper {
       consumedAt: row.confirmUsedAt,
     });
 
-    const unsubscribeToken =
-      row.unsubscribeToken && row.unsubscribeExpiresAt
-        ? SubscriptionToken.rehydrate({
-            value: row.unsubscribeToken,
-            scope: SubscriptionTokenScope.Unsubscribe,
-            expiresAt: row.unsubscribeExpiresAt,
-            consumedAt: row.unsubscribeUsedAt,
-          })
-        : null;
+    const unsubscribeToken = row.unsubscribeToken
+      ? SubscriptionToken.rehydrate({
+          value: row.unsubscribeToken,
+          scope: SubscriptionTokenScope.Unsubscribe,
+          expiresAt: null,
+          consumedAt: row.unsubscribeUsedAt,
+        })
+      : null;
 
     return Subscription.rehydrate({
       id: row.id,
@@ -58,6 +56,10 @@ export class SubscriptionRowMapper {
     const subscriptionToken = subscription.confirmationToken;
     const unsubscribe = subscription.unsubscribeToken;
 
+    if (!subscriptionToken.expiresAt) {
+      throw new Error('Confirm token expires at is required');
+    }
+
     return {
       id: subscription.id,
       email: subscription.email.value,
@@ -67,7 +69,6 @@ export class SubscriptionRowMapper {
       confirmExpiresAt: subscriptionToken.expiresAt,
       confirmUsedAt: subscriptionToken.consumedAt,
       unsubscribeToken: unsubscribe?.value ?? null,
-      unsubscribeExpiresAt: unsubscribe?.expiresAt ?? null,
       unsubscribeUsedAt: unsubscribe?.consumedAt ?? null,
     };
   }

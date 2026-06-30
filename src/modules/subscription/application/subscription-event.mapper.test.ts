@@ -11,6 +11,11 @@ import { SubscriptionToken } from '../domain/subscription-token.js';
 import { SubscriptionTokenScope } from '../domain/subscription-token-scope.js';
 
 describe('toPublicApiEvents', () => {
+  const CONFIRM_TOKEN = '550e8400-e29b-41d4-a716-446655440000';
+  const RENEWED_TOKEN = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+  const REACTIVATED_TOKEN = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
+  const UNSUBSCRIBE_TOKEN = '8d3e2729-8f5c-4b1a-9c2d-1e4f6a8b0c2d';
+
   it('maps SubscriptionRequested domain event to integration event', () => {
     const occurredAt = new Date('2026-01-01T12:00:00Z');
 
@@ -20,7 +25,7 @@ describe('toPublicApiEvents', () => {
         email: Email.fromString('test@example.com'),
         repoPath: RepoPath.fromString('owner/repo'),
         confirmationToken: SubscriptionToken.rehydrate({
-          value: 'confirm-token',
+          value: CONFIRM_TOKEN,
           scope: SubscriptionTokenScope.Confirm,
           expiresAt: new Date('2026-01-01T13:00:00Z'),
         }),
@@ -36,7 +41,7 @@ describe('toPublicApiEvents', () => {
         payload: {
           email: 'test@example.com',
           repo: 'owner/repo',
-          confirmationToken: 'confirm-token',
+          confirmationToken: CONFIRM_TOKEN,
         },
       },
     ]);
@@ -51,7 +56,7 @@ describe('toPublicApiEvents', () => {
         email: Email.fromString('test@example.com'),
         repoPath: RepoPath.fromString('owner/repo'),
         confirmationToken: SubscriptionToken.rehydrate({
-          value: 'renewed-token',
+          value: RENEWED_TOKEN,
           scope: SubscriptionTokenScope.Confirm,
           expiresAt: new Date('2026-01-01T13:00:00Z'),
         }),
@@ -67,7 +72,7 @@ describe('toPublicApiEvents', () => {
         payload: {
           email: 'test@example.com',
           repo: 'owner/repo',
-          confirmationToken: 'renewed-token',
+          confirmationToken: RENEWED_TOKEN,
         },
       },
     ]);
@@ -82,7 +87,7 @@ describe('toPublicApiEvents', () => {
         email: Email.fromString('test@example.com'),
         repoPath: RepoPath.fromString('owner/repo'),
         confirmationToken: SubscriptionToken.rehydrate({
-          value: 'reactivated-token',
+          value: REACTIVATED_TOKEN,
           scope: SubscriptionTokenScope.Confirm,
           expiresAt: new Date('2026-01-01T13:00:00Z'),
         }),
@@ -98,7 +103,7 @@ describe('toPublicApiEvents', () => {
         payload: {
           email: 'test@example.com',
           repo: 'owner/repo',
-          confirmationToken: 'reactivated-token',
+          confirmationToken: REACTIVATED_TOKEN,
         },
       },
     ]);
@@ -113,9 +118,9 @@ describe('toPublicApiEvents', () => {
         email: Email.fromString('test@example.com'),
         repoPath: RepoPath.fromString('owner/repo'),
         unsubscribeToken: SubscriptionToken.rehydrate({
-          value: 'unsub-token',
+          value: UNSUBSCRIBE_TOKEN,
           scope: SubscriptionTokenScope.Unsubscribe,
-          expiresAt: new Date('2026-01-01T13:00:00Z'),
+          expiresAt: null,
         }),
         baselineTag: 'v1.0.0',
       },
@@ -130,7 +135,7 @@ describe('toPublicApiEvents', () => {
         payload: {
           email: 'test@example.com',
           repo: 'owner/repo',
-          unsubscribeToken: 'unsub-token',
+          unsubscribeToken: UNSUBSCRIBE_TOKEN,
           baselineTag: 'v1.0.0',
         },
       },
