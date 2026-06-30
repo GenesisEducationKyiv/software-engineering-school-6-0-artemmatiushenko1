@@ -70,6 +70,7 @@ export class AppContainer {
       logger: deps.logger,
       clock: deps.clock,
       metrics: deps.metrics,
+      cronExpression: config.scannerCron,
     });
   }
 
