@@ -10,8 +10,6 @@ import type {
 } from '../../../shared-kernel/index.js';
 
 export class ConfirmUseCase {
-  private static readonly UNSUBSCRIBE_TTL_MS = 24 * 60 * 60 * 1000;
-
   constructor(
     private subscriptionRepo: SubscriptionRepository,
     private notificationService: NotificationService,
@@ -36,7 +34,6 @@ export class ConfirmUseCase {
       value: this.tokenGenerator.generate(),
       scope: SubscriptionTokenScope.Unsubscribe,
       issuedAt: now,
-      ttlMs: ConfirmUseCase.UNSUBSCRIBE_TTL_MS,
     });
 
     subscription.confirm(token, now, unsubscribeToken);

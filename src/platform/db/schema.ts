@@ -21,12 +21,17 @@ export const subscriptions = pgTable(
     status: subscriptionStatusEnum('status').default('pending').notNull(),
     lastSeenTag: text('last_seen_tag'),
     confirmToken: text('confirm_token').notNull(),
-    confirmExpiresAt: timestamp('confirm_expires_at').notNull(),
-    confirmUsedAt: timestamp('confirm_used_at'),
+    confirmExpiresAt: timestamp('confirm_expires_at', {
+      withTimezone: true,
+    }).notNull(),
+    confirmUsedAt: timestamp('confirm_used_at', { withTimezone: true }),
     unsubscribeToken: text('unsubscribe_token'),
-    unsubscribeExpiresAt: timestamp('unsubscribe_expires_at'),
-    unsubscribeUsedAt: timestamp('unsubscribe_used_at'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    unsubscribeUsedAt: timestamp('unsubscribe_used_at', {
+      withTimezone: true,
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     uniqueIndex('email_repo_unique').on(table.email, table.repo),

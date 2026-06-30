@@ -50,6 +50,20 @@
       "when": 1782051000000,
       "tag": "0006_rename_subscribe_token_to_confirm",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782052000000,
+      "tag": "0007_subscription_timestamptz",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782053000000,
+      "tag": "0008_drop_unsubscribe_expires_at",
+      "breakpoints": true
     }
   ]
 }
