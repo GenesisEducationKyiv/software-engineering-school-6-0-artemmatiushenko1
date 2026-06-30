@@ -122,7 +122,6 @@ describe('toPublicApiEvents', () => {
           scope: SubscriptionTokenScope.Unsubscribe,
           expiresAt: null,
         }),
-        baselineTag: 'v1.0.0',
       },
       occurredAt,
     );
@@ -136,7 +135,6 @@ describe('toPublicApiEvents', () => {
           email: 'test@example.com',
           repo: 'owner/repo',
           unsubscribeToken: UNSUBSCRIBE_TOKEN,
-          baselineTag: 'v1.0.0',
         },
       },
     ]);

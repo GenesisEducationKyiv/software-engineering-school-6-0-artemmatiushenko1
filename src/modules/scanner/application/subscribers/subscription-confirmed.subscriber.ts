@@ -11,20 +11,26 @@ import {
 import { EventSubscriber } from '../../../../platform/event-bus/event-subscriber.js';
 import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
+import type { GithubClient } from '../../../github/api/github-client.interface.js';
 
 export class SubscriptionConfirmedSubscriber extends EventSubscriber<SubscriptionConfirmedEvent> {
   readonly eventType = SubscriptionEventType.Confirmed;
   constructor(
     private readonly monitoredRepoRepository: MonitoredRepoRepository,
     private readonly transactionManager: TransactionManager,
+    private readonly githubClient: GithubClient,
   ) {
     super();
   }
 
   async handle(event: SubscriptionConfirmedEvent): Promise<void> {
     const repo = RepoPath.fromString(event.payload.repo);
-    const lastNotifiedTag = event.payload.baselineTag
-      ? ReleaseTag.fromString(event.payload.baselineTag)
+    const latestRelease = await this.githubClient.getLatestRelease(
+      repo.owner,
+      repo.repo,
+    );
+    const lastNotifiedTag = latestRelease
+      ? ReleaseTag.fromString(latestRelease.tag)
       : null;
 
     await this.transactionManager.run(async (tx) => {

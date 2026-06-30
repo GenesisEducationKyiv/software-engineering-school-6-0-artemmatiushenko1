@@ -46,6 +46,7 @@ export class ScannerModule {
       new SubscriptionConfirmedSubscriber(
         this.monitoredRepoRepository,
         this.transactionManager,
+        this.deps.githubClient,
       ),
       new SubscriptionDeactivatedSubscriber(
         this.monitoredRepoRepository,

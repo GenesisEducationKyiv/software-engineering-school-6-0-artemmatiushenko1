@@ -39,7 +39,6 @@ export const createConfirmedSubscription = (
       scope: SubscriptionTokenScope.Unsubscribe,
       expiresAt: null,
     }),
-    null,
   );
   subscription.pullEvents();
 

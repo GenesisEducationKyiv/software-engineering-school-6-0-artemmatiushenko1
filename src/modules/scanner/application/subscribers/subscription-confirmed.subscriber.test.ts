@@ -3,6 +3,7 @@ import { mock } from 'vitest-mock-extended';
 import { SubscriptionEventType } from '../../../subscription/api/events.js';
 import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
+import type { GithubClient } from '../../../github/api/github-client.interface.js';
 import {
   MonitoredRepo,
   ReleaseTag,
@@ -20,7 +21,6 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
       email: 'alice@example.com',
       repo: 'owner/repo',
       unsubscribeToken: 'unsub-token',
-      baselineTag: 'v1.0.0',
     },
   } as const;
 
@@ -33,13 +33,22 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
       work({} as never),
     );
 
+    const githubClient = mock<GithubClient>();
+    githubClient.getLatestRelease.mockResolvedValue({
+      tag: 'v1.0.0',
+      name: 'v1.0.0',
+      publishedAt: null,
+    });
+
     const subscriber = new SubscriptionConfirmedSubscriber(
       monitoredRepoRepository,
       transactionManager,
+      githubClient,
     );
 
     await subscriber.handle(event);
 
+    expect(githubClient.getLatestRelease).toHaveBeenCalledWith('owner', 'repo');
     expect(monitoredRepoRepository.findByRepo).toHaveBeenCalledWith(
       RepoPath.fromString('owner/repo'),
       expect.anything(),
@@ -75,9 +84,17 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
       work({} as never),
     );
 
+    const githubClient = mock<GithubClient>();
+    githubClient.getLatestRelease.mockResolvedValue({
+      tag: 'v1.0.0',
+      name: 'v1.0.0',
+      publishedAt: null,
+    });
+
     const subscriber = new SubscriptionConfirmedSubscriber(
       monitoredRepoRepository,
       transactionManager,
+      githubClient,
     );
 
     await subscriber.handle(event);
@@ -93,7 +110,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
     );
   });
 
-  it('stores null lastNotifiedTag when baselineTag is null', async () => {
+  it('stores null lastNotifiedTag when the repository has no releases', async () => {
     const monitoredRepoRepository = mock<MonitoredRepoRepository>();
     monitoredRepoRepository.findByRepo.mockResolvedValue(null);
 
@@ -102,15 +119,16 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
       work({} as never),
     );
 
+    const githubClient = mock<GithubClient>();
+    githubClient.getLatestRelease.mockResolvedValue(null);
+
     const subscriber = new SubscriptionConfirmedSubscriber(
       monitoredRepoRepository,
       transactionManager,
+      githubClient,
     );
 
-    await subscriber.handle({
-      ...event,
-      payload: { ...event.payload, baselineTag: null },
-    });
+    await subscriber.handle(event);
 
     expect(monitoredRepoRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -10,10 +10,7 @@ import {
   SubscriptionAlreadyDeactivatedError,
   WrongTokenScopeError,
 } from '../../src/modules/subscription/domain/errors.js';
-import {
-  SubscriptionDeactivatedEvent,
-  SubscriptionConfirmedEvent,
-} from '../../src/modules/subscription/domain/events.js';
+import { SubscriptionDeactivatedEvent } from '../../src/modules/subscription/domain/events.js';
 
 const SUBSCRIPTION_ID = 'sub-1';
 const EMAIL = Email.fromString('test@example.com');
@@ -55,16 +52,8 @@ const requestSubscription = () =>
     ISSUED_AT,
   );
 
-const confirmSubscription = (
-  subscription = requestSubscription(),
-  baselineTag: string | null = null,
-) => {
-  subscription.confirm(
-    CONFIRM_TOKEN_UUID,
-    NOW,
-    issueUnsubscribeToken(),
-    baselineTag,
-  );
+const confirmSubscription = (subscription = requestSubscription()) => {
+  subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueUnsubscribeToken());
 
   return subscription;
 };
@@ -176,12 +165,7 @@ describe('Subscription', () => {
     it('should confirm a pending subscription', () => {
       const subscription = requestSubscription();
 
-      subscription.confirm(
-        CONFIRM_TOKEN_UUID,
-        NOW,
-        issueUnsubscribeToken(),
-        null,
-      );
+      subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueUnsubscribeToken());
 
       expect(subscription.status).toBe(SubscriptionStatus.Confirmed);
     });
@@ -190,20 +174,10 @@ describe('Subscription', () => {
       const subscription = requestSubscription();
 
       expect(() =>
-        subscription.confirm(
-          'invalid-token',
-          NOW,
-          issueUnsubscribeToken(),
-          null,
-        ),
+        subscription.confirm('invalid-token', NOW, issueUnsubscribeToken()),
       ).toThrow(WrongTokenScopeError);
       expect(() =>
-        subscription.confirm(
-          'invalid-token',
-          NOW,
-          issueUnsubscribeToken(),
-          null,
-        ),
+        subscription.confirm('invalid-token', NOW, issueUnsubscribeToken()),
       ).toThrow('Wrong token scope: expected confirm, got unknown');
     });
 
@@ -211,60 +185,21 @@ describe('Subscription', () => {
       const subscription = confirmSubscription();
 
       expect(() =>
-        subscription.confirm(
-          CONFIRM_TOKEN_UUID,
-          NOW,
-          issueUnsubscribeToken(),
-          null,
-        ),
+        subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueUnsubscribeToken()),
       ).toThrow(SubscriptionAlreadyConfirmedError);
       expect(() =>
-        subscription.confirm(
-          CONFIRM_TOKEN_UUID,
-          NOW,
-          issueUnsubscribeToken(),
-          null,
-        ),
+        subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueUnsubscribeToken()),
       ).toThrow('Subscription already confirmed');
-    });
-
-    it('should include baselineTag in SubscriptionConfirmed event', () => {
-      const subscription = requestSubscription();
-      subscription.pullEvents();
-      const baselineTag = 'v1.0.0';
-
-      subscription.confirm(
-        CONFIRM_TOKEN_UUID,
-        NOW,
-        issueUnsubscribeToken(),
-        baselineTag,
-      );
-
-      const [event] = subscription.pullEvents();
-      expect(event).toBeInstanceOf(SubscriptionConfirmedEvent);
-      expect((event as SubscriptionConfirmedEvent).payload.baselineTag).toEqual(
-        baselineTag,
-      );
     });
 
     it('should throw WrongTokenScopeError when unsubscribe token has wrong scope', () => {
       const subscription = requestSubscription();
 
       expect(() =>
-        subscription.confirm(
-          CONFIRM_TOKEN_UUID,
-          NOW,
-          issueConfirmToken(),
-          null,
-        ),
+        subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueConfirmToken()),
       ).toThrow(WrongTokenScopeError);
       expect(() =>
-        subscription.confirm(
-          CONFIRM_TOKEN_UUID,
-          NOW,
-          issueConfirmToken(),
-          null,
-        ),
+        subscription.confirm(CONFIRM_TOKEN_UUID, NOW, issueConfirmToken()),
       ).toThrow('Wrong token scope: expected unsubscribe, got confirm');
     });
   });

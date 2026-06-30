@@ -14,7 +14,6 @@ describe('SubscriptionConfirmedSubscriber', () => {
       email: 'test@example.com',
       repo: 'owner/repo',
       unsubscribeToken: 'unsub-token',
-      baselineTag: null,
     },
   } as const;
 

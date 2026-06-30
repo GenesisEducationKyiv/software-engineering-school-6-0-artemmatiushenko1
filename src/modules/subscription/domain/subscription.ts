@@ -122,12 +122,7 @@ export class Subscription {
     );
   }
 
-  confirm(
-    token: string,
-    now: Date,
-    unsubscribeToken: SubscriptionToken,
-    baselineTag: string | null,
-  ) {
+  confirm(token: string, now: Date, unsubscribeToken: SubscriptionToken) {
     if (this.confirmationToken.value !== token) {
       throw new WrongTokenScopeError(SubscriptionTokenScope.Confirm, 'unknown');
     }
@@ -154,7 +149,6 @@ export class Subscription {
           repoPath: this.repoPath,
           email: this.email,
           unsubscribeToken: this._unsubscribeToken,
-          baselineTag,
         },
         now,
       ),

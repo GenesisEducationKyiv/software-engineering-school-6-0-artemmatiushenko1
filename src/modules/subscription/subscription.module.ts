@@ -49,7 +49,6 @@ export class SubscriptionModule {
       deps.tokenGenerator,
       deps.clock,
       deps.eventBus,
-      deps.githubClient,
     );
     this.unsubscribeUseCase = new UnsubscribeUseCase(
       subscriptionRepo,

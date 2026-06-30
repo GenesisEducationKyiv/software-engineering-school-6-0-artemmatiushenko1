@@ -6,7 +6,6 @@ type SubscriptionConfirmedEventPayload = {
   repoPath: RepoPath;
   email: Email;
   unsubscribeToken: SubscriptionToken;
-  baselineTag: string | null;
 };
 
 export class SubscriptionConfirmedEvent extends DomainEvent<SubscriptionConfirmedEventPayload> {

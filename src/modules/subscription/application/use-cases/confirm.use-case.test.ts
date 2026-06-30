@@ -10,7 +10,6 @@ import type {
 } from '../../../../shared-kernel/index.js';
 import type { TokenGenerator } from '../ports/token-generator.js';
 import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
-import type { GithubClient } from '../../../github/api/github-client.interface.js';
 import { SubscriptionEventType } from '../../api/events.js';
 import { mock } from 'vitest-mock-extended';
 import {
@@ -30,7 +29,6 @@ describe('ConfirmUseCase', () => {
   const tokenGeneratorMock = mock<TokenGenerator>();
   const clockMock = mock<Clock>();
   const eventBusMock = mock<EventBus>();
-  const githubClientMock = mock<GithubClient>();
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -42,11 +40,6 @@ describe('ConfirmUseCase', () => {
     );
 
     eventBusMock.publish.mockResolvedValue(undefined);
-    githubClientMock.getLatestRelease.mockResolvedValue({
-      tag: 'v1.0.0',
-      name: 'v1.0.0',
-      publishedAt: null,
-    });
 
     confirmUseCase = new ConfirmUseCase(
       repoMock,
@@ -55,7 +48,6 @@ describe('ConfirmUseCase', () => {
       tokenGeneratorMock,
       clockMock,
       eventBusMock,
-      githubClientMock,
     );
   });
 
@@ -75,10 +67,6 @@ describe('ConfirmUseCase', () => {
       tokenValue,
       SubscriptionTokenScope.Confirm,
     );
-    expect(githubClientMock.getLatestRelease).toHaveBeenCalledWith(
-      'owner',
-      'repo',
-    );
     expect(tokenGeneratorMock.generate).toHaveBeenCalled();
     expect(repoMock.save).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -96,31 +84,8 @@ describe('ConfirmUseCase', () => {
           email: 'test@example.com',
           repo: 'owner/repo',
           unsubscribeToken: unsubscribeTokenValue,
-          baselineTag: 'v1.0.0',
         },
       },
-    ]);
-  });
-
-  it('should set baselineTag to null when the repository has no releases', async () => {
-    const tokenValue = '550e8400-e29b-41d4-a716-446655440000';
-    const unsubscribeTokenValue = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-    const subscription = createPendingSubscription({
-      id: '10',
-    });
-
-    tokenGeneratorMock.generate.mockReturnValue(unsubscribeTokenValue);
-    repoMock.findByToken.mockResolvedValue(subscription);
-    githubClientMock.getLatestRelease.mockResolvedValue(null);
-
-    await confirmUseCase.execute(tokenValue);
-
-    expect(eventBusMock.publish).toHaveBeenCalledWith([
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          baselineTag: null,
-        }),
-      }),
     ]);
   });
 
