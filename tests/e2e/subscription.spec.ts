@@ -66,6 +66,7 @@ test.describe('Subscription Flow', () => {
 
   test('should resend confirmation when re-subscribing before confirmation', async ({
     page,
+    request,
   }) => {
     await page.goto('/');
     await page.fill('#repo', EXISTING_REPO_FULL_NAME);
@@ -77,6 +78,8 @@ test.describe('Subscription Flow', () => {
       page,
       'Confirm Subscription',
     );
+
+    await clearEmails(request);
 
     await page.goto('/');
     await page.fill('#repo', EXISTING_REPO_FULL_NAME);
