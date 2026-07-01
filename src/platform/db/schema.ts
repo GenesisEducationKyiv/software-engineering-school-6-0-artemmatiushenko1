@@ -1,3 +1,4 @@
+import { isNull } from 'drizzle-orm';
 import {
   pgTable,
   text,
@@ -5,6 +6,7 @@ import {
   pgEnum,
   uniqueIndex,
   index,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 
 export const subscriptionStatusEnum = pgEnum('subscription_status', [
@@ -62,3 +64,23 @@ export const notificationRecipients = pgTable('notification_recipients', {
   email: text('email').notNull(),
   unsubscribeToken: text('unsubscribe_token').notNull(),
 });
+
+export const outboxMessages = pgTable(
+  'outbox_messages',
+  {
+    id: text('id').primaryKey(),
+    eventType: text('event_type').notNull(),
+    aggregateId: text('aggregate_id').notNull(),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+    payload: jsonb('payload').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('outbox_messages_pending_idx')
+      .on(table.createdAt)
+      .where(isNull(table.processedAt)),
+  ],
+);
