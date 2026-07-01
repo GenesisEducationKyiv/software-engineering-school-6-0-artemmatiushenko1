@@ -2,7 +2,7 @@ import {
   SubscriptionEventType,
   type SubscriptionConfirmationRenewedEvent,
 } from '../../../subscription/api/events.js';
-import type { DeliveryDedup } from '../../../../platform/delivery-dedup/delivery-dedup.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import { buildConfirmUrl } from '../links.js';
 import { subscriptionConfirmationTemplate } from '../templates.js';
 import type { EmailClient } from '../ports/email-client.js';
@@ -12,12 +12,12 @@ import { IdempotentEmailSubscriber } from './idempotent-email.subscriber.js';
 export class SubscriptionConfirmationRenewedSubscriber extends IdempotentEmailSubscriber<SubscriptionConfirmationRenewedEvent> {
   readonly eventType = SubscriptionEventType.ConfirmationRenewed;
   constructor(
-    deliveryDedup: DeliveryDedup,
+    idempotencyGuard: IdempotencyGuard,
     private readonly emailClient: EmailClient,
     private readonly appUrl: string,
     private readonly metrics?: NotificationMetrics,
   ) {
-    super(deliveryDedup);
+    super(idempotencyGuard);
   }
 
   protected async deliver(

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import { Email } from '../../domain/index.js';
-import type { DeliveryDedup } from '../../../../platform/delivery-dedup/delivery-dedup.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
@@ -22,8 +22,8 @@ describe('NewReleaseDetectedSubscriber', () => {
   } as const;
 
   it('sends a new release notification email', async () => {
-    const deliveryDedup = mock<DeliveryDedup>();
-    deliveryDedup.claim.mockResolvedValue({ release: vi.fn() });
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
     const recipientRepository = mock<RecipientRepository>();
     const recipient = Recipient.rehydrate({
       subscriptionId: 'sub-1',
@@ -35,7 +35,7 @@ describe('NewReleaseDetectedSubscriber', () => {
     const emailClient = mock<EmailClient>();
     const metrics = mock<NotificationMetrics>();
     const subscriber = new NewReleaseDetectedSubscriber(
-      deliveryDedup,
+      idempotencyGuard,
       recipientRepository,
       emailClient,
       'http://localhost:3000',
@@ -58,8 +58,8 @@ describe('NewReleaseDetectedSubscriber', () => {
   });
 
   it('does not send email on duplicate delivery', async () => {
-    const deliveryDedup = mock<DeliveryDedup>();
-    deliveryDedup.claim.mockResolvedValue(null);
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.claim.mockResolvedValue(null);
     const recipientRepository = mock<RecipientRepository>();
     const recipient = Recipient.rehydrate({
       subscriptionId: 'sub-1',
@@ -70,7 +70,7 @@ describe('NewReleaseDetectedSubscriber', () => {
 
     const emailClient = mock<EmailClient>();
     const subscriber = new NewReleaseDetectedSubscriber(
-      deliveryDedup,
+      idempotencyGuard,
       recipientRepository,
       emailClient,
       'http://localhost:3000',
@@ -78,7 +78,7 @@ describe('NewReleaseDetectedSubscriber', () => {
 
     await subscriber.handle({ ...event, id: 'msg-1' });
 
-    expect(deliveryDedup.claim).toHaveBeenCalledWith('msg-1');
+    expect(idempotencyGuard.claim).toHaveBeenCalledWith('msg-1');
     expect(emailClient.sendEmail).not.toHaveBeenCalled();
   });
 });

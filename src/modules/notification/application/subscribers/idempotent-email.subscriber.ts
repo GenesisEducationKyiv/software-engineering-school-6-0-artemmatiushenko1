@@ -1,11 +1,11 @@
 import type { DomainEventEnvelope } from '../../../../platform/event-bus/domain-event-envelope.js';
 import { EventSubscriber } from '../../../../platform/event-bus/event-subscriber.js';
-import type { DeliveryDedup } from '../../../../platform/delivery-dedup/delivery-dedup.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 
 export abstract class IdempotentEmailSubscriber<
   T extends DomainEventEnvelope,
 > extends EventSubscriber<T> {
-  constructor(protected readonly deliveryDedup: DeliveryDedup) {
+  constructor(protected readonly idempotencyGuard: IdempotencyGuard) {
     super();
   }
 
@@ -16,7 +16,7 @@ export abstract class IdempotentEmailSubscriber<
   }
 
   protected async deliverIdempotently(event: T): Promise<void> {
-    const claim = await this.deliveryDedup.claim(event.id);
+    const claim = await this.idempotencyGuard.claim(event.id);
     if (!claim) {
       return;
     }

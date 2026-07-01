@@ -1,17 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
 import { mock } from 'vitest-mock-extended';
-import type { DeliveryDedup } from '../../../../platform/delivery-dedup/delivery-dedup.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import type { EmailClient } from '../ports/email-client.js';
 import { SubscriptionEventType } from '../../../subscription/api/events.js';
 import { SubscriptionReactivatedSubscriber } from './subscription-reactivated.subscriber.js';
 
 describe('SubscriptionReactivatedSubscriber', () => {
   it('sends a subscription confirmation email', async () => {
-    const deliveryDedup = mock<DeliveryDedup>();
-    deliveryDedup.claim.mockResolvedValue({ release: vi.fn() });
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
     const emailClient = mock<EmailClient>();
     const subscriber = new SubscriptionReactivatedSubscriber(
-      deliveryDedup,
+      idempotencyGuard,
       emailClient,
       'http://localhost:3000',
     );

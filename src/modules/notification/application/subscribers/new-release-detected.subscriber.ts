@@ -2,7 +2,7 @@ import {
   ScannerEventType,
   type NewReleaseDetectedEvent,
 } from '../../../scanner/api/events.js';
-import type { DeliveryDedup } from '../../../../platform/delivery-dedup/delivery-dedup.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import { RecipientNotFoundError } from '../../domain/errors.js';
 import { buildUnsubscribeUrl } from '../links.js';
 import { newReleaseNotificationTemplate } from '../templates.js';
@@ -14,13 +14,13 @@ import { IdempotentEmailSubscriber } from './idempotent-email.subscriber.js';
 export class NewReleaseDetectedSubscriber extends IdempotentEmailSubscriber<NewReleaseDetectedEvent> {
   readonly eventType = ScannerEventType.NewReleaseDetected;
   constructor(
-    deliveryDedup: DeliveryDedup,
+    idempotencyGuard: IdempotencyGuard,
     private readonly recipientRepository: RecipientRepository,
     private readonly emailClient: EmailClient,
     private readonly appUrl: string,
     private readonly metrics?: NotificationMetrics,
   ) {
-    super(deliveryDedup);
+    super(idempotencyGuard);
   }
 
   protected async deliver(event: NewReleaseDetectedEvent): Promise<void> {

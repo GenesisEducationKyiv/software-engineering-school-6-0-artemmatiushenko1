@@ -1,15 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import type { DomainEventEnvelope } from '../../../../platform/event-bus/domain-event-envelope.js';
-import type { DeliveryDedup } from '../../../../platform/delivery-dedup/delivery-dedup.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import { IdempotentEmailSubscriber } from './idempotent-email.subscriber.js';
 
 class TestEmailSubscriber extends IdempotentEmailSubscriber<DomainEventEnvelope> {
   readonly eventType = 'TestEvent';
   onDeliver = vi.fn().mockResolvedValue(undefined);
 
-  constructor(deliveryDedup: DeliveryDedup) {
-    super(deliveryDedup);
+  constructor(idempotencyGuard: IdempotencyGuard) {
+    super(idempotencyGuard);
   }
 
   protected override async deliver(event: DomainEventEnvelope): Promise<void> {
@@ -27,9 +27,9 @@ describe('IdempotentEmailSubscriber', () => {
   };
 
   it('delivers on first claim', async () => {
-    const deliveryDedup = mock<DeliveryDedup>();
-    deliveryDedup.claim.mockResolvedValue({ release: vi.fn() });
-    const subscriber = new TestEmailSubscriber(deliveryDedup);
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
+    const subscriber = new TestEmailSubscriber(idempotencyGuard);
 
     await subscriber.handle(event);
 
@@ -37,9 +37,9 @@ describe('IdempotentEmailSubscriber', () => {
   });
 
   it('skips delivery on duplicate claim', async () => {
-    const deliveryDedup = mock<DeliveryDedup>();
-    deliveryDedup.claim.mockResolvedValue(null);
-    const subscriber = new TestEmailSubscriber(deliveryDedup);
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.claim.mockResolvedValue(null);
+    const subscriber = new TestEmailSubscriber(idempotencyGuard);
 
     await subscriber.handle(event);
 
@@ -48,9 +48,9 @@ describe('IdempotentEmailSubscriber', () => {
 
   it('releases claim when delivery fails', async () => {
     const release = vi.fn();
-    const deliveryDedup = mock<DeliveryDedup>();
-    deliveryDedup.claim.mockResolvedValue({ release });
-    const subscriber = new TestEmailSubscriber(deliveryDedup);
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.claim.mockResolvedValue({ release });
+    const subscriber = new TestEmailSubscriber(idempotencyGuard);
     subscriber.onDeliver.mockRejectedValue(new Error('send failed'));
 
     await expect(subscriber.handle(event)).rejects.toThrow('send failed');

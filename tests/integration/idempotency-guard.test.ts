@@ -7,35 +7,35 @@ import {
   runDatabaseMigrations,
 } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
-import { DrizzleDeliveryDedup } from '../../src/platform/delivery-dedup/drizzle-delivery-dedup.js';
+import { DrizzleIdempotencyGuard } from '../../src/platform/idempotency-guard/drizzle-idempotency-guard.js';
 
-describe('DrizzleDeliveryDedup', () => {
+describe('DrizzleIdempotencyGuard', () => {
   let db: Database;
-  let deliveryDedup: DrizzleDeliveryDedup;
+  let idempotencyGuard: DrizzleIdempotencyGuard;
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
     await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
-    deliveryDedup = new DrizzleDeliveryDedup(db);
+    idempotencyGuard = new DrizzleIdempotencyGuard(db);
   });
 
   afterEach(async () => {
     await db.delete(schema.processedDeliveries);
   });
 
-  it('claims a delivery id once', async () => {
-    expect(await deliveryDedup.claim('msg-1')).not.toBeNull();
-    expect(await deliveryDedup.claim('msg-1')).toBeNull();
+  it('claims an id once', async () => {
+    expect(await idempotencyGuard.claim('msg-1')).not.toBeNull();
+    expect(await idempotencyGuard.claim('msg-1')).toBeNull();
   });
 
   it('allows reclaim after release', async () => {
-    const claim = await deliveryDedup.claim('msg-1');
+    const claim = await idempotencyGuard.claim('msg-1');
     expect(claim).not.toBeNull();
     await claim!.release();
-    expect(await deliveryDedup.claim('msg-1')).not.toBeNull();
+    expect(await idempotencyGuard.claim('msg-1')).not.toBeNull();
   });
 
   it('returns an open claim when id is absent', async () => {
-    expect(await deliveryDedup.claim(undefined)).not.toBeNull();
+    expect(await idempotencyGuard.claim(undefined)).not.toBeNull();
   });
 });

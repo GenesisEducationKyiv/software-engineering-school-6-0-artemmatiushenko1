@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm';
 import { processedDeliveries } from '../db/schema.js';
 import type { Database } from '../db/types.js';
-import type { DeliveryClaim, DeliveryDedup } from './delivery-dedup.js';
+import type { ClaimHandle, IdempotencyGuard } from './idempotency-guard.js';
 
-export class DrizzleDeliveryDedup implements DeliveryDedup {
+export class DrizzleIdempotencyGuard implements IdempotencyGuard {
   constructor(private readonly db: Database) {}
 
-  async claim(id?: string): Promise<DeliveryClaim | null> {
+  async claim(id?: string): Promise<ClaimHandle | null> {
     if (!id) {
       return { release: async () => {} };
     }

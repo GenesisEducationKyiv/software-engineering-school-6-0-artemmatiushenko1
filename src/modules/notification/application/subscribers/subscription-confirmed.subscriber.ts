@@ -2,7 +2,7 @@ import {
   SubscriptionEventType,
   type SubscriptionConfirmedEvent,
 } from '../../../subscription/api/events.js';
-import type { DeliveryDedup } from '../../../../platform/delivery-dedup/delivery-dedup.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import { Email, Recipient } from '../../domain/index.js';
 import { buildUnsubscribeUrl } from '../links.js';
 import { subscriptionConfirmedTemplate } from '../templates.js';
@@ -14,13 +14,13 @@ import { IdempotentEmailSubscriber } from './idempotent-email.subscriber.js';
 export class SubscriptionConfirmedSubscriber extends IdempotentEmailSubscriber<SubscriptionConfirmedEvent> {
   readonly eventType = SubscriptionEventType.Confirmed;
   constructor(
-    deliveryDedup: DeliveryDedup,
+    idempotencyGuard: IdempotencyGuard,
     private readonly recipientRepository: RecipientRepository,
     private readonly emailClient: EmailClient,
     private readonly appUrl: string,
     private readonly metrics?: NotificationMetrics,
   ) {
-    super(deliveryDedup);
+    super(idempotencyGuard);
   }
 
   async handle(event: SubscriptionConfirmedEvent): Promise<void> {
