@@ -24,6 +24,7 @@ import { msToSeconds } from './utils/time.utils.js';
 import { REQUEST_ID_HEADER } from './platform/fastify/constants.js';
 import { runWithRequestLogger } from './platform/logger/request-log-context.js';
 import { ScanCron } from './modules/scanner/infrastructure/scan.cron.js';
+import { OutboxRelayCron } from './platform/outbox/outbox-relay.cron.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +34,7 @@ export class App {
   private readonly deps: AppDependencies;
   private readonly config: AppConfig;
   private scanCron?: ScanCron;
+  private outboxRelayCron?: OutboxRelayCron;
 
   private constructor(
     config: AppConfig,
@@ -189,6 +191,15 @@ export class App {
     this.scanCron.start();
   }
 
+  startOutboxRelayCron() {
+    this.outboxRelayCron = new OutboxRelayCron(
+      this.config.outboxRelayCron,
+      this.deps.outboxRelay,
+      this.deps.logger,
+    );
+    this.outboxRelayCron.start();
+  }
+
   public async start() {
     try {
       const { port, host } = this.config;
@@ -213,6 +224,9 @@ export class App {
       try {
         await this.scanCron?.stop();
         this.deps.logger.info('Scanner tasks stopped.');
+
+        await this.outboxRelayCron?.stop();
+        this.deps.logger.info('Outbox relay stopped.');
 
         await this.deps.redis.quit();
         this.deps.logger.info('Redis connection closed.');

@@ -14,6 +14,9 @@ import type { TokenGenerator } from './modules/subscription/application/ports/to
 import type { IdGenerator } from './shared-kernel/id-generator.js';
 import { InProcessEventBus } from './platform/event-bus/in-process-event-bus.js';
 import type { EventBus } from './platform/event-bus/event-bus.interface.js';
+import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-manager.js';
+import { DrizzleOutboxRepository } from './platform/outbox/drizzle-outbox.repository.js';
+import { OutboxRelay } from './platform/outbox/outbox-relay.js';
 
 export interface AppDependencies {
   redis: Redis;
@@ -23,6 +26,7 @@ export interface AppDependencies {
   notification: NotificationModule;
   github: GithubModule;
   scanner: ScannerModule;
+  outboxRelay: OutboxRelay;
 }
 
 export interface AppContainerDeps {
@@ -44,6 +48,7 @@ export class AppContainer {
   private readonly subscription: SubscriptionModule;
   private readonly scanner: ScannerModule;
   private readonly eventBus: EventBus;
+  private readonly outboxRelay: OutboxRelay;
   private eventSubscribersRegistered = false;
 
   constructor(
@@ -51,6 +56,18 @@ export class AppContainer {
     private readonly deps: AppContainerDeps,
   ) {
     this.eventBus = deps.eventBus ?? new InProcessEventBus();
+
+    const transactionManager = new DrizzleTransactionManager(deps.db);
+    const outboxRepository = new DrizzleOutboxRepository(
+      deps.db,
+      deps.idGenerator,
+    );
+    this.outboxRelay = new OutboxRelay(
+      outboxRepository,
+      this.eventBus,
+      transactionManager,
+      deps.logger,
+    );
 
     this.github = GithubModule.create();
 
@@ -100,6 +117,7 @@ export class AppContainer {
       notification: this.notification,
       github: this.github,
       scanner: this.scanner,
+      outboxRelay: this.outboxRelay,
     };
   }
 }

@@ -10,6 +10,7 @@ export const TEST_APP_CONFIG: AppConfig = {
   apiPrefix: '/api',
   githubToken: undefined,
   scannerCron: '',
+  outboxRelayCron: '',
   githubCacheTtl: 0,
   githubApiBaseUrl: '',
   email: {

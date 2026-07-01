@@ -31,6 +31,7 @@ const AppConfigSchema = z.object({
   port: z.coerce.number().default(3000),
   host: z.string().default('0.0.0.0'),
   scannerCron: z.string().default('*/10 * * * *'), // Default to every 10 minutes
+  outboxRelayCron: z.string().default('*/5 * * * * *'), // Default to every 5 seconds
   githubCacheTtl: z.coerce.number().default(600), // Default to 10 minutes in seconds
   githubApiBaseUrl: z.string(),
 });
@@ -77,6 +78,7 @@ export const createConfig = () =>
     port: process.env.PORT,
     host: process.env.HOST,
     scannerCron: process.env.SCANNER_CRON,
+    outboxRelayCron: process.env.OUTBOX_RELAY_CRON,
     githubCacheTtl: process.env.GITHUB_CACHE_TTL,
     githubApiBaseUrl: process.env.GITHUB_API_URL,
   });
