@@ -14,6 +14,7 @@ import type { TokenGenerator } from './modules/subscription/application/ports/to
 import type { IdGenerator } from './shared-kernel/id-generator.js';
 import { InProcessEventBus } from './platform/event-bus/in-process-event-bus.js';
 import type { EventBus } from './platform/event-bus/event-bus.interface.js';
+import { registerEventSubscribers } from './platform/event-bus/event-subscriber.js';
 
 export interface AppDependencies {
   redis: Redis;
@@ -81,13 +82,15 @@ export class AppContainer {
     });
   }
 
-  registerEventSubscribers(): void {
+  wireEventSubscribers(): void {
     if (this.eventSubscribersRegistered) {
       return;
     }
 
-    this.notification.registerEventSubscribers(this.eventBus);
-    this.scanner.registerEventSubscribers(this.eventBus);
+    for (const module of [this.notification, this.scanner]) {
+      registerEventSubscribers(this.eventBus, module.eventSubscribers);
+    }
+
     this.eventSubscribersRegistered = true;
   }
 

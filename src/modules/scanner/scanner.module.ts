@@ -7,7 +7,8 @@ import type { ScannerMetrics } from './application/ports/scanner-metrics.interfa
 import { DrizzleMonitoredRepoRepository } from './infrastructure/monitored-repo.repository.js';
 import { DrizzleTransactionManager } from '../../platform/db/drizzle-transaction-manager.js';
 import type { EventBus } from '../../platform/event-bus/event-bus.interface.js';
-import { registerEventSubscribers } from '../../platform/event-bus/event-subscriber.js';
+import type { DomainEventEnvelope } from '../../platform/event-bus/domain-event-envelope.js';
+import type { EventSubscriber } from '../../platform/event-bus/event-subscriber.js';
 import { SubscriptionConfirmedSubscriber } from './application/subscribers/subscription-confirmed.subscriber.js';
 import { SubscriptionDeactivatedSubscriber } from './application/subscribers/subscription-deactivated.subscriber.js';
 
@@ -22,11 +23,12 @@ export interface ScannerModuleDeps {
 
 export class ScannerModule {
   readonly scanUseCase: ScanUseCase;
+  readonly eventSubscribers: EventSubscriber<DomainEventEnvelope>[];
 
   private readonly monitoredRepoRepository: DrizzleMonitoredRepoRepository;
   private readonly transactionManager: DrizzleTransactionManager;
 
-  private constructor(private readonly deps: ScannerModuleDeps) {
+  private constructor(deps: ScannerModuleDeps) {
     this.monitoredRepoRepository = new DrizzleMonitoredRepoRepository(deps.db);
     this.transactionManager = new DrizzleTransactionManager(deps.db);
 
@@ -39,20 +41,18 @@ export class ScannerModule {
       deps.metrics,
       deps.eventBus,
     );
-  }
 
-  registerEventSubscribers(eventBus: EventBus): void {
-    registerEventSubscribers(eventBus, [
+    this.eventSubscribers = [
       new SubscriptionConfirmedSubscriber(
         this.monitoredRepoRepository,
         this.transactionManager,
-        this.deps.githubClient,
+        deps.githubClient,
       ),
       new SubscriptionDeactivatedSubscriber(
         this.monitoredRepoRepository,
         this.transactionManager,
       ),
-    ]);
+    ];
   }
 
   static create(deps: ScannerModuleDeps): ScannerModule {
