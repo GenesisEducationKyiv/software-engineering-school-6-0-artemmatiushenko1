@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mock } from 'vitest-mock-extended';
+import type { DeliveryDedup } from '../../../../platform/delivery-dedup/delivery-dedup.js';
 import type { EmailClient } from '../ports/email-client.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
 import { SubscriptionEventType } from '../../../subscription/api/events.js';
@@ -18,9 +19,12 @@ describe('SubscriptionConfirmedSubscriber', () => {
   } as const;
 
   it('saves the recipient and sends a subscription confirmed email', async () => {
+    const deliveryDedup = mock<DeliveryDedup>();
+    deliveryDedup.claim.mockResolvedValue({ release: vi.fn() });
     const recipientRepository = mock<RecipientRepository>();
     const emailClient = mock<EmailClient>();
     const subscriber = new SubscriptionConfirmedSubscriber(
+      deliveryDedup,
       recipientRepository,
       emailClient,
       'http://localhost:3000',

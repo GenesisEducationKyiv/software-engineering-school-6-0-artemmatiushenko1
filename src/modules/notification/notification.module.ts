@@ -2,6 +2,7 @@ import type { Database } from '../../platform/db/types.js';
 import type { EmailClient } from './application/ports/email-client.js';
 import type { NotificationMetrics } from './application/ports/notification-metrics.js';
 import { DrizzleRecipientRepository } from './infrastructure/recipient.repository.js';
+import { DrizzleDeliveryDedup } from '../../platform/delivery-dedup/drizzle-delivery-dedup.js';
 import type { DomainEventEnvelope } from '../../platform/event-bus/domain-event-envelope.js';
 import type { EventSubscriber } from '../../platform/event-bus/event-subscriber.js';
 import { SubscriptionRequestedSubscriber } from './application/subscribers/subscription-requested.subscriber.js';
@@ -24,24 +25,29 @@ export class NotificationModule {
   private readonly recipientRepository: DrizzleRecipientRepository;
 
   private constructor(deps: NotificationModuleDeps) {
+    const deliveryDedup = new DrizzleDeliveryDedup(deps.db);
     this.recipientRepository = new DrizzleRecipientRepository(deps.db);
     this.eventSubscribers = [
       new SubscriptionRequestedSubscriber(
+        deliveryDedup,
         deps.emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionConfirmationRenewedSubscriber(
+        deliveryDedup,
         deps.emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionReactivatedSubscriber(
+        deliveryDedup,
         deps.emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionConfirmedSubscriber(
+        deliveryDedup,
         this.recipientRepository,
         deps.emailClient,
         deps.appUrl,
@@ -49,6 +55,7 @@ export class NotificationModule {
       ),
       new SubscriptionDeactivatedSubscriber(this.recipientRepository),
       new NewReleaseDetectedSubscriber(
+        deliveryDedup,
         this.recipientRepository,
         deps.emailClient,
         deps.appUrl,

@@ -18,5 +18,6 @@ export function toDomainEventEnvelope(
     aggregateId: message.aggregateId,
     occurredAt: message.occurredAt,
     payload: message.payload,
+    id: message.id,
   };
 }

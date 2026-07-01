@@ -15,6 +15,13 @@
       "when": 1782890416773,
       "tag": "0001_sparkling_vertigo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782933121488,
+      "tag": "0002_acoustic_colossus",
+      "breakpoints": true
     }
   ]
 }

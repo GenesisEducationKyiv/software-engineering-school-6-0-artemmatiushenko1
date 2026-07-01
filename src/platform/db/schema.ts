@@ -65,6 +65,13 @@ export const notificationRecipients = pgTable('notification_recipients', {
   unsubscribeToken: text('unsubscribe_token').notNull(),
 });
 
+export const processedDeliveries = pgTable('processed_deliveries', {
+  id: text('message_id').primaryKey(),
+  processedAt: timestamp('processed_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export const outboxMessages = pgTable(
   'outbox_messages',
   {

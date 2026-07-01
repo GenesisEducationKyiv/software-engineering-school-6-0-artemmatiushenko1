@@ -2,26 +2,28 @@ import {
   ScannerEventType,
   type NewReleaseDetectedEvent,
 } from '../../../scanner/api/events.js';
-import { EventSubscriber } from '../../../../platform/event-bus/event-subscriber.js';
+import type { DeliveryDedup } from '../../../../platform/delivery-dedup/delivery-dedup.js';
 import { RecipientNotFoundError } from '../../domain/errors.js';
 import { buildUnsubscribeUrl } from '../links.js';
 import { newReleaseNotificationTemplate } from '../templates.js';
 import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
+import { IdempotentEmailSubscriber } from './idempotent-email.subscriber.js';
 
-export class NewReleaseDetectedSubscriber extends EventSubscriber<NewReleaseDetectedEvent> {
+export class NewReleaseDetectedSubscriber extends IdempotentEmailSubscriber<NewReleaseDetectedEvent> {
   readonly eventType = ScannerEventType.NewReleaseDetected;
   constructor(
+    deliveryDedup: DeliveryDedup,
     private readonly recipientRepository: RecipientRepository,
     private readonly emailClient: EmailClient,
     private readonly appUrl: string,
     private readonly metrics?: NotificationMetrics,
   ) {
-    super();
+    super(deliveryDedup);
   }
 
-  async handle(event: NewReleaseDetectedEvent): Promise<void> {
+  protected async deliver(event: NewReleaseDetectedEvent): Promise<void> {
     const recipient = await this.recipientRepository.findBySubscriptionId(
       event.aggregateId,
     );

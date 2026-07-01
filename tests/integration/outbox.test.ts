@@ -46,7 +46,10 @@ describe('DrizzleOutboxRepository', () => {
     const pending = await fetchPending(10);
 
     expect(pending).toHaveLength(1);
-    expect(toDomainEventEnvelope(pending[0]!)).toEqual(sampleEvent);
+    expect(toDomainEventEnvelope(pending[0]!)).toEqual({
+      ...sampleEvent,
+      id: pending[0]!.id,
+    });
   });
 
   it('rolls back outbox rows when the transaction fails', async () => {
