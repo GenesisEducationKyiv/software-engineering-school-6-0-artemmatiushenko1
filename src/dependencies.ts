@@ -16,6 +16,7 @@ import { InProcessEventBus } from './platform/event-bus/in-process-event-bus.js'
 import type { EventBus } from './platform/event-bus/event-bus.interface.js';
 import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-manager.js';
 import { DrizzleOutboxRepository } from './platform/outbox/drizzle-outbox.repository.js';
+import type { Outbox } from './platform/outbox/outbox.js';
 import { OutboxRelay } from './platform/outbox/outbox-relay.js';
 
 export interface AppDependencies {
@@ -62,6 +63,7 @@ export class AppContainer {
       deps.db,
       deps.idGenerator,
     );
+    const outbox: Outbox = outboxRepository;
     this.outboxRelay = new OutboxRelay(
       outboxRepository,
       this.eventBus,
@@ -85,7 +87,7 @@ export class AppContainer {
       clock: deps.clock,
       idGenerator: deps.idGenerator,
       tokenGenerator: deps.tokenGenerator,
-      eventBus: this.eventBus,
+      outbox,
     });
 
     this.scanner = ScannerModule.create({
@@ -94,7 +96,7 @@ export class AppContainer {
       logger: deps.logger,
       clock: deps.clock,
       metrics: deps.metrics,
-      eventBus: this.eventBus,
+      outbox,
     });
   }
 

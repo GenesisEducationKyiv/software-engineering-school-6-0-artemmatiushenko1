@@ -6,7 +6,7 @@ import type { TransactionManager } from '../../../shared-kernel/transaction.js';
 import { GithubRateLimitError } from '../../github/domain/errors.js';
 import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
 import { msToSeconds } from '../../../utils/time.utils.js';
-import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
+import type { Outbox } from '../../../platform/outbox/outbox.js';
 import { ScannerEventType } from '../api/events.js';
 import type { DomainEventEnvelope } from '../../../platform/event-bus/domain-event-envelope.js';
 
@@ -18,7 +18,7 @@ export class ScanUseCase {
     private readonly logger: Logger,
     private readonly clock: Clock,
     private readonly metrics: ScannerMetrics,
-    private readonly eventBus: EventBus,
+    private readonly outbox: Outbox,
   ) {}
 
   async execute(): Promise<void> {
@@ -116,14 +116,13 @@ export class ScanUseCase {
       });
     }
 
-    if (newReleaseEvents.length > 0) {
-      await this.eventBus.publish(newReleaseEvents);
-    }
-
     monitoredRepo.markReleaseSeen(latestTag);
     monitoredRepo.markWatcherNotified(eligibleWatchers, latestTag);
 
     await this.transactionManager.run(async (tx) => {
+      if (newReleaseEvents.length > 0) {
+        await this.outbox.save(newReleaseEvents, tx);
+      }
       await this.monitoredRepoRepository.save(monitoredRepo, tx);
     });
   }

@@ -6,6 +6,7 @@ import { ScanUseCase } from './application/scan.use-case.js';
 import type { ScannerMetrics } from './application/ports/scanner-metrics.interface.js';
 import { DrizzleMonitoredRepoRepository } from './infrastructure/monitored-repo.repository.js';
 import { DrizzleTransactionManager } from '../../platform/db/drizzle-transaction-manager.js';
+import type { Outbox } from '../../platform/outbox/outbox.js';
 import type { EventBus } from '../../platform/event-bus/event-bus.interface.js';
 import { registerEventSubscribers } from '../../platform/event-bus/event-subscriber.js';
 import { SubscriptionConfirmedSubscriber } from './application/subscribers/subscription-confirmed.subscriber.js';
@@ -17,7 +18,7 @@ export interface ScannerModuleDeps {
   logger: Logger;
   clock: Clock;
   metrics: ScannerMetrics;
-  eventBus: EventBus;
+  outbox: Outbox;
 }
 
 export class ScannerModule {
@@ -37,7 +38,7 @@ export class ScannerModule {
       deps.logger,
       deps.clock,
       deps.metrics,
-      deps.eventBus,
+      deps.outbox,
     );
   }
 

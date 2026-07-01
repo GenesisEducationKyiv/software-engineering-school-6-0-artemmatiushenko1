@@ -9,7 +9,7 @@ import type {
   Logger,
 } from '../../../../shared-kernel/index.js';
 import type { TokenGenerator } from '../ports/token-generator.js';
-import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
+import type { Outbox } from '../../../../platform/outbox/outbox.js';
 import { SubscriptionEventType } from '../../api/events.js';
 import { mock } from 'vitest-mock-extended';
 import {
@@ -28,7 +28,7 @@ describe('ConfirmUseCase', () => {
   const transactionManagerMock = mock<TransactionManager>();
   const tokenGeneratorMock = mock<TokenGenerator>();
   const clockMock = mock<Clock>();
-  const eventBusMock = mock<EventBus>();
+  const outboxMock = mock<Outbox>();
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -39,7 +39,7 @@ describe('ConfirmUseCase', () => {
       async (work) => await work({} as DomainTransaction),
     );
 
-    eventBusMock.publish.mockResolvedValue(undefined);
+    outboxMock.save.mockResolvedValue(undefined);
 
     confirmUseCase = new ConfirmUseCase(
       repoMock,
@@ -47,7 +47,7 @@ describe('ConfirmUseCase', () => {
       loggerMock,
       tokenGeneratorMock,
       clockMock,
-      eventBusMock,
+      outboxMock,
     );
   });
 
@@ -75,18 +75,21 @@ describe('ConfirmUseCase', () => {
       }),
       expect.anything(),
     );
-    expect(eventBusMock.publish).toHaveBeenCalledWith([
-      {
-        type: SubscriptionEventType.Confirmed,
-        aggregateId: '10',
-        occurredAt: FIXED_NOW,
-        payload: {
-          email: 'test@example.com',
-          repo: 'owner/repo',
-          unsubscribeToken: unsubscribeTokenValue,
+    expect(outboxMock.save).toHaveBeenCalledWith(
+      [
+        {
+          type: SubscriptionEventType.Confirmed,
+          aggregateId: '10',
+          occurredAt: FIXED_NOW,
+          payload: {
+            email: 'test@example.com',
+            repo: 'owner/repo',
+            unsubscribeToken: unsubscribeTokenValue,
+          },
         },
-      },
-    ]);
+      ],
+      expect.anything(),
+    );
   });
 
   it('should throw SubscriptionNotFoundError when token cannot be resolved', async () => {

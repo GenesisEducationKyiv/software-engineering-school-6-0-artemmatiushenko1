@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { mock } from 'vitest-mock-extended';
+import type { Outbox } from '../../platform/outbox/outbox.js';
 import type { EventBus } from '../../platform/event-bus/event-bus.interface.js';
 import { SubscriptionEventType } from '../subscription/api/events.js';
 import type { Database } from '../../platform/db/types.js';
@@ -18,7 +19,7 @@ describe('ScannerModule', () => {
       logger: mock<Logger>(),
       clock: mock<Clock>(),
       metrics: mock<ScannerMetrics>(),
-      eventBus: mock<EventBus>(),
+      outbox: mock<Outbox>(),
     });
 
     module.registerEventSubscribers(eventBus);

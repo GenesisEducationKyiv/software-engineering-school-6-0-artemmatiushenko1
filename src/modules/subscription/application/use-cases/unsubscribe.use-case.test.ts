@@ -8,7 +8,7 @@ import type {
   DomainTransaction,
   Logger,
 } from '../../../../shared-kernel/index.js';
-import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
+import type { Outbox } from '../../../../platform/outbox/outbox.js';
 import { SubscriptionEventType } from '../../api/events.js';
 import { mock } from 'vitest-mock-extended';
 import {
@@ -26,7 +26,7 @@ describe('UnsubscribeUseCase', () => {
   const loggerMock = mock<Logger>();
   const transactionManagerMock = mock<TransactionManager>();
   const clockMock = mock<Clock>();
-  const eventBusMock = mock<EventBus>();
+  const outboxMock = mock<Outbox>();
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -37,14 +37,14 @@ describe('UnsubscribeUseCase', () => {
       async (work) => await work({} as DomainTransaction),
     );
 
-    eventBusMock.publish.mockResolvedValue(undefined);
+    outboxMock.save.mockResolvedValue(undefined);
 
     unsubscribeUseCase = new UnsubscribeUseCase(
       repoMock,
       transactionManagerMock,
       loggerMock,
       clockMock,
-      eventBusMock,
+      outboxMock,
     );
   });
 
@@ -67,16 +67,19 @@ describe('UnsubscribeUseCase', () => {
       }),
       expect.anything(),
     );
-    expect(eventBusMock.publish).toHaveBeenCalledWith([
-      {
-        type: SubscriptionEventType.Deactivated,
-        aggregateId: '10',
-        occurredAt: FIXED_NOW,
-        payload: {
-          repo: 'owner/repo',
+    expect(outboxMock.save).toHaveBeenCalledWith(
+      [
+        {
+          type: SubscriptionEventType.Deactivated,
+          aggregateId: '10',
+          occurredAt: FIXED_NOW,
+          payload: {
+            repo: 'owner/repo',
+          },
         },
-      },
-    ]);
+      ],
+      expect.anything(),
+    );
     expect(loggerMock.info).toHaveBeenCalled();
   });
 
