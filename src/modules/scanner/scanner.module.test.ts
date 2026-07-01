@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import type { Outbox } from '../../platform/outbox/outbox.js';
 import type { EventBus } from '../../platform/event-bus/event-bus.interface.js';
+import { registerEventSubscribers } from '../../platform/event-bus/event-subscriber.js';
 import { SubscriptionEventType } from '../subscription/api/events.js';
 import type { Database } from '../../platform/db/types.js';
 import type { GithubClient } from '../github/api/github-client.interface.js';
@@ -22,7 +23,7 @@ describe('ScannerModule', () => {
       outbox: mock<Outbox>(),
     });
 
-    module.registerEventSubscribers(eventBus);
+    registerEventSubscribers(eventBus, module.eventSubscribers);
 
     expect(eventBus.subscribe).toHaveBeenCalledTimes(2);
     expect(eventBus.subscribe).toHaveBeenCalledWith(

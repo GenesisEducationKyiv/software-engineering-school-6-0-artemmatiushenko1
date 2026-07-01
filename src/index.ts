@@ -54,7 +54,7 @@ const container = new AppContainer(appConfig, {
   idGenerator,
   tokenGenerator,
 });
-container.registerEventSubscribers();
+container.wireEventSubscribers();
 const deps = container.build();
 
 deps.logger.info('Running database migrations...');

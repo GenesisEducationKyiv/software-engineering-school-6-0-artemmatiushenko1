@@ -18,6 +18,7 @@ import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-man
 import { DrizzleOutboxRepository } from './platform/outbox/drizzle-outbox.repository.js';
 import type { Outbox } from './platform/outbox/outbox.js';
 import { OutboxRelay } from './platform/outbox/outbox-relay.js';
+import { registerEventSubscribers } from './platform/event-bus/event-subscriber.js';
 
 export interface AppDependencies {
   redis: Redis;
@@ -100,13 +101,15 @@ export class AppContainer {
     });
   }
 
-  registerEventSubscribers(): void {
+  wireEventSubscribers(): void {
     if (this.eventSubscribersRegistered) {
       return;
     }
 
-    this.notification.registerEventSubscribers(this.eventBus);
-    this.scanner.registerEventSubscribers(this.eventBus);
+    for (const module of [this.notification, this.scanner]) {
+      registerEventSubscribers(this.eventBus, module.eventSubscribers);
+    }
+
     this.eventSubscribersRegistered = true;
   }
 

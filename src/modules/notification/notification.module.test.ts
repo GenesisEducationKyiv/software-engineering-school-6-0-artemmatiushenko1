@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import type { EventBus } from '../../platform/event-bus/event-bus.interface.js';
+import { registerEventSubscribers } from '../../platform/event-bus/event-subscriber.js';
 import { SubscriptionEventType } from '../subscription/api/events.js';
 import { ScannerEventType } from '../scanner/api/events.js';
 import type { EmailClient } from './application/ports/email-client.js';
@@ -16,7 +17,7 @@ describe('NotificationModule', () => {
       appUrl: 'http://localhost:3000',
     });
 
-    module.registerEventSubscribers(eventBus);
+    registerEventSubscribers(eventBus, module.eventSubscribers);
 
     expect(eventBus.subscribe).toHaveBeenCalledTimes(6);
     expect(eventBus.subscribe).toHaveBeenCalledWith(

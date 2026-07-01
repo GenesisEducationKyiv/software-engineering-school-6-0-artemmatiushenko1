@@ -174,7 +174,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       tokenGenerator: new CryptoTokenGenerator(),
     });
 
-    container.registerEventSubscribers();
+    container.wireEventSubscribers();
     deps = container.build();
     app = await App.create(TEST_APP_CONFIG, deps, fastify);
   });
