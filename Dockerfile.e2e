@@ -8,7 +8,7 @@ RUN npm ci
 
 RUN npx playwright install
 
-COPY src/db ./src/db
+COPY src/platform/db ./src/platform/db
 COPY src/config.ts ./src/config.ts
 COPY tests/e2e ./tests/e2e
 COPY drizzle.config.ts ./

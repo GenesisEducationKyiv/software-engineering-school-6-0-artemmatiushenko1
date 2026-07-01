@@ -1,0 +1,160 @@
+import { describe, it, expect, beforeAll, afterEach } from 'vitest';
+import { PGlite } from '@electric-sql/pglite';
+import { drizzle } from 'drizzle-orm/pglite';
+import * as schema from '../../src/platform/db/schema.js';
+import {
+  MIGRATIONS_FOLDER,
+  runDatabaseMigrations,
+} from '../../src/platform/db/migrate.js';
+import type { Database } from '../../src/platform/db/types.js';
+import { DrizzleTransactionManager } from '../../src/platform/db/drizzle-transaction-manager.js';
+import { DrizzleMonitoredRepoRepository } from '../../src/modules/scanner/infrastructure/monitored-repo.repository.js';
+import {
+  MonitoredRepo,
+  ReleaseTag,
+  RepoPath,
+  RepoWatcher,
+} from '../../src/modules/scanner/domain/index.js';
+
+describe('DrizzleMonitoredRepoRepository', () => {
+  let db: Database;
+  let repository: DrizzleMonitoredRepoRepository;
+  let transactionManager: DrizzleTransactionManager;
+
+  const save = async (monitoredRepo: MonitoredRepo) => {
+    await transactionManager.run(async (tx) => {
+      await repository.save(monitoredRepo, tx);
+    });
+  };
+
+  const createWatcher = (
+    subscriptionId: string,
+    lastNotifiedTag: string | null = 'v1.0.0',
+  ) =>
+    RepoWatcher.create({
+      subscriptionId,
+      lastNotifiedTag: lastNotifiedTag
+        ? ReleaseTag.fromString(lastNotifiedTag)
+        : null,
+    });
+
+  beforeAll(async () => {
+    db = drizzle(new PGlite(), { schema });
+    await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
+    repository = new DrizzleMonitoredRepoRepository(db);
+    transactionManager = new DrizzleTransactionManager(db);
+  });
+
+  afterEach(async () => {
+    await db.delete(schema.repoWatchers);
+    await db.delete(schema.monitoredRepos);
+  });
+
+  it('persists and loads a monitored repo with watchers', async () => {
+    const monitoredRepo = MonitoredRepo.create(
+      RepoPath.fromString('owner/repo'),
+    );
+    monitoredRepo.addWatcher(createWatcher('sub-1'));
+
+    await save(monitoredRepo);
+
+    const [loaded] = await repository.findAll();
+    expect(loaded?.repo.toString()).toBe('owner/repo');
+    expect(loaded?.watchers).toHaveLength(1);
+    expect(loaded?.watchers[0]?.subscriptionId).toBe('sub-1');
+    expect(loaded?.watchers[0]?.lastNotifiedTag?.value).toBe('v1.0.0');
+    expect(loaded?.lastSeenTag).toBeNull();
+  });
+
+  it('upserts repo cursor and watcher state on save', async () => {
+    const monitoredRepo = MonitoredRepo.create(
+      RepoPath.fromString('owner/repo'),
+    );
+    monitoredRepo.addWatcher(createWatcher('sub-1'));
+    await save(monitoredRepo);
+
+    monitoredRepo.markReleaseSeen(ReleaseTag.fromString('v2.0.0'));
+    monitoredRepo.markWatcherNotified(
+      [...monitoredRepo.watchers],
+      ReleaseTag.fromString('v2.0.0'),
+    );
+    await save(monitoredRepo);
+
+    const [loaded] = await repository.findAll();
+    expect(loaded?.lastSeenTag?.value).toBe('v2.0.0');
+    expect(loaded?.watchers[0]?.lastNotifiedTag?.value).toBe('v2.0.0');
+  });
+
+  it('adds a second watcher to the same repo', async () => {
+    const monitoredRepo = MonitoredRepo.create(
+      RepoPath.fromString('owner/repo'),
+    );
+    monitoredRepo.addWatcher(createWatcher('sub-1'));
+    await save(monitoredRepo);
+
+    monitoredRepo.addWatcher(createWatcher('sub-2', 'v1.5.0'));
+    await save(monitoredRepo);
+
+    const [loaded] = await repository.findAll();
+    expect(loaded?.watchers).toHaveLength(2);
+    expect(loaded?.watchers.map((watcher) => watcher.subscriptionId)).toEqual([
+      'sub-1',
+      'sub-2',
+    ]);
+  });
+
+  it('removes stale watchers no longer present on the aggregate', async () => {
+    const monitoredRepo = MonitoredRepo.create(
+      RepoPath.fromString('owner/repo'),
+    );
+    const alice = createWatcher('sub-1');
+    const bob = createWatcher('sub-2');
+    monitoredRepo.addWatcher(alice);
+    monitoredRepo.addWatcher(bob);
+    await save(monitoredRepo);
+
+    monitoredRepo.removeWatcher(bob);
+    await save(monitoredRepo);
+
+    const [loaded] = await repository.findAll();
+    expect(loaded?.watchers).toHaveLength(1);
+    expect(loaded?.watchers[0]?.subscriptionId).toBe('sub-1');
+  });
+
+  it('loads a monitored repo by repo path', async () => {
+    const monitoredRepo = MonitoredRepo.create(
+      RepoPath.fromString('owner/repo'),
+    );
+    monitoredRepo.addWatcher(createWatcher('sub-1'));
+    await save(monitoredRepo);
+
+    const loaded = await repository.findByRepo(
+      RepoPath.fromString('owner/repo'),
+    );
+
+    expect(loaded?.repo.toString()).toBe('owner/repo');
+    expect(loaded?.watchers).toHaveLength(1);
+  });
+
+  it('returns null when the repo is not monitored', async () => {
+    const loaded = await repository.findByRepo(
+      RepoPath.fromString('missing/repo'),
+    );
+
+    expect(loaded).toBeNull();
+  });
+
+  it('deletes the repo when the last watcher is removed', async () => {
+    const monitoredRepo = MonitoredRepo.create(
+      RepoPath.fromString('owner/repo'),
+    );
+    const watcher = createWatcher('sub-1');
+    monitoredRepo.addWatcher(watcher);
+    await save(monitoredRepo);
+
+    monitoredRepo.removeWatcher(watcher);
+    await save(monitoredRepo);
+
+    expect(await repository.findAll()).toEqual([]);
+  });
+});
