@@ -98,6 +98,7 @@ export class AppContainer {
       clock: deps.clock,
       metrics: deps.metrics,
       outbox,
+      cronExpression: config.scannerCron,
     });
   }
 

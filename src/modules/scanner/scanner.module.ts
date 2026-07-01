@@ -11,6 +11,7 @@ import type { DomainEventEnvelope } from '../../platform/event-bus/domain-event-
 import type { EventSubscriber } from '../../platform/event-bus/event-subscriber.js';
 import { SubscriptionConfirmedSubscriber } from './application/subscribers/subscription-confirmed.subscriber.js';
 import { SubscriptionDeactivatedSubscriber } from './application/subscribers/subscription-deactivated.subscriber.js';
+import { ScanCron } from './infrastructure/scan.cron.js';
 
 export interface ScannerModuleDeps {
   db: Database;
@@ -19,6 +20,7 @@ export interface ScannerModuleDeps {
   clock: Clock;
   metrics: ScannerMetrics;
   outbox: Outbox;
+  cronExpression: string;
 }
 
 export class ScannerModule {
@@ -27,8 +29,9 @@ export class ScannerModule {
 
   private readonly monitoredRepoRepository: DrizzleMonitoredRepoRepository;
   private readonly transactionManager: DrizzleTransactionManager;
+  private scanCron?: ScanCron;
 
-  private constructor(deps: ScannerModuleDeps) {
+  private constructor(private readonly deps: ScannerModuleDeps) {
     this.monitoredRepoRepository = new DrizzleMonitoredRepoRepository(deps.db);
     this.transactionManager = new DrizzleTransactionManager(deps.db);
 
@@ -57,5 +60,22 @@ export class ScannerModule {
 
   static create(deps: ScannerModuleDeps): ScannerModule {
     return new ScannerModule(deps);
+  }
+
+  startCron(): void {
+    if (!this.deps.cronExpression) {
+      return;
+    }
+
+    this.scanCron = new ScanCron(
+      this.deps.cronExpression,
+      this.scanUseCase,
+      this.deps.logger,
+    );
+    this.scanCron.start();
+  }
+
+  async stopCron(): Promise<void> {
+    await this.scanCron?.stop();
   }
 }

@@ -23,7 +23,6 @@ import { type AppDependencies } from './dependencies.js';
 import { msToSeconds } from './utils/time.utils.js';
 import { REQUEST_ID_HEADER } from './platform/fastify/constants.js';
 import { runWithRequestLogger } from './platform/logger/request-log-context.js';
-import { ScanCron } from './modules/scanner/infrastructure/scan.cron.js';
 import { OutboxRelayCron } from './platform/outbox/outbox-relay.cron.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,7 +32,6 @@ export class App {
   public readonly fastify: FastifyInstance;
   private readonly deps: AppDependencies;
   private readonly config: AppConfig;
-  private scanCron?: ScanCron;
   private outboxRelayCron?: OutboxRelayCron;
 
   private constructor(
@@ -183,12 +181,7 @@ export class App {
   }
 
   startScannerCron() {
-    this.scanCron = new ScanCron(
-      this.config.scannerCron,
-      this.deps.scanner.scanUseCase,
-      this.deps.logger,
-    );
-    this.scanCron.start();
+    this.deps.scanner.startCron();
   }
 
   startOutboxRelayCron() {
@@ -222,7 +215,7 @@ export class App {
       this.deps.logger.info('Starting graceful shutdown', { signal });
 
       try {
-        await this.scanCron?.stop();
+        await this.deps.scanner.stopCron();
         this.deps.logger.info('Scanner tasks stopped.');
 
         await this.outboxRelayCron?.stop();

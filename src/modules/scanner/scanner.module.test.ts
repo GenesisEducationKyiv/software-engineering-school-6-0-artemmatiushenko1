@@ -21,6 +21,7 @@ describe('ScannerModule', () => {
       clock: mock<Clock>(),
       metrics: mock<ScannerMetrics>(),
       outbox: mock<Outbox>(),
+      cronExpression: '*/10 * * * *',
     });
 
     registerEventSubscribers(eventBus, module.eventSubscribers);
