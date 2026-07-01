@@ -31,7 +31,7 @@ const AppConfigSchema = z.object({
   port: z.coerce.number().default(3000),
   host: z.string().default('0.0.0.0'),
   scannerCron: z.string().default('*/10 * * * *'), // Default to every 10 minutes
-  outboxRelayCron: z.string().default('*/3 * * * * *'), // Default to every 5 seconds
+  outboxRelayCron: z.string().default('*/3 * * * * *'), // Default to every 3 seconds
   githubCacheTtl: z.coerce.number().default(600), // Default to 10 minutes in seconds
   githubApiBaseUrl: z.string(),
 });
