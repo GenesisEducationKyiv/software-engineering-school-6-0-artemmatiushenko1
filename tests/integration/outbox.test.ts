@@ -14,7 +14,7 @@ import { CryptoIdGenerator } from '../../src/modules/subscription/infrastructure
 
 describe('DrizzleOutboxRepository', () => {
   let db: Database;
-  let repository: DrizzleOutboxRepository;
+  let outboxRepository: DrizzleOutboxRepository;
   let transactionManager: DrizzleTransactionManager;
 
   const sampleEvent = {
@@ -27,7 +27,7 @@ describe('DrizzleOutboxRepository', () => {
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
     await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
-    repository = new DrizzleOutboxRepository(db, new CryptoIdGenerator());
+    outboxRepository = new DrizzleOutboxRepository(db, new CryptoIdGenerator());
     transactionManager = new DrizzleTransactionManager(db);
   });
 
@@ -36,11 +36,11 @@ describe('DrizzleOutboxRepository', () => {
   });
 
   const fetchPending = (limit: number) =>
-    transactionManager.run((tx) => repository.fetchPending(limit, tx));
+    transactionManager.run((tx) => outboxRepository.fetchPending(limit, tx));
 
   it('saves events in a transaction and fetches them as pending', async () => {
     await transactionManager.run(async (tx) => {
-      await repository.save([sampleEvent], tx);
+      await outboxRepository.save([sampleEvent], tx);
     });
 
     const pending = await fetchPending(10);
@@ -52,7 +52,7 @@ describe('DrizzleOutboxRepository', () => {
   it('rolls back outbox rows when the transaction fails', async () => {
     await expect(
       transactionManager.run(async (tx) => {
-        await repository.save([sampleEvent], tx);
+        await outboxRepository.save([sampleEvent], tx);
         throw new Error('boom');
       }),
     ).rejects.toThrow('boom');
@@ -63,11 +63,11 @@ describe('DrizzleOutboxRepository', () => {
 
   it('marks fetched rows as processed', async () => {
     await transactionManager.run(async (tx) => {
-      await repository.save([sampleEvent], tx);
+      await outboxRepository.save([sampleEvent], tx);
     });
 
     const pending = await fetchPending(10);
-    await repository.markProcessed(pending.map((message) => message.id));
+    await outboxRepository.markProcessed(pending.map((message) => message.id));
 
     const afterMark = await fetchPending(10);
     expect(afterMark).toHaveLength(0);
