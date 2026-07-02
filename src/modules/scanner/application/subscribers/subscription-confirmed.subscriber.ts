@@ -11,11 +11,13 @@ import {
 import { EventSubscriber } from '../../../../platform/event-bus/event-subscriber.js';
 import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import type { GithubClient } from '../../../github/api/github-client.interface.js';
 
 export class SubscriptionConfirmedSubscriber extends EventSubscriber<SubscriptionConfirmedEvent> {
   readonly eventType = SubscriptionEventType.Confirmed;
   constructor(
+    private readonly idempotencyGuard: IdempotencyGuard,
     private readonly monitoredRepoRepository: MonitoredRepoRepository,
     private readonly transactionManager: TransactionManager,
     private readonly githubClient: GithubClient,
@@ -24,6 +26,22 @@ export class SubscriptionConfirmedSubscriber extends EventSubscriber<Subscriptio
   }
 
   async handle(event: SubscriptionConfirmedEvent): Promise<void> {
+    const claim = await this.idempotencyGuard.claim(
+      event.id ? `${event.id}:scanner:subscription-confirmed` : undefined,
+    );
+    if (!claim) {
+      return;
+    }
+
+    try {
+      await this.addWatcher(event);
+    } catch (error) {
+      await claim.release();
+      throw error;
+    }
+  }
+
+  private async addWatcher(event: SubscriptionConfirmedEvent): Promise<void> {
     const repo = RepoPath.fromString(event.payload.repo);
     const latestRelease = await this.githubClient.getLatestRelease(
       repo.owner,

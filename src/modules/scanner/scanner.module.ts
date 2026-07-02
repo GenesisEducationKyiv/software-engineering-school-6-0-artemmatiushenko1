@@ -7,6 +7,7 @@ import type { ScannerMetrics } from './application/ports/scanner-metrics.interfa
 import { DrizzleMonitoredRepoRepository } from './infrastructure/monitored-repo.repository.js';
 import { DrizzleTransactionManager } from '../../platform/db/drizzle-transaction-manager.js';
 import type { Outbox } from '../../platform/outbox/outbox.js';
+import { DrizzleIdempotencyGuard } from '../../platform/idempotency-guard/drizzle-idempotency-guard.js';
 import type { DomainEventEnvelope } from '../../platform/event-bus/domain-event-envelope.js';
 import type { EventSubscriber } from '../../platform/event-bus/event-subscriber.js';
 import { SubscriptionConfirmedSubscriber } from './application/subscribers/subscription-confirmed.subscriber.js';
@@ -45,8 +46,11 @@ export class ScannerModule {
       deps.outbox,
     );
 
+    const idempotencyGuard = new DrizzleIdempotencyGuard(deps.db);
+
     this.eventSubscribers = [
       new SubscriptionConfirmedSubscriber(
+        idempotencyGuard,
         this.monitoredRepoRepository,
         this.transactionManager,
         deps.githubClient,

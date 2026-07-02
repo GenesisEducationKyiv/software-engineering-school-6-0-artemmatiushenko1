@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import { SubscriptionEventType } from '../../../subscription/api/events.js';
 import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import type { GithubClient } from '../../../github/api/github-client.interface.js';
 import {
   MonitoredRepo,
@@ -17,6 +18,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
     type: SubscriptionEventType.Confirmed,
     aggregateId: 'sub-1',
     occurredAt: new Date('2024-01-01T00:00:00.000Z'),
+    id: 'msg-1',
     payload: {
       email: 'alice@example.com',
       repo: 'owner/repo',
@@ -25,6 +27,9 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
   } as const;
 
   it('creates a monitored repo and saves a watcher with baseline tag', async () => {
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
+
     const monitoredRepoRepository = mock<MonitoredRepoRepository>();
     monitoredRepoRepository.findByRepo.mockResolvedValue(null);
 
@@ -41,6 +46,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
     });
 
     const subscriber = new SubscriptionConfirmedSubscriber(
+      idempotencyGuard,
       monitoredRepoRepository,
       transactionManager,
       githubClient,
@@ -48,6 +54,9 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
 
     await subscriber.handle(event);
 
+    expect(idempotencyGuard.claim).toHaveBeenCalledWith(
+      'msg-1:scanner:subscription-confirmed',
+    );
     expect(githubClient.getLatestRelease).toHaveBeenCalledWith('owner', 'repo');
     expect(monitoredRepoRepository.findByRepo).toHaveBeenCalledWith(
       RepoPath.fromString('owner/repo'),
@@ -68,6 +77,9 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
   });
 
   it('adds a watcher to an existing monitored repo', async () => {
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
+
     const existing = MonitoredRepo.create(RepoPath.fromString('owner/repo'));
     existing.addWatcher(
       RepoWatcher.create({
@@ -92,6 +104,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
     });
 
     const subscriber = new SubscriptionConfirmedSubscriber(
+      idempotencyGuard,
       monitoredRepoRepository,
       transactionManager,
       githubClient,
@@ -111,6 +124,9 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
   });
 
   it('stores null lastNotifiedTag when the repository has no releases', async () => {
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
+
     const monitoredRepoRepository = mock<MonitoredRepoRepository>();
     monitoredRepoRepository.findByRepo.mockResolvedValue(null);
 
@@ -123,6 +139,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
     githubClient.getLatestRelease.mockResolvedValue(null);
 
     const subscriber = new SubscriptionConfirmedSubscriber(
+      idempotencyGuard,
       monitoredRepoRepository,
       transactionManager,
       githubClient,
@@ -140,5 +157,57 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
       }),
       expect.anything(),
     );
+  });
+
+  it('does not re-fetch GitHub or overwrite watcher on duplicate outbox delivery', async () => {
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.claim.mockResolvedValue(null);
+
+    const monitoredRepoRepository = mock<MonitoredRepoRepository>();
+    const transactionManager = mock<TransactionManager>();
+    const githubClient = mock<GithubClient>();
+
+    const subscriber = new SubscriptionConfirmedSubscriber(
+      idempotencyGuard,
+      monitoredRepoRepository,
+      transactionManager,
+      githubClient,
+    );
+
+    await subscriber.handle(event);
+
+    expect(githubClient.getLatestRelease).not.toHaveBeenCalled();
+    expect(monitoredRepoRepository.findByRepo).not.toHaveBeenCalled();
+    expect(monitoredRepoRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('releases claim when save fails', async () => {
+    const release = vi.fn();
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.claim.mockResolvedValue({ release });
+
+    const monitoredRepoRepository = mock<MonitoredRepoRepository>();
+    monitoredRepoRepository.findByRepo.mockResolvedValue(null);
+
+    const transactionManager = mock<TransactionManager>();
+    transactionManager.run.mockRejectedValue(new Error('save failed'));
+
+    const githubClient = mock<GithubClient>();
+    githubClient.getLatestRelease.mockResolvedValue({
+      tag: 'v1.0.0',
+      name: 'v1.0.0',
+      publishedAt: null,
+    });
+
+    const subscriber = new SubscriptionConfirmedSubscriber(
+      idempotencyGuard,
+      monitoredRepoRepository,
+      transactionManager,
+      githubClient,
+    );
+
+    await expect(subscriber.handle(event)).rejects.toThrow('save failed');
+
+    expect(release).toHaveBeenCalled();
   });
 });
