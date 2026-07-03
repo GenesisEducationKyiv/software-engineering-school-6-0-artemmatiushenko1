@@ -8,7 +8,7 @@ import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
 import { msToSeconds } from '../../../utils/time.utils.js';
 import type { Outbox } from '../../../platform/outbox/outbox.js';
 import { ScannerEventType } from '../api/events.js';
-import type { NewReleaseDetectedIntegrationEvent } from '../api/events.js';
+import type { NewReleaseDetectedEvent } from '../api/events.js';
 
 export class ScanUseCase {
   constructor(
@@ -101,7 +101,7 @@ export class ScanUseCase {
 
     const eligibleWatchers = monitoredRepo.eligibleWatchers(latestTag);
 
-    const newReleaseEvents: NewReleaseDetectedIntegrationEvent[] = [];
+    const newReleaseEvents: NewReleaseDetectedEvent[] = [];
 
     for (const watcher of eligibleWatchers) {
       newReleaseEvents.push({

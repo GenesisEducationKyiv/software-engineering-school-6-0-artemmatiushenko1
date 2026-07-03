@@ -2,6 +2,7 @@ import {
   SubscriptionEventType,
   type SubscriptionConfirmedEvent,
 } from '../../../subscription/api/events.js';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import { IdempotentSubscriber } from '../../../../platform/idempotency-guard/idempotent.subscriber.js';
 import { Email, Recipient } from '../../domain/index.js';
@@ -11,7 +12,9 @@ import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
 
-export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<SubscriptionConfirmedEvent> {
+export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<
+  Delivered<SubscriptionConfirmedEvent>
+> {
   readonly eventType = SubscriptionEventType.Confirmed;
   constructor(
     idempotencyGuard: IdempotencyGuard,
@@ -25,7 +28,7 @@ export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<Subscr
 
   protected readonly name = 'notification:subscription-confirmed';
 
-  async handle(event: SubscriptionConfirmedEvent): Promise<void> {
+  async handle(event: Delivered<SubscriptionConfirmedEvent>): Promise<void> {
     const recipient = Recipient.create(
       event.aggregateId,
       Email.fromString(event.payload.email),
@@ -36,7 +39,9 @@ export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<Subscr
     await this.claimAndRun(event, () => this.deliver(event));
   }
 
-  private async deliver(event: SubscriptionConfirmedEvent): Promise<void> {
+  private async deliver(
+    event: Delivered<SubscriptionConfirmedEvent>,
+  ): Promise<void> {
     const unsubscribeUrl = buildUnsubscribeUrl(
       this.appUrl,
       event.payload.unsubscribeToken,

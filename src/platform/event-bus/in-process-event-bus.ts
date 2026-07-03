@@ -1,12 +1,14 @@
-import type { DeliveredEvent } from './domain-event-envelope.js';
+import type { Delivered, IntegrationEvent } from './domain-event-envelope.js';
 import type { EventBus } from './event-bus.interface.js';
 
-type EventHandler = (event: DeliveredEvent) => void | Promise<void>;
+type EventHandler = (
+  event: Delivered<IntegrationEvent>,
+) => void | Promise<void>;
 
 export class InProcessEventBus implements EventBus {
   private readonly subscribers = new Map<string, EventHandler[]>();
 
-  async publish(events: DeliveredEvent[]): Promise<void> {
+  async publish(events: Delivered<IntegrationEvent>[]): Promise<void> {
     for (const event of events) {
       const handlers = this.subscribers.get(event.type);
       if (!handlers) continue;
@@ -17,7 +19,7 @@ export class InProcessEventBus implements EventBus {
     }
   }
 
-  subscribe<T extends DeliveredEvent>(
+  subscribe<T extends Delivered<IntegrationEvent>>(
     eventType: T['type'],
     callback: (event: T) => void | Promise<void>,
   ): void {

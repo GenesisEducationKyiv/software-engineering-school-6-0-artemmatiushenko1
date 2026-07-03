@@ -20,7 +20,7 @@ describe('SubscriptionConfirmationRenewedSubscriber', () => {
       type: SubscriptionEventType.ConfirmationRenewed,
       aggregateId: 'sub-1',
       occurredAt: new Date('2024-01-01T00:00:00.000Z'),
-      messageId: 'msg-1',
+      id: 'msg-1',
       payload: {
         email: 'test@example.com',
         repo: 'owner/repo',

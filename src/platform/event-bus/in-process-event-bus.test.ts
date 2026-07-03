@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
 import { InProcessEventBus } from './in-process-event-bus.js';
-import type { DeliveredEvent } from './domain-event-envelope.js';
+import type { Delivered, IntegrationEvent } from './domain-event-envelope.js';
 
-const testEvent: DeliveredEvent<{ value: number }> = {
+const testEvent: Delivered<IntegrationEvent<{ value: number }, 'TestEvent'>> = {
   type: 'TestEvent',
   aggregateId: 'agg-1',
   occurredAt: new Date('2026-01-01T00:00:00.000Z'),
   payload: { value: 1 },
-  messageId: 'msg-1',
+  id: 'msg-1',
 };
 
 describe('InProcessEventBus', () => {

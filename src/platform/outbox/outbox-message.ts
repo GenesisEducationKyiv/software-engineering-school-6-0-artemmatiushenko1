@@ -1,4 +1,7 @@
-import type { DeliveredEvent } from '../event-bus/domain-event-envelope.js';
+import type {
+  Delivered,
+  IntegrationEvent,
+} from '../event-bus/domain-event-envelope.js';
 
 export type OutboxMessage = {
   readonly id: string;
@@ -10,12 +13,14 @@ export type OutboxMessage = {
   readonly processedAt: Date | null;
 };
 
-export function toDeliveredEvent(message: OutboxMessage): DeliveredEvent {
+export function toDeliveredEvent(
+  message: OutboxMessage,
+): Delivered<IntegrationEvent> {
   return {
     type: message.eventType,
     aggregateId: message.aggregateId,
     occurredAt: message.occurredAt,
     payload: message.payload,
-    messageId: message.id,
+    id: message.id,
   };
 }

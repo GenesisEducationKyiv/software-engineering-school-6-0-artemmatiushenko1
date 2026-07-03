@@ -2,6 +2,7 @@ import {
   SubscriptionEventType,
   type SubscriptionRequestedEvent,
 } from '../../../subscription/api/events.js';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import { IdempotentSubscriber } from '../../../../platform/idempotency-guard/idempotent.subscriber.js';
 import { buildConfirmUrl } from '../links.js';
@@ -9,7 +10,9 @@ import { subscriptionConfirmationTemplate } from '../templates.js';
 import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 
-export class SubscriptionRequestedSubscriber extends IdempotentSubscriber<SubscriptionRequestedEvent> {
+export class SubscriptionRequestedSubscriber extends IdempotentSubscriber<
+  Delivered<SubscriptionRequestedEvent>
+> {
   readonly eventType = SubscriptionEventType.Requested;
   constructor(
     idempotencyGuard: IdempotencyGuard,
@@ -22,11 +25,13 @@ export class SubscriptionRequestedSubscriber extends IdempotentSubscriber<Subscr
 
   protected readonly name = 'notification:subscription-requested';
 
-  async handle(event: SubscriptionRequestedEvent): Promise<void> {
+  async handle(event: Delivered<SubscriptionRequestedEvent>): Promise<void> {
     await this.claimAndRun(event, () => this.deliver(event));
   }
 
-  private async deliver(event: SubscriptionRequestedEvent): Promise<void> {
+  private async deliver(
+    event: Delivered<SubscriptionRequestedEvent>,
+  ): Promise<void> {
     const confirmUrl = buildConfirmUrl(
       this.appUrl,
       event.payload.confirmationToken,

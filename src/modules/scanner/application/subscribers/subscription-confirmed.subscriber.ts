@@ -8,13 +8,16 @@ import {
   SubscriptionEventType,
   type SubscriptionConfirmedEvent,
 } from '../../../subscription/api/events.js';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
 import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import { IdempotentSubscriber } from '../../../../platform/idempotency-guard/idempotent.subscriber.js';
 import type { GithubClient } from '../../../github/api/github-client.interface.js';
 
-export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<SubscriptionConfirmedEvent> {
+export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<
+  Delivered<SubscriptionConfirmedEvent>
+> {
   readonly eventType = SubscriptionEventType.Confirmed;
   protected readonly name = 'scanner:subscription-confirmed';
 
@@ -27,11 +30,13 @@ export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<Subscr
     super(idempotencyGuard);
   }
 
-  async handle(event: SubscriptionConfirmedEvent): Promise<void> {
+  async handle(event: Delivered<SubscriptionConfirmedEvent>): Promise<void> {
     await this.claimAndRun(event, () => this.addWatcher(event));
   }
 
-  private async addWatcher(event: SubscriptionConfirmedEvent): Promise<void> {
+  private async addWatcher(
+    event: Delivered<SubscriptionConfirmedEvent>,
+  ): Promise<void> {
     const repo = RepoPath.fromString(event.payload.repo);
     const latestRelease = await this.githubClient.getLatestRelease(
       repo.owner,

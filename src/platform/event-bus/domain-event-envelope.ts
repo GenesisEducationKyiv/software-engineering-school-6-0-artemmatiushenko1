@@ -5,24 +5,19 @@ type EventEnvelopeCore<TPayload = unknown, TEventType = string> = {
   readonly payload: TPayload;
 };
 
-/** Written to outbox — messageId is assigned by the repository on insert. */
+/** Written to outbox — delivery id is assigned by the repository on insert. */
 export type IntegrationEvent<
   TPayload = unknown,
   TEventType = string,
 > = EventEnvelopeCore<TPayload, TEventType>;
 
-/** Published after delivery — messageId is always the outbox row id. */
-export type DeliveredEvent<
-  TPayload = unknown,
-  TEventType = string,
-> = EventEnvelopeCore<TPayload, TEventType> & {
-  readonly messageId: string;
-};
+/** Adds the outbox row id after delivery. */
+export type Delivered<E> = E & { readonly id: string };
 
 export const asDelivered = <T extends IntegrationEvent>(
   event: T,
-  messageId: string,
-): DeliveredEvent<T['payload'], T['type']> => ({
+  id: string,
+): Delivered<T> => ({
   ...event,
-  messageId,
+  id,
 });

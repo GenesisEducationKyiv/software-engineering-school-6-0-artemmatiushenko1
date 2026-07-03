@@ -48,7 +48,7 @@ describe('DrizzleOutboxRepository', () => {
     expect(pending).toHaveLength(1);
     expect(toDeliveredEvent(pending[0]!)).toEqual({
       ...sampleEvent,
-      messageId: pending[0]!.id,
+      id: pending[0]!.id,
     });
   });
 

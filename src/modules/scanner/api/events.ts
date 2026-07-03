@@ -1,7 +1,4 @@
-import type {
-  IntegrationEvent,
-  DeliveredEvent,
-} from '../../../platform/event-bus/domain-event-envelope.js';
+import type { IntegrationEvent } from '../../../platform/event-bus/domain-event-envelope.js';
 
 export const ScannerEventType = {
   NewReleaseDetected: 'NewReleaseDetected',
@@ -13,14 +10,9 @@ type NewReleaseDetectedPayload = {
   releaseName: string;
 };
 
-export type NewReleaseDetectedIntegrationEvent = IntegrationEvent<
+export type NewReleaseDetectedEvent = IntegrationEvent<
   NewReleaseDetectedPayload,
   typeof ScannerEventType.NewReleaseDetected
 >;
 
-export type NewReleaseDetectedEvent = DeliveredEvent<
-  NewReleaseDetectedPayload,
-  typeof ScannerEventType.NewReleaseDetected
->;
-
-export type ScannerPublicApiEvent = NewReleaseDetectedIntegrationEvent;
+export type ScannerPublicApiEvent = NewReleaseDetectedEvent;

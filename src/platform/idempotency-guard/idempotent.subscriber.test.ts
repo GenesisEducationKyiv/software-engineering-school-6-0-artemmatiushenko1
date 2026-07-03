@@ -1,11 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
 import { mock } from 'vitest-mock-extended';
-import type { DeliveredEvent } from '../event-bus/domain-event-envelope.js';
+import type {
+  Delivered,
+  IntegrationEvent,
+} from '../event-bus/domain-event-envelope.js';
 import type { IdempotencyGuard } from './idempotency-guard.js';
 import { IdempotentSubscriber } from './idempotent.subscriber.js';
 
 const TEST_NAME = 'test:handler';
-type TestEvent = DeliveredEvent<Record<string, never>, 'TestEvent'>;
+type TestEvent = Delivered<
+  IntegrationEvent<Record<string, never>, 'TestEvent'>
+>;
 
 class TestSubscriber extends IdempotentSubscriber<TestEvent> {
   readonly eventType = 'TestEvent';
@@ -24,12 +29,12 @@ class TestSubscriber extends IdempotentSubscriber<TestEvent> {
 }
 
 describe('IdempotentSubscriber', () => {
-  const event = {
-    type: 'TestEvent' as const,
+  const event: TestEvent = {
+    type: 'TestEvent',
     aggregateId: 'sub-1',
     occurredAt: new Date('2024-01-01T00:00:00.000Z'),
     payload: {},
-    messageId: 'msg-1',
+    id: 'msg-1',
   };
 
   it('runs work on first claim', async () => {
