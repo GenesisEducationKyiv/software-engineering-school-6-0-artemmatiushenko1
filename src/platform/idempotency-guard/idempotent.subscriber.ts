@@ -22,16 +22,12 @@ export abstract class IdempotentSubscriber<
     event: T,
     work: () => Promise<void>,
   ): Promise<void> {
-    const claim = await this.idempotencyGuard.claim(this.deliveryKey(event.id));
-    if (!claim) {
+    const key = this.deliveryKey(event.id);
+    if (await this.idempotencyGuard.isProcessed(key)) {
       return;
     }
 
-    try {
-      await work();
-    } catch (error) {
-      await claim.release();
-      throw error;
-    }
+    await work();
+    await this.idempotencyGuard.markProcessed(key);
   }
 }

@@ -29,6 +29,12 @@ export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<
   protected readonly name = 'notification:subscription-confirmed';
 
   async handle(event: Delivered<SubscriptionConfirmedEvent>): Promise<void> {
+    await this.claimAndRun(event, () => this.deliver(event));
+  }
+
+  private async deliver(
+    event: Delivered<SubscriptionConfirmedEvent>,
+  ): Promise<void> {
     const recipient = Recipient.create(
       event.aggregateId,
       Email.fromString(event.payload.email),
@@ -36,12 +42,6 @@ export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<
     );
     await this.recipientRepository.save(recipient);
 
-    await this.claimAndRun(event, () => this.deliver(event));
-  }
-
-  private async deliver(
-    event: Delivered<SubscriptionConfirmedEvent>,
-  ): Promise<void> {
     const unsubscribeUrl = buildUnsubscribeUrl(
       this.appUrl,
       event.payload.unsubscribeToken,

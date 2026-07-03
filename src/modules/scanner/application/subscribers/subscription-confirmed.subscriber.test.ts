@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import { SubscriptionEventType } from '../../../subscription/api/events.js';
 import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
@@ -28,7 +28,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
 
   it('creates a monitored repo and saves a watcher with baseline tag', async () => {
     const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
 
     const monitoredRepoRepository = mock<MonitoredRepoRepository>();
     monitoredRepoRepository.findByRepo.mockResolvedValue(null);
@@ -54,7 +54,10 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
 
     await subscriber.handle(event);
 
-    expect(idempotencyGuard.claim).toHaveBeenCalledWith(
+    expect(idempotencyGuard.isProcessed).toHaveBeenCalledWith(
+      'msg-1:scanner:subscription-confirmed',
+    );
+    expect(idempotencyGuard.markProcessed).toHaveBeenCalledWith(
       'msg-1:scanner:subscription-confirmed',
     );
     expect(githubClient.getLatestRelease).toHaveBeenCalledWith('owner', 'repo');
@@ -78,7 +81,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
 
   it('adds a watcher to an existing monitored repo', async () => {
     const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
 
     const existing = MonitoredRepo.create(RepoPath.fromString('owner/repo'));
     existing.addWatcher(
@@ -125,7 +128,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
 
   it('stores null lastNotifiedTag when the repository has no releases', async () => {
     const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
 
     const monitoredRepoRepository = mock<MonitoredRepoRepository>();
     monitoredRepoRepository.findByRepo.mockResolvedValue(null);
@@ -161,7 +164,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
 
   it('does not re-fetch GitHub or overwrite watcher on duplicate outbox delivery', async () => {
     const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.claim.mockResolvedValue(null);
+    idempotencyGuard.isProcessed.mockResolvedValue(true);
 
     const monitoredRepoRepository = mock<MonitoredRepoRepository>();
     const transactionManager = mock<TransactionManager>();
@@ -181,10 +184,9 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
     expect(monitoredRepoRepository.save).not.toHaveBeenCalled();
   });
 
-  it('releases claim when save fails', async () => {
-    const release = vi.fn();
+  it('does not mark processed when save fails', async () => {
     const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.claim.mockResolvedValue({ release });
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
 
     const monitoredRepoRepository = mock<MonitoredRepoRepository>();
     monitoredRepoRepository.findByRepo.mockResolvedValue(null);
@@ -208,6 +210,6 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
 
     await expect(subscriber.handle(event)).rejects.toThrow('save failed');
 
-    expect(release).toHaveBeenCalled();
+    expect(idempotencyGuard.markProcessed).not.toHaveBeenCalled();
   });
 });

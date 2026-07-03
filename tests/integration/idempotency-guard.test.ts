@@ -23,15 +23,15 @@ describe('DrizzleIdempotencyGuard', () => {
     await db.delete(schema.processedDeliveries);
   });
 
-  it('claims an id once', async () => {
-    expect(await idempotencyGuard.claim('msg-1')).not.toBeNull();
-    expect(await idempotencyGuard.claim('msg-1')).toBeNull();
+  it('tracks processed keys', async () => {
+    expect(await idempotencyGuard.isProcessed('msg-1')).toBe(false);
+    await idempotencyGuard.markProcessed('msg-1');
+    expect(await idempotencyGuard.isProcessed('msg-1')).toBe(true);
   });
 
-  it('allows reclaim after release', async () => {
-    const claim = await idempotencyGuard.claim('msg-1');
-    expect(claim).not.toBeNull();
-    await claim!.release();
-    expect(await idempotencyGuard.claim('msg-1')).not.toBeNull();
+  it('markProcessed is idempotent', async () => {
+    await idempotencyGuard.markProcessed('msg-1');
+    await idempotencyGuard.markProcessed('msg-1');
+    expect(await idempotencyGuard.isProcessed('msg-1')).toBe(true);
   });
 });

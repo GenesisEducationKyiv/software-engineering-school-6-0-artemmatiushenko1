@@ -1,7 +1,4 @@
-export type ClaimHandle = {
-  release(): Promise<void>;
-};
-
 export interface IdempotencyGuard {
-  claim(key: string): Promise<ClaimHandle | null>;
+  isProcessed(key: string): Promise<boolean>;
+  markProcessed(key: string): Promise<void>;
 }

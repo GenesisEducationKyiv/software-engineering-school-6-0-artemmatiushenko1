@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import type { EmailClient } from '../ports/email-client.js';
@@ -21,7 +21,7 @@ describe('SubscriptionConfirmedSubscriber', () => {
 
   it('saves the recipient and sends a subscription confirmed email', async () => {
     const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
     const recipientRepository = mock<RecipientRepository>();
     const emailClient = mock<EmailClient>();
     const subscriber = new SubscriptionConfirmedSubscriber(
@@ -48,5 +48,46 @@ describe('SubscriptionConfirmedSubscriber', () => {
         ),
       }),
     );
+    expect(idempotencyGuard.markProcessed).toHaveBeenCalledWith(
+      'msg-1:notification:subscription-confirmed',
+    );
+  });
+
+  it('does not save recipient or send email on duplicate delivery', async () => {
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.isProcessed.mockResolvedValue(true);
+    const recipientRepository = mock<RecipientRepository>();
+    const emailClient = mock<EmailClient>();
+    const subscriber = new SubscriptionConfirmedSubscriber(
+      idempotencyGuard,
+      recipientRepository,
+      emailClient,
+      'http://localhost:3000',
+    );
+
+    await subscriber.handle(event);
+
+    expect(recipientRepository.save).not.toHaveBeenCalled();
+    expect(emailClient.sendEmail).not.toHaveBeenCalled();
+    expect(idempotencyGuard.markProcessed).not.toHaveBeenCalled();
+  });
+
+  it('does not mark processed when email delivery fails', async () => {
+    const idempotencyGuard = mock<IdempotencyGuard>();
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
+    const recipientRepository = mock<RecipientRepository>();
+    const emailClient = mock<EmailClient>();
+    emailClient.sendEmail.mockRejectedValue(new Error('smtp failed'));
+    const subscriber = new SubscriptionConfirmedSubscriber(
+      idempotencyGuard,
+      recipientRepository,
+      emailClient,
+      'http://localhost:3000',
+    );
+
+    await expect(subscriber.handle(event)).rejects.toThrow('smtp failed');
+
+    expect(recipientRepository.save).toHaveBeenCalled();
+    expect(idempotencyGuard.markProcessed).not.toHaveBeenCalled();
   });
 });

@@ -37,36 +37,41 @@ describe('IdempotentSubscriber', () => {
     id: 'msg-1',
   };
 
-  it('runs work on first claim', async () => {
+  it('runs work and marks processed on first delivery', async () => {
     const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
     const subscriber = new TestSubscriber(idempotencyGuard);
 
     await subscriber.handle(event);
 
-    expect(idempotencyGuard.claim).toHaveBeenCalledWith(`msg-1:${TEST_NAME}`);
+    expect(idempotencyGuard.isProcessed).toHaveBeenCalledWith(
+      `msg-1:${TEST_NAME}`,
+    );
     expect(subscriber.onWork).toHaveBeenCalledWith(event);
+    expect(idempotencyGuard.markProcessed).toHaveBeenCalledWith(
+      `msg-1:${TEST_NAME}`,
+    );
   });
 
-  it('skips work on duplicate claim', async () => {
+  it('skips work when already processed', async () => {
     const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.claim.mockResolvedValue(null);
+    idempotencyGuard.isProcessed.mockResolvedValue(true);
     const subscriber = new TestSubscriber(idempotencyGuard);
 
     await subscriber.handle(event);
 
     expect(subscriber.onWork).not.toHaveBeenCalled();
+    expect(idempotencyGuard.markProcessed).not.toHaveBeenCalled();
   });
 
-  it('releases claim when work fails', async () => {
-    const release = vi.fn();
+  it('does not mark processed when work fails', async () => {
     const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.claim.mockResolvedValue({ release });
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
     const subscriber = new TestSubscriber(idempotencyGuard);
     subscriber.onWork.mockRejectedValue(new Error('work failed'));
 
     await expect(subscriber.handle(event)).rejects.toThrow('work failed');
 
-    expect(release).toHaveBeenCalled();
+    expect(idempotencyGuard.markProcessed).not.toHaveBeenCalled();
   });
 });

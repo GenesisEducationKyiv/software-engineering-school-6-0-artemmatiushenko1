@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import type { EmailClient } from '../ports/email-client.js';
@@ -8,7 +8,7 @@ import { SubscriptionConfirmationRenewedSubscriber } from './subscription-confir
 describe('SubscriptionConfirmationRenewedSubscriber', () => {
   it('sends a subscription confirmation email', async () => {
     const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
     const emailClient = mock<EmailClient>();
     const subscriber = new SubscriptionConfirmationRenewedSubscriber(
       idempotencyGuard,

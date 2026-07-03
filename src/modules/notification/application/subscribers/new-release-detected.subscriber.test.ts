@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import { Email } from '../../domain/index.js';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
@@ -24,7 +24,7 @@ describe('NewReleaseDetectedSubscriber', () => {
 
   it('sends a new release notification email', async () => {
     const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.claim.mockResolvedValue({ release: vi.fn() });
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
     const recipientRepository = mock<RecipientRepository>();
     const recipient = Recipient.rehydrate({
       subscriptionId: 'sub-1',
@@ -60,7 +60,7 @@ describe('NewReleaseDetectedSubscriber', () => {
 
   it('does not send email on duplicate delivery', async () => {
     const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.claim.mockResolvedValue(null);
+    idempotencyGuard.isProcessed.mockResolvedValue(true);
     const recipientRepository = mock<RecipientRepository>();
     const recipient = Recipient.rehydrate({
       subscriptionId: 'sub-1',
@@ -79,7 +79,7 @@ describe('NewReleaseDetectedSubscriber', () => {
 
     await subscriber.handle(event);
 
-    expect(idempotencyGuard.claim).toHaveBeenCalledWith(
+    expect(idempotencyGuard.isProcessed).toHaveBeenCalledWith(
       'msg-1:notification:new-release-detected',
     );
     expect(emailClient.sendEmail).not.toHaveBeenCalled();
