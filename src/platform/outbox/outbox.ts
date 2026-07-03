@@ -1,6 +1,6 @@
-import type { DomainEventEnvelope } from '../event-bus/domain-event-envelope.js';
+import type { IntegrationEvent } from '../event-bus/domain-event-envelope.js';
 import type { DomainTransaction } from '../../shared-kernel/transaction.js';
 
 export interface Outbox {
-  save(events: DomainEventEnvelope[], tx: DomainTransaction): Promise<void>;
+  save(events: IntegrationEvent[], tx: DomainTransaction): Promise<void>;
 }

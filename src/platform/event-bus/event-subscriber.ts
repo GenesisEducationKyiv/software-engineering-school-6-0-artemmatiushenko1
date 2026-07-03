@@ -1,7 +1,7 @@
-import type { DomainEventEnvelope } from './domain-event-envelope.js';
+import type { DeliveredEvent } from './domain-event-envelope.js';
 import type { EventBus } from './event-bus.interface.js';
 
-export abstract class EventSubscriber<T extends DomainEventEnvelope> {
+export abstract class EventSubscriber<T extends DeliveredEvent> {
   abstract readonly eventType: T['type'];
 
   abstract handle(event: T): void | Promise<void>;
@@ -13,7 +13,7 @@ export abstract class EventSubscriber<T extends DomainEventEnvelope> {
 
 export function registerEventSubscribers(
   eventBus: EventBus,
-  subscribers: EventSubscriber<DomainEventEnvelope>[],
+  subscribers: EventSubscriber<DeliveredEvent>[],
 ): void {
   for (const subscriber of subscribers) {
     subscriber.register(eventBus);

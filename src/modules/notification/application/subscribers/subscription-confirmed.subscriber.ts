@@ -20,7 +20,7 @@ export class SubscriptionConfirmedSubscriber extends IdempotentEmailSubscriber<S
     private readonly appUrl: string,
     private readonly metrics?: NotificationMetrics,
   ) {
-    super(idempotencyGuard);
+    super(idempotencyGuard, 'notification:subscription-confirmed');
   }
 
   async handle(event: SubscriptionConfirmedEvent): Promise<void> {

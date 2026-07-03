@@ -17,7 +17,7 @@ export class SubscriptionRequestedSubscriber extends IdempotentEmailSubscriber<S
     private readonly appUrl: string,
     private readonly metrics?: NotificationMetrics,
   ) {
-    super(idempotencyGuard);
+    super(idempotencyGuard, 'notification:subscription-requested');
   }
 
   protected async deliver(event: SubscriptionRequestedEvent): Promise<void> {

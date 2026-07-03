@@ -34,8 +34,4 @@ describe('DrizzleIdempotencyGuard', () => {
     await claim!.release();
     expect(await idempotencyGuard.claim('msg-1')).not.toBeNull();
   });
-
-  it('returns an open claim when id is absent', async () => {
-    expect(await idempotencyGuard.claim(undefined)).not.toBeNull();
-  });
 });

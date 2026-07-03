@@ -9,7 +9,7 @@ import {
 import type { Database } from '../../src/platform/db/types.js';
 import { DrizzleTransactionManager } from '../../src/platform/db/drizzle-transaction-manager.js';
 import { DrizzleOutboxRepository } from '../../src/platform/outbox/drizzle-outbox.repository.js';
-import { toDomainEventEnvelope } from '../../src/platform/outbox/outbox-message.js';
+import { toDeliveredEvent } from '../../src/platform/outbox/outbox-message.js';
 import { CryptoIdGenerator } from '../../src/modules/subscription/infrastructure/crypto-id-generator.js';
 
 describe('DrizzleOutboxRepository', () => {
@@ -46,9 +46,9 @@ describe('DrizzleOutboxRepository', () => {
     const pending = await fetchPending(10);
 
     expect(pending).toHaveLength(1);
-    expect(toDomainEventEnvelope(pending[0]!)).toEqual({
+    expect(toDeliveredEvent(pending[0]!)).toEqual({
       ...sampleEvent,
-      id: pending[0]!.id,
+      messageId: pending[0]!.id,
     });
   });
 

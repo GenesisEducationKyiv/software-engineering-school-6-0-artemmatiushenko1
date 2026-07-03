@@ -2,7 +2,7 @@ import type { EventBus } from '../event-bus/event-bus.interface.js';
 import type { Logger } from '../../shared-kernel/logger.js';
 import type { TransactionManager } from '../../shared-kernel/transaction.js';
 import type { OutboxRepository } from './outbox.repository.js';
-import { toDomainEventEnvelope } from './outbox-message.js';
+import { toDeliveredEvent } from './outbox-message.js';
 
 export class OutboxRelay {
   constructor(
@@ -22,7 +22,7 @@ export class OutboxRelay {
       return;
     }
 
-    const envelopes = pending.map(toDomainEventEnvelope);
+    const envelopes = pending.map(toDeliveredEvent);
 
     try {
       await this.eventBus.publish(envelopes);

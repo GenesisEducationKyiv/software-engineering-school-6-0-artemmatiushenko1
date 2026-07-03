@@ -8,7 +8,7 @@ import { DrizzleMonitoredRepoRepository } from './infrastructure/monitored-repo.
 import { DrizzleTransactionManager } from '../../platform/db/drizzle-transaction-manager.js';
 import type { Outbox } from '../../platform/outbox/outbox.js';
 import { DrizzleIdempotencyGuard } from '../../platform/idempotency-guard/drizzle-idempotency-guard.js';
-import type { DomainEventEnvelope } from '../../platform/event-bus/domain-event-envelope.js';
+import type { DeliveredEvent } from '../../platform/event-bus/domain-event-envelope.js';
 import type { EventSubscriber } from '../../platform/event-bus/event-subscriber.js';
 import { SubscriptionConfirmedSubscriber } from './application/subscribers/subscription-confirmed.subscriber.js';
 import { SubscriptionDeactivatedSubscriber } from './application/subscribers/subscription-deactivated.subscriber.js';
@@ -26,7 +26,7 @@ export interface ScannerModuleDeps {
 
 export class ScannerModule {
   readonly scanUseCase: ScanUseCase;
-  readonly eventSubscribers: EventSubscriber<DomainEventEnvelope>[];
+  readonly eventSubscribers: EventSubscriber<DeliveredEvent>[];
 
   private readonly monitoredRepoRepository: DrizzleMonitoredRepoRepository;
   private readonly transactionManager: DrizzleTransactionManager;

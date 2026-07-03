@@ -17,7 +17,7 @@ export class SubscriptionConfirmationRenewedSubscriber extends IdempotentEmailSu
     private readonly appUrl: string,
     private readonly metrics?: NotificationMetrics,
   ) {
-    super(idempotencyGuard);
+    super(idempotencyGuard, 'notification:subscription-confirmation-renewed');
   }
 
   protected async deliver(

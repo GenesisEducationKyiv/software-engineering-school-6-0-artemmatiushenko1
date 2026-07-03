@@ -20,7 +20,7 @@ export class NewReleaseDetectedSubscriber extends IdempotentEmailSubscriber<NewR
     private readonly appUrl: string,
     private readonly metrics?: NotificationMetrics,
   ) {
-    super(idempotencyGuard);
+    super(idempotencyGuard, 'notification:new-release-detected');
   }
 
   protected async deliver(event: NewReleaseDetectedEvent): Promise<void> {

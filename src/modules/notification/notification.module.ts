@@ -3,7 +3,7 @@ import type { EmailClient } from './application/ports/email-client.js';
 import type { NotificationMetrics } from './application/ports/notification-metrics.js';
 import { DrizzleRecipientRepository } from './infrastructure/recipient.repository.js';
 import { DrizzleIdempotencyGuard } from '../../platform/idempotency-guard/drizzle-idempotency-guard.js';
-import type { DomainEventEnvelope } from '../../platform/event-bus/domain-event-envelope.js';
+import type { DeliveredEvent } from '../../platform/event-bus/domain-event-envelope.js';
 import type { EventSubscriber } from '../../platform/event-bus/event-subscriber.js';
 import { SubscriptionRequestedSubscriber } from './application/subscribers/subscription-requested.subscriber.js';
 import { SubscriptionConfirmationRenewedSubscriber } from './application/subscribers/subscription-confirmation-renewed.subscriber.js';
@@ -20,7 +20,7 @@ export interface NotificationModuleDeps {
 }
 
 export class NotificationModule {
-  readonly eventSubscribers: EventSubscriber<DomainEventEnvelope>[];
+  readonly eventSubscribers: EventSubscriber<DeliveredEvent>[];
 
   private readonly recipientRepository: DrizzleRecipientRepository;
 

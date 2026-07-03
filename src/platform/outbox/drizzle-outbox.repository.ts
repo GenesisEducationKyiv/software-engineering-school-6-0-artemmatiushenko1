@@ -4,7 +4,7 @@ import type {
   Transaction as DrizzleTransaction,
 } from '../db/types.js';
 import { outboxMessages } from '../db/schema.js';
-import type { DomainEventEnvelope } from '../event-bus/domain-event-envelope.js';
+import type { IntegrationEvent } from '../event-bus/domain-event-envelope.js';
 import type { DomainTransaction } from '../../shared-kernel/transaction.js';
 import type { IdGenerator } from '../../shared-kernel/id-generator.js';
 import type { OutboxMessage } from './outbox-message.js';
@@ -34,10 +34,7 @@ export class DrizzleOutboxRepository implements OutboxRepository {
     };
   }
 
-  async save(
-    events: DomainEventEnvelope[],
-    tx: DomainTransaction,
-  ): Promise<void> {
+  async save(events: IntegrationEvent[], tx: DomainTransaction): Promise<void> {
     if (events.length === 0) {
       return;
     }

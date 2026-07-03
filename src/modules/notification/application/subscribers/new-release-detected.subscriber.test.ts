@@ -7,6 +7,7 @@ import type { NotificationMetrics } from '../ports/notification-metrics.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
 import { ScannerEventType } from '../../../scanner/api/events.js';
 import { Recipient } from '../../domain/recipient.js';
+import { deliveryKey } from '../../../../platform/idempotency-guard/delivery-key.js';
 import { NewReleaseDetectedSubscriber } from './new-release-detected.subscriber.js';
 
 describe('NewReleaseDetectedSubscriber', () => {
@@ -14,6 +15,7 @@ describe('NewReleaseDetectedSubscriber', () => {
     type: ScannerEventType.NewReleaseDetected,
     aggregateId: 'sub-1',
     occurredAt: new Date('2024-01-01T00:00:00.000Z'),
+    messageId: 'msg-1',
     payload: {
       repo: 'owner/repo',
       tag: 'v1.1.0',
@@ -76,9 +78,11 @@ describe('NewReleaseDetectedSubscriber', () => {
       'http://localhost:3000',
     );
 
-    await subscriber.handle({ ...event, id: 'msg-1' });
+    await subscriber.handle(event);
 
-    expect(idempotencyGuard.claim).toHaveBeenCalledWith('msg-1');
+    expect(idempotencyGuard.claim).toHaveBeenCalledWith(
+      deliveryKey('msg-1', 'notification:new-release-detected'),
+    );
     expect(emailClient.sendEmail).not.toHaveBeenCalled();
   });
 });

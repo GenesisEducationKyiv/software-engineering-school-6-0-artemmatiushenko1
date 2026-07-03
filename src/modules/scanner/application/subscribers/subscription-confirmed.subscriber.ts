@@ -12,7 +12,10 @@ import { EventSubscriber } from '../../../../platform/event-bus/event-subscriber
 import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
+import { deliveryKey } from '../../../../platform/idempotency-guard/delivery-key.js';
 import type { GithubClient } from '../../../github/api/github-client.interface.js';
+
+const CONSUMER = 'scanner:subscription-confirmed';
 
 export class SubscriptionConfirmedSubscriber extends EventSubscriber<SubscriptionConfirmedEvent> {
   readonly eventType = SubscriptionEventType.Confirmed;
@@ -27,7 +30,7 @@ export class SubscriptionConfirmedSubscriber extends EventSubscriber<Subscriptio
 
   async handle(event: SubscriptionConfirmedEvent): Promise<void> {
     const claim = await this.idempotencyGuard.claim(
-      event.id ? `${event.id}:scanner:subscription-confirmed` : undefined,
+      deliveryKey(event.messageId, CONSUMER),
     );
     if (!claim) {
       return;

@@ -17,7 +17,7 @@ export class SubscriptionReactivatedSubscriber extends IdempotentEmailSubscriber
     private readonly appUrl: string,
     private readonly metrics?: NotificationMetrics,
   ) {
-    super(idempotencyGuard);
+    super(idempotencyGuard, 'notification:subscription-reactivated');
   }
 
   protected async deliver(event: SubscriptionReactivatedEvent): Promise<void> {

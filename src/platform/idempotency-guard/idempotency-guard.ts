@@ -3,5 +3,5 @@ export type ClaimHandle = {
 };
 
 export interface IdempotencyGuard {
-  claim(id?: string): Promise<ClaimHandle | null>;
+  claim(key: string): Promise<ClaimHandle | null>;
 }

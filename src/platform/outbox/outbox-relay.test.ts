@@ -52,7 +52,7 @@ describe('OutboxRelay', () => {
         aggregateId: 'sub-1',
         occurredAt: sampleMessage.occurredAt,
         payload: sampleMessage.payload,
-        id: 'msg-1',
+        messageId: 'msg-1',
       },
     ]);
     expect(outboxRepository.markProcessed).toHaveBeenCalledWith(['msg-1']);

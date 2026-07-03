@@ -1,4 +1,4 @@
-import type { DomainEventEnvelope } from '../event-bus/domain-event-envelope.js';
+import type { DeliveredEvent } from '../event-bus/domain-event-envelope.js';
 
 export type OutboxMessage = {
   readonly id: string;
@@ -10,14 +10,12 @@ export type OutboxMessage = {
   readonly processedAt: Date | null;
 };
 
-export function toDomainEventEnvelope(
-  message: OutboxMessage,
-): DomainEventEnvelope {
+export function toDeliveredEvent(message: OutboxMessage): DeliveredEvent {
   return {
     type: message.eventType,
     aggregateId: message.aggregateId,
     occurredAt: message.occurredAt,
     payload: message.payload,
-    id: message.id,
+    messageId: message.id,
   };
 }

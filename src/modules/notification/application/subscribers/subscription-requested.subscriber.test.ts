@@ -20,6 +20,7 @@ describe('SubscriptionRequestedSubscriber', () => {
       type: SubscriptionEventType.Requested,
       aggregateId: 'sub-1',
       occurredAt: new Date('2024-01-01T00:00:00.000Z'),
+      messageId: 'msg-1',
       payload: {
         email: 'test@example.com',
         repo: 'owner/repo',

@@ -6,14 +6,10 @@ import type { ClaimHandle, IdempotencyGuard } from './idempotency-guard.js';
 export class DrizzleIdempotencyGuard implements IdempotencyGuard {
   constructor(private readonly db: Database) {}
 
-  async claim(id?: string): Promise<ClaimHandle | null> {
-    if (!id) {
-      return { release: async () => {} };
-    }
-
+  async claim(key: string): Promise<ClaimHandle | null> {
     const [row] = await this.db
       .insert(processedDeliveries)
-      .values({ id })
+      .values({ id: key })
       .onConflictDoNothing()
       .returning({ id: processedDeliveries.id });
 
@@ -25,7 +21,7 @@ export class DrizzleIdempotencyGuard implements IdempotencyGuard {
       release: async () => {
         await this.db
           .delete(processedDeliveries)
-          .where(eq(processedDeliveries.id, id));
+          .where(eq(processedDeliveries.id, key));
       },
     };
   }
