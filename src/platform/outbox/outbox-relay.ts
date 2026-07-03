@@ -18,22 +18,18 @@ export class OutboxRelay {
       this.outboxRepository.fetchPending(this.batchSize, tx),
     );
 
-    if (pending.length === 0) {
-      return;
-    }
-
-    const envelopes = pending.map(toDeliveredEvent);
-
-    try {
-      await this.eventBus.publish(envelopes);
-      await this.outboxRepository.markProcessed(
-        pending.map((message) => message.id),
-      );
-    } catch (error) {
-      if (error instanceof Error) {
-        this.logger.error('Outbox relay failed', error);
-      } else {
-        throw error;
+    for (const message of pending) {
+      try {
+        await this.eventBus.publish([toDeliveredEvent(message)]);
+        await this.outboxRepository.markProcessed([message.id]);
+      } catch (error) {
+        if (error instanceof Error) {
+          this.logger.error('Outbox relay failed', error, {
+            messageId: message.id,
+          });
+        } else {
+          throw error;
+        }
       }
     }
   }

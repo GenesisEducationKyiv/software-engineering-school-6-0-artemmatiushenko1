@@ -80,6 +80,65 @@ describe('OutboxRelay', () => {
     await relay.runOnce();
 
     expect(outboxRepository.markProcessed).not.toHaveBeenCalled();
-    expect(logger.error).toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalledWith(
+      'Outbox relay failed',
+      expect.any(Error),
+      { messageId: 'msg-1' },
+    );
+  });
+
+  it('marks each message processed independently in a batch', async () => {
+    const secondMessage: OutboxMessage = {
+      ...sampleMessage,
+      id: 'msg-2',
+      aggregateId: 'sub-2',
+    };
+
+    transactionManager.run.mockImplementation(async (work) =>
+      work({} as never),
+    );
+    outboxRepository.fetchPending.mockResolvedValue([
+      sampleMessage,
+      secondMessage,
+    ]);
+
+    await relay.runOnce();
+
+    expect(eventBus.publish).toHaveBeenCalledTimes(2);
+    expect(outboxRepository.markProcessed).toHaveBeenNthCalledWith(1, [
+      'msg-1',
+    ]);
+    expect(outboxRepository.markProcessed).toHaveBeenNthCalledWith(2, [
+      'msg-2',
+    ]);
+  });
+
+  it('continues the batch when one message fails', async () => {
+    const secondMessage: OutboxMessage = {
+      ...sampleMessage,
+      id: 'msg-2',
+      aggregateId: 'sub-2',
+    };
+
+    transactionManager.run.mockImplementation(async (work) =>
+      work({} as never),
+    );
+    outboxRepository.fetchPending.mockResolvedValue([
+      sampleMessage,
+      secondMessage,
+    ]);
+    eventBus.publish
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('publish failed'));
+
+    await relay.runOnce();
+
+    expect(outboxRepository.markProcessed).toHaveBeenCalledTimes(1);
+    expect(outboxRepository.markProcessed).toHaveBeenCalledWith(['msg-1']);
+    expect(logger.error).toHaveBeenCalledWith(
+      'Outbox relay failed',
+      expect.any(Error),
+      { messageId: 'msg-2' },
+    );
   });
 });
