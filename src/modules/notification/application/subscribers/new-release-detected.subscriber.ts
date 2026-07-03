@@ -3,15 +3,15 @@ import {
   type NewReleaseDetectedEvent,
 } from '../../../scanner/api/events.js';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
+import { IdempotentSubscriber } from '../../../../platform/idempotency-guard/idempotent.subscriber.js';
 import { RecipientNotFoundError } from '../../domain/errors.js';
 import { buildUnsubscribeUrl } from '../links.js';
 import { newReleaseNotificationTemplate } from '../templates.js';
 import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
-import { IdempotentEmailSubscriber } from './idempotent-email.subscriber.js';
 
-export class NewReleaseDetectedSubscriber extends IdempotentEmailSubscriber<NewReleaseDetectedEvent> {
+export class NewReleaseDetectedSubscriber extends IdempotentSubscriber<NewReleaseDetectedEvent> {
   readonly eventType = ScannerEventType.NewReleaseDetected;
   constructor(
     idempotencyGuard: IdempotencyGuard,
@@ -20,10 +20,16 @@ export class NewReleaseDetectedSubscriber extends IdempotentEmailSubscriber<NewR
     private readonly appUrl: string,
     private readonly metrics?: NotificationMetrics,
   ) {
-    super(idempotencyGuard, 'notification:new-release-detected');
+    super(idempotencyGuard);
   }
 
-  protected async deliver(event: NewReleaseDetectedEvent): Promise<void> {
+  protected readonly name = 'notification:new-release-detected';
+
+  async handle(event: NewReleaseDetectedEvent): Promise<void> {
+    await this.claimAndRun(event, () => this.deliver(event));
+  }
+
+  private async deliver(event: NewReleaseDetectedEvent): Promise<void> {
     const recipient = await this.recipientRepository.findBySubscriptionId(
       event.aggregateId,
     );

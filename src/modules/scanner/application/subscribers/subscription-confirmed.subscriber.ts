@@ -8,40 +8,27 @@ import {
   SubscriptionEventType,
   type SubscriptionConfirmedEvent,
 } from '../../../subscription/api/events.js';
-import { EventSubscriber } from '../../../../platform/event-bus/event-subscriber.js';
 import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
-import { deliveryKey } from '../../../../platform/idempotency-guard/delivery-key.js';
+import { IdempotentSubscriber } from '../../../../platform/idempotency-guard/idempotent.subscriber.js';
 import type { GithubClient } from '../../../github/api/github-client.interface.js';
 
-const CONSUMER = 'scanner:subscription-confirmed';
-
-export class SubscriptionConfirmedSubscriber extends EventSubscriber<SubscriptionConfirmedEvent> {
+export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<SubscriptionConfirmedEvent> {
   readonly eventType = SubscriptionEventType.Confirmed;
+  protected readonly name = 'scanner:subscription-confirmed';
+
   constructor(
-    private readonly idempotencyGuard: IdempotencyGuard,
+    idempotencyGuard: IdempotencyGuard,
     private readonly monitoredRepoRepository: MonitoredRepoRepository,
     private readonly transactionManager: TransactionManager,
     private readonly githubClient: GithubClient,
   ) {
-    super();
+    super(idempotencyGuard);
   }
 
   async handle(event: SubscriptionConfirmedEvent): Promise<void> {
-    const claim = await this.idempotencyGuard.claim(
-      deliveryKey(event.messageId, CONSUMER),
-    );
-    if (!claim) {
-      return;
-    }
-
-    try {
-      await this.addWatcher(event);
-    } catch (error) {
-      await claim.release();
-      throw error;
-    }
+    await this.claimAndRun(event, () => this.addWatcher(event));
   }
 
   private async addWatcher(event: SubscriptionConfirmedEvent): Promise<void> {

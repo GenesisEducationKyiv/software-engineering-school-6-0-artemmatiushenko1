@@ -7,7 +7,6 @@ import type { NotificationMetrics } from '../ports/notification-metrics.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
 import { ScannerEventType } from '../../../scanner/api/events.js';
 import { Recipient } from '../../domain/recipient.js';
-import { deliveryKey } from '../../../../platform/idempotency-guard/delivery-key.js';
 import { NewReleaseDetectedSubscriber } from './new-release-detected.subscriber.js';
 
 describe('NewReleaseDetectedSubscriber', () => {
@@ -81,7 +80,7 @@ describe('NewReleaseDetectedSubscriber', () => {
     await subscriber.handle(event);
 
     expect(idempotencyGuard.claim).toHaveBeenCalledWith(
-      deliveryKey('msg-1', 'notification:new-release-detected'),
+      'msg-1:notification:new-release-detected',
     );
     expect(emailClient.sendEmail).not.toHaveBeenCalled();
   });

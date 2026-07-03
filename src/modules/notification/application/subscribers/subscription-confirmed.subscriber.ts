@@ -3,15 +3,15 @@ import {
   type SubscriptionConfirmedEvent,
 } from '../../../subscription/api/events.js';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
+import { IdempotentSubscriber } from '../../../../platform/idempotency-guard/idempotent.subscriber.js';
 import { Email, Recipient } from '../../domain/index.js';
 import { buildUnsubscribeUrl } from '../links.js';
 import { subscriptionConfirmedTemplate } from '../templates.js';
 import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
-import { IdempotentEmailSubscriber } from './idempotent-email.subscriber.js';
 
-export class SubscriptionConfirmedSubscriber extends IdempotentEmailSubscriber<SubscriptionConfirmedEvent> {
+export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<SubscriptionConfirmedEvent> {
   readonly eventType = SubscriptionEventType.Confirmed;
   constructor(
     idempotencyGuard: IdempotencyGuard,
@@ -20,8 +20,10 @@ export class SubscriptionConfirmedSubscriber extends IdempotentEmailSubscriber<S
     private readonly appUrl: string,
     private readonly metrics?: NotificationMetrics,
   ) {
-    super(idempotencyGuard, 'notification:subscription-confirmed');
+    super(idempotencyGuard);
   }
+
+  protected readonly name = 'notification:subscription-confirmed';
 
   async handle(event: SubscriptionConfirmedEvent): Promise<void> {
     const recipient = Recipient.create(
@@ -31,10 +33,10 @@ export class SubscriptionConfirmedSubscriber extends IdempotentEmailSubscriber<S
     );
     await this.recipientRepository.save(recipient);
 
-    await this.deliverIdempotently(event);
+    await this.claimAndRun(event, () => this.deliver(event));
   }
 
-  protected async deliver(event: SubscriptionConfirmedEvent): Promise<void> {
+  private async deliver(event: SubscriptionConfirmedEvent): Promise<void> {
     const unsubscribeUrl = buildUnsubscribeUrl(
       this.appUrl,
       event.payload.unsubscribeToken,
