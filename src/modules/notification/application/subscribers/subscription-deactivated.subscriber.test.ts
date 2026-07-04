@@ -14,7 +14,7 @@ describe('SubscriptionDeactivatedSubscriber', () => {
     await subscriber.handle({
       type: SubscriptionEventType.Deactivated,
       aggregateId: 'sub-1',
-      occurredAt: new Date('2024-01-01T00:00:00.000Z'),
+      occurredAt: '2024-01-01T00:00:00.000Z',
       payload: {
         repo: 'owner/repo',
       },

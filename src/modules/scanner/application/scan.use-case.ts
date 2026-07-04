@@ -107,7 +107,7 @@ export class ScanUseCase {
       newReleaseEvents.push({
         type: ScannerEventType.NewReleaseDetected,
         aggregateId: watcher.subscriptionId,
-        occurredAt: this.clock.now(),
+        occurredAt: this.clock.now().toISOString(),
         payload: {
           repo,
           tag: latestRelease.tag,

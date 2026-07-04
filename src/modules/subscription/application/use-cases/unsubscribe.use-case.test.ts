@@ -18,6 +18,7 @@ import {
 import {
   createConfirmedSubscription,
   FIXED_NOW,
+  FIXED_NOW_ISO,
 } from './subscription-test-fixtures.js';
 
 describe('UnsubscribeUseCase', () => {
@@ -71,7 +72,7 @@ describe('UnsubscribeUseCase', () => {
       {
         type: SubscriptionEventType.Deactivated,
         aggregateId: '10',
-        occurredAt: FIXED_NOW,
+        occurredAt: FIXED_NOW_ISO,
         payload: {
           repo: 'owner/repo',
         },

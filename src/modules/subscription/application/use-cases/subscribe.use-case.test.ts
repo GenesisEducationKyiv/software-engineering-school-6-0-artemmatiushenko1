@@ -25,6 +25,7 @@ import {
   createPendingSubscription,
   createUnsubscribedSubscription,
   FIXED_NOW,
+  FIXED_NOW_ISO,
 } from './subscription-test-fixtures.js';
 
 describe('SubscribeUseCase', () => {
@@ -102,7 +103,7 @@ describe('SubscribeUseCase', () => {
       {
         type: SubscriptionEventType.Requested,
         aggregateId: subscriptionId,
-        occurredAt: FIXED_NOW,
+        occurredAt: FIXED_NOW_ISO,
         payload: {
           email,
           repo,
@@ -165,7 +166,7 @@ describe('SubscribeUseCase', () => {
       {
         type: SubscriptionEventType.ConfirmationRenewed,
         aggregateId: existingDomainSubscription.id,
-        occurredAt: FIXED_NOW,
+        occurredAt: FIXED_NOW_ISO,
         payload: {
           email,
           repo,
@@ -208,7 +209,7 @@ describe('SubscribeUseCase', () => {
       {
         type: SubscriptionEventType.Reactivated,
         aggregateId: existingDomainSubscription.id,
-        occurredAt: FIXED_NOW,
+        occurredAt: FIXED_NOW_ISO,
         payload: {
           email,
           repo,

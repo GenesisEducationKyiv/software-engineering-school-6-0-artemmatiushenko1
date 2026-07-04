@@ -8,6 +8,7 @@ import {
 } from '../../domain/index.js';
 
 export const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
+export const FIXED_NOW_ISO = FIXED_NOW.toISOString();
 export const TOKEN_EXPIRES_AT = new Date('2026-01-01T13:00:00Z');
 export const CONFIRM_TOKEN_EXPIRES_AT = new Date('2026-01-01T12:01:00Z');
 
