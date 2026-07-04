@@ -12,5 +12,3 @@ export type NewReleaseDetectedEvent = DomainEventEnvelope<
   },
   typeof ScannerEventType.NewReleaseDetected
 >;
-
-export type ScannerPublicApiEvent = NewReleaseDetectedEvent;

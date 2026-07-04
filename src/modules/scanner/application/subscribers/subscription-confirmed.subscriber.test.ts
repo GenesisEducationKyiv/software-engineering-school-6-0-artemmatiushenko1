@@ -54,14 +54,15 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
       expect.anything(),
     );
     expect(monitoredRepoRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
+      MonitoredRepo.rehydrate({
         repo: RepoPath.fromString('owner/repo'),
         watchers: [
-          expect.objectContaining({
+          RepoWatcher.create({
             subscriptionId: 'sub-1',
             lastNotifiedTag: ReleaseTag.fromString('v1.0.0'),
           }),
         ],
+        lastSeenTag: null,
       }),
       expect.anything(),
     );
@@ -102,8 +103,14 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
     expect(monitoredRepoRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
         watchers: expect.arrayContaining([
-          expect.objectContaining({ subscriptionId: 'sub-0' }),
-          expect.objectContaining({ subscriptionId: 'sub-1' }),
+          expect.objectContaining({
+            subscriptionId: 'sub-0',
+            lastNotifiedTag: ReleaseTag.fromString('v0.9.0'),
+          }),
+          expect.objectContaining({
+            subscriptionId: 'sub-1',
+            lastNotifiedTag: ReleaseTag.fromString('v1.0.0'),
+          }),
         ]),
       }),
       expect.anything(),
