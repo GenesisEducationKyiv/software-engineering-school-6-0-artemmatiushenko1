@@ -5,9 +5,10 @@ import { createConfig } from './src/config.js';
 const appConfig = createConfig();
 
 export default defineConfig({
-  schema: './src/platform/db/schema.ts',
+  out: './src/modules/scanner/infrastructure/db/migrations',
+  schema: './src/modules/scanner/infrastructure/db/schema.ts',
   dialect: 'postgresql',
-  schemaFilter: ['subscription', 'scanner', 'notification'],
+  schemaFilter: ['scanner'],
   dbCredentials: {
     url: appConfig.databaseUrl,
   },

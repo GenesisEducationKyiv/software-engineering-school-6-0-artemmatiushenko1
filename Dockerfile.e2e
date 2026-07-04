@@ -19,5 +19,4 @@ COPY src/modules/notification/config.ts ./src/modules/notification/config.ts
 COPY src/modules/github/config.ts ./src/modules/github/config.ts
 
 COPY tests/e2e ./tests/e2e
-COPY drizzle.config.ts ./
 COPY playwright.config.ts ./

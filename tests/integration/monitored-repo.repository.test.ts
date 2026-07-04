@@ -2,10 +2,7 @@ import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/platform/db/schema.js';
-import {
-  MIGRATIONS_FOLDER,
-  runDatabaseMigrations,
-} from '../../src/platform/db/migrate.js';
+import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import { DrizzleTransactionManager } from '../../src/platform/db/drizzle-transaction-manager.js';
 import { DrizzleMonitoredRepoRepository } from '../../src/modules/scanner/infrastructure/monitored-repo.repository.js';
@@ -40,7 +37,7 @@ describe('DrizzleMonitoredRepoRepository', () => {
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
-    await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
+    await runAllDatabaseMigrations(db);
     repository = new DrizzleMonitoredRepoRepository(db);
     transactionManager = new DrizzleTransactionManager(db);
   });

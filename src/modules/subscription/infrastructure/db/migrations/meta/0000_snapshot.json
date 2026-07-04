@@ -1,5 +1,5 @@
 {
-  "id": "560606bd-5ade-41c6-9897-8293b37af945",
+  "id": "dbc6c23b-6e60-4883-8969-0854b4c2c1e0",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -131,141 +131,17 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
-    },
-    "scanner.monitored_repos": {
-      "name": "monitored_repos",
-      "schema": "scanner",
-      "columns": {
-        "repo": {
-          "name": "repo",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "last_seen_tag": {
-          "name": "last_seen_tag",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "scanner.repo_watchers": {
-      "name": "repo_watchers",
-      "schema": "scanner",
-      "columns": {
-        "subscription_id": {
-          "name": "subscription_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "repo": {
-          "name": "repo",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "last_notified_tag": {
-          "name": "last_notified_tag",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "repo_watchers_repo_idx": {
-          "name": "repo_watchers_repo_idx",
-          "columns": [
-            {
-              "expression": "repo",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "repo_watchers_repo_monitored_repos_repo_fk": {
-          "name": "repo_watchers_repo_monitored_repos_repo_fk",
-          "tableFrom": "repo_watchers",
-          "tableTo": "monitored_repos",
-          "schemaTo": "scanner",
-          "columnsFrom": [
-            "repo"
-          ],
-          "columnsTo": [
-            "repo"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "notification.notification_recipients": {
-      "name": "notification_recipients",
-      "schema": "notification",
-      "columns": {
-        "subscription_id": {
-          "name": "subscription_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "unsubscribe_token": {
-          "name": "unsubscribe_token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
     }
   },
   "enums": {
     "subscription.subscription_status": {
       "name": "subscription_status",
       "schema": "subscription",
-      "values": [
-        "pending",
-        "confirmed",
-        "unsubscribed"
-      ]
+      "values": ["pending", "confirmed", "unsubscribed"]
     }
   },
   "schemas": {
-    "subscription": "subscription",
-    "scanner": "scanner",
-    "notification": "notification"
+    "subscription": "subscription"
   },
   "sequences": {},
   "roles": {},
