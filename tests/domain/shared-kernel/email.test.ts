@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Email, InvalidEmailError } from '../../src/shared-kernel/index.js';
+import { Email, InvalidEmailError } from '../../../src/shared-kernel/index.js';
 
 describe('Email', () => {
   describe('fromString', () => {
