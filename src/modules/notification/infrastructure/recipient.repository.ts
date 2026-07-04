@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { notificationRecipients } from '../../../platform/db/schema.js';
+import { notificationRecipients } from './db/schema.js';
 import type {
   Database,
   Transaction as DrizzleTransaction,

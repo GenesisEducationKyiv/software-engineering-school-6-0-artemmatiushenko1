@@ -1,5 +1,5 @@
 import { and, eq, notInArray } from 'drizzle-orm';
-import { monitoredRepos, repoWatchers } from '../../../platform/db/schema.js';
+import { monitoredRepos, repoWatchers } from './db/schema.js';
 import type {
   Database,
   Transaction as DrizzleTransaction,
