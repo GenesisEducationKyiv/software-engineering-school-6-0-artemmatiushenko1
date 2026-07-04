@@ -62,7 +62,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
             lastNotifiedTag: ReleaseTag.fromString('v1.0.0'),
           }),
         ],
-        lastSeenTag: null,
+        lastSeenTag: ReleaseTag.fromString('v1.0.0'),
       }),
       expect.anything(),
     );

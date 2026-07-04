@@ -37,6 +37,10 @@ export class SubscriptionConfirmedSubscriber extends EventSubscriber<Subscriptio
       const existing = await this.monitoredRepoRepository.findByRepo(repo, tx);
       const monitoredRepo = existing ?? MonitoredRepo.create(repo);
 
+      if (!existing && lastNotifiedTag) {
+        monitoredRepo.markReleaseSeen(lastNotifiedTag);
+      }
+
       monitoredRepo.addWatcher(
         RepoWatcher.create({
           subscriptionId: event.aggregateId,
