@@ -1,11 +1,13 @@
-import { pgTable, text, index } from 'drizzle-orm/pg-core';
+import { pgSchema, text, index } from 'drizzle-orm/pg-core';
 
-export const monitoredRepos = pgTable('monitored_repos', {
+export const scannerSchema = pgSchema('scanner');
+
+export const monitoredRepos = scannerSchema.table('monitored_repos', {
   repo: text('repo').primaryKey(),
   lastSeenTag: text('last_seen_tag'),
 });
 
-export const repoWatchers = pgTable(
+export const repoWatchers = scannerSchema.table(
   'repo_watchers',
   {
     subscriptionId: text('subscription_id').primaryKey(),

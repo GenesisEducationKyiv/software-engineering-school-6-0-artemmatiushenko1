@@ -1,18 +1,13 @@
-import {
-  pgTable,
-  text,
-  timestamp,
-  pgEnum,
-  uniqueIndex,
-} from 'drizzle-orm/pg-core';
+import { pgSchema, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 
-export const subscriptionStatusEnum = pgEnum('subscription_status', [
-  'pending',
-  'confirmed',
-  'unsubscribed',
-]);
+export const subscriptionSchema = pgSchema('subscription');
 
-export const subscriptions = pgTable(
+export const subscriptionStatusEnum = subscriptionSchema.enum(
+  'subscription_status',
+  ['pending', 'confirmed', 'unsubscribed'],
+);
+
+export const subscriptions = subscriptionSchema.table(
   'subscriptions',
   {
     id: text('id').primaryKey(),
