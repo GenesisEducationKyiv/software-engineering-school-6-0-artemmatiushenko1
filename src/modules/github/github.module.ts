@@ -5,14 +5,19 @@ import type { GithubConfig } from './config.js';
 import { CachedOctokitGithubClient } from './infrastructure/cached-octokit.client.js';
 import { OctokitGithubClient } from './infrastructure/octokit.client.js';
 
-export type GithubModuleDeps =
-  | { kind: 'client'; githubClient: GithubClient }
-  | {
-      kind: 'config';
-      config: GithubConfig;
-      redis: Redis;
-      metrics: CacheMetrics;
-    };
+export type GithubModuleDeps = {
+  githubClient:
+    | {
+        source: 'client';
+        instance: GithubClient;
+      }
+    | {
+        source: 'config';
+        config: GithubConfig;
+        redis: Redis;
+        metrics: CacheMetrics;
+      };
+};
 
 export class GithubModule {
   readonly githubClient: GithubClient;
@@ -22,20 +27,19 @@ export class GithubModule {
   }
 
   static create(deps: GithubModuleDeps): GithubModule {
-    if (deps.kind === 'client') {
-      return new GithubModule(deps.githubClient);
-    }
+    const githubClient =
+      deps.githubClient.source === 'client'
+        ? deps.githubClient.instance
+        : new CachedOctokitGithubClient(
+            new OctokitGithubClient(
+              deps.githubClient.config.githubApiBaseUrl,
+              deps.githubClient.config.githubToken,
+            ),
+            deps.githubClient.redis,
+            deps.githubClient.config.githubCacheTtl,
+            deps.githubClient.metrics,
+          );
 
-    return new GithubModule(
-      new CachedOctokitGithubClient(
-        new OctokitGithubClient(
-          deps.config.githubApiBaseUrl,
-          deps.config.githubToken,
-        ),
-        deps.redis,
-        deps.config.githubCacheTtl,
-        deps.metrics,
-      ),
-    );
+    return new GithubModule(githubClient);
   }
 }
