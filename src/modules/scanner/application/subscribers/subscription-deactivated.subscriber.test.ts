@@ -66,7 +66,7 @@ describe('Scanner SubscriptionDeactivatedSubscriber', () => {
     );
   });
 
-  it('saves an empty repo when the last watcher is removed', async () => {
+  it('deletes the monitored repo when the last watcher is removed', async () => {
     const monitoredRepo = MonitoredRepo.create(
       RepoPath.fromString('owner/repo'),
     );
@@ -92,12 +92,14 @@ describe('Scanner SubscriptionDeactivatedSubscriber', () => {
 
     await subscriber.handle(event);
 
-    expect(monitoredRepoRepository.save).toHaveBeenCalledWith(
+    expect(monitoredRepoRepository.delete).toHaveBeenCalledWith(
       expect.objectContaining({
+        repo: RepoPath.fromString('owner/repo'),
         watchers: [],
       }),
       expect.anything(),
     );
+    expect(monitoredRepoRepository.save).not.toHaveBeenCalled();
   });
 
   it('does nothing when the repo is not monitored', async () => {
@@ -117,6 +119,7 @@ describe('Scanner SubscriptionDeactivatedSubscriber', () => {
     await subscriber.handle(event);
 
     expect(monitoredRepoRepository.save).not.toHaveBeenCalled();
+    expect(monitoredRepoRepository.delete).not.toHaveBeenCalled();
   });
 
   it('does nothing when the watcher is not found', async () => {
@@ -146,5 +149,6 @@ describe('Scanner SubscriptionDeactivatedSubscriber', () => {
     await subscriber.handle(event);
 
     expect(monitoredRepoRepository.save).not.toHaveBeenCalled();
+    expect(monitoredRepoRepository.delete).not.toHaveBeenCalled();
   });
 });

@@ -87,11 +87,6 @@ export class DrizzleMonitoredRepoRepository implements MonitoredRepoRepository {
     const db = this.getDb(tx);
     const repo = monitoredRepo.repo.toString();
 
-    if (monitoredRepo.watchers.length === 0) {
-      await db.delete(monitoredRepos).where(eq(monitoredRepos.repo, repo));
-      return;
-    }
-
     const repoRow = this.mapper.toRepoRow(monitoredRepo);
     await db
       .insert(monitoredRepos)
@@ -125,5 +120,15 @@ export class DrizzleMonitoredRepoRepository implements MonitoredRepoRepository {
           notInArray(repoWatchers.subscriptionId, subscriptionIds),
         ),
       );
+  }
+
+  async delete(
+    monitoredRepo: MonitoredRepo,
+    tx: DomainTransaction,
+  ): Promise<void> {
+    const db = this.getDb(tx);
+    await db
+      .delete(monitoredRepos)
+      .where(eq(monitoredRepos.repo, monitoredRepo.repo.toString()));
   }
 }

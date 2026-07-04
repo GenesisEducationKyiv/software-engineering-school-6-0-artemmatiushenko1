@@ -24,6 +24,12 @@ describe('DrizzleMonitoredRepoRepository', () => {
     });
   };
 
+  const deleteRepo = async (monitoredRepo: MonitoredRepo) => {
+    await transactionManager.run(async (tx) => {
+      await repository.delete(monitoredRepo, tx);
+    });
+  };
+
   const createWatcher = (
     subscriptionId: string,
     lastNotifiedTag: string | null = 'v1.0.0',
@@ -141,7 +147,7 @@ describe('DrizzleMonitoredRepoRepository', () => {
     expect(loaded).toBeNull();
   });
 
-  it('deletes the repo when the last watcher is removed', async () => {
+  it('deletes the repo', async () => {
     const monitoredRepo = MonitoredRepo.create(
       RepoPath.fromString('owner/repo'),
     );
@@ -149,8 +155,9 @@ describe('DrizzleMonitoredRepoRepository', () => {
     monitoredRepo.addWatcher(watcher);
     await save(monitoredRepo);
 
-    monitoredRepo.removeWatcher(watcher);
-    await save(monitoredRepo);
+    if (monitoredRepo.removeWatcher(watcher)) {
+      await deleteRepo(monitoredRepo);
+    }
 
     expect(await repository.findAll()).toEqual([]);
   });

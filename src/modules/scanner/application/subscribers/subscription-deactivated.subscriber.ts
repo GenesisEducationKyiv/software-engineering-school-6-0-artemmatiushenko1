@@ -9,6 +9,7 @@ import type { TransactionManager } from '../../../../shared-kernel/transaction.j
 
 export class SubscriptionDeactivatedSubscriber extends EventSubscriber<SubscriptionDeactivatedEvent> {
   readonly eventType = SubscriptionEventType.Deactivated;
+
   constructor(
     private readonly monitoredRepoRepository: MonitoredRepoRepository,
     private readonly transactionManager: TransactionManager,
@@ -37,7 +38,11 @@ export class SubscriptionDeactivatedSubscriber extends EventSubscriber<Subscript
         return;
       }
 
-      monitoredRepo.removeWatcher(watcher);
+      if (monitoredRepo.removeWatcher(watcher)) {
+        await this.monitoredRepoRepository.delete(monitoredRepo, tx);
+        return;
+      }
+
       await this.monitoredRepoRepository.save(monitoredRepo, tx);
     });
   }

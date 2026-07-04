@@ -15,6 +15,7 @@ import type { GithubClient } from '../../../github/api/github-client.interface.j
 
 export class SubscriptionConfirmedSubscriber extends EventSubscriber<SubscriptionConfirmedEvent> {
   readonly eventType = SubscriptionEventType.Confirmed;
+
   constructor(
     private readonly monitoredRepoRepository: MonitoredRepoRepository,
     private readonly transactionManager: TransactionManager,

@@ -10,4 +10,6 @@ export interface MonitoredRepoRepository {
   ): Promise<MonitoredRepo | null>;
 
   save(monitoredRepo: MonitoredRepo, tx: DomainTransaction): Promise<void>;
+
+  delete(monitoredRepo: MonitoredRepo, tx: DomainTransaction): Promise<void>;
 }
