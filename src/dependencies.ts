@@ -62,34 +62,25 @@ export class AppContainer {
     const tokenGenerator = deps.tokenGenerator ?? new CryptoTokenGenerator();
     this.metrics = deps.metrics ?? new PrometheusMetrics();
 
-    this.github = GithubModule.create(
-      deps.githubClient
-        ? { kind: 'client', githubClient: deps.githubClient }
+    this.github = GithubModule.create({
+      githubClient: deps.githubClient
+        ? { source: 'client', instance: deps.githubClient }
         : {
-            kind: 'config',
+            source: 'config',
             config: config.github,
             redis: deps.redis,
             metrics: this.metrics,
           },
-    );
+    });
 
-    this.notification = NotificationModule.create(
-      deps.emailClient
-        ? {
-            kind: 'client',
-            db: deps.db,
-            emailClient: deps.emailClient,
-            appUrl: config.appUrl,
-            metrics: this.metrics,
-          }
-        : {
-            kind: 'config',
-            db: deps.db,
-            config: config.email,
-            appUrl: config.appUrl,
-            metrics: this.metrics,
-          },
-    );
+    this.notification = NotificationModule.create({
+      db: deps.db,
+      appUrl: config.appUrl,
+      metrics: this.metrics,
+      emailClient: deps.emailClient
+        ? { source: 'client', instance: deps.emailClient }
+        : { source: 'config', config: config.email },
+    });
 
     this.subscription = SubscriptionModule.create({
       clock,

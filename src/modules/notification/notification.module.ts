@@ -17,17 +17,16 @@ export type NotificationModuleDeps = {
   db: Database;
   appUrl: string;
   metrics?: NotificationMetrics;
-} & (
-  | {
-      kind: 'client';
-      emailClient: EmailClient;
-    }
-  | {
-      kind: 'config';
-      config: EmailConfig;
-    }
-);
-
+  emailClient:
+    | {
+        source: 'client';
+        instance: EmailClient;
+      }
+    | {
+        source: 'config';
+        config: EmailConfig;
+      };
+};
 export class NotificationModule {
   readonly eventSubscribers: EventSubscriber<DomainEventEnvelope>[];
 
@@ -69,9 +68,9 @@ export class NotificationModule {
 
   static create(deps: NotificationModuleDeps): NotificationModule {
     const emailClient =
-      deps.kind === 'client'
-        ? deps.emailClient
-        : new NodemailerEmailClient(deps.config);
+      deps.emailClient.source === 'client'
+        ? deps.emailClient.instance
+        : new NodemailerEmailClient(deps.emailClient.config);
 
     return new NotificationModule(deps, emailClient);
   }
