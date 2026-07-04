@@ -1,4 +1,5 @@
 import type { Database } from '../../platform/db/types.js';
+import type { EmailConfig } from './config.js';
 import type { EmailClient } from './application/ports/email-client.js';
 import type { NotificationMetrics } from './application/ports/notification-metrics.js';
 import { DrizzleRecipientRepository } from './infrastructure/recipient.repository.js';
@@ -10,47 +11,56 @@ import { SubscriptionReactivatedSubscriber } from './application/subscribers/sub
 import { SubscriptionConfirmedSubscriber } from './application/subscribers/subscription-confirmed.subscriber.js';
 import { NewReleaseDetectedSubscriber } from './application/subscribers/new-release-detected.subscriber.js';
 import { SubscriptionDeactivatedSubscriber } from './application/subscribers/subscription-deactivated.subscriber.js';
+import { NodemailerEmailClient } from './infrastructure/nodemailer-email-client.js';
 
-export interface NotificationModuleDeps {
+export type NotificationModuleDeps = {
   db: Database;
-  emailClient: EmailClient;
   appUrl: string;
   metrics?: NotificationMetrics;
-}
+} & (
+  | {
+      kind: 'client';
+      emailClient: EmailClient;
+    }
+  | {
+      kind: 'config';
+      config: EmailConfig;
+    }
+);
 
 export class NotificationModule {
   readonly eventSubscribers: EventSubscriber<DomainEventEnvelope>[];
 
   private readonly recipientRepository: DrizzleRecipientRepository;
 
-  private constructor(deps: NotificationModuleDeps) {
+  private constructor(deps: NotificationModuleDeps, emailClient: EmailClient) {
     this.recipientRepository = new DrizzleRecipientRepository(deps.db);
     this.eventSubscribers = [
       new SubscriptionRequestedSubscriber(
-        deps.emailClient,
+        emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionConfirmationRenewedSubscriber(
-        deps.emailClient,
+        emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionReactivatedSubscriber(
-        deps.emailClient,
+        emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionConfirmedSubscriber(
         this.recipientRepository,
-        deps.emailClient,
+        emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionDeactivatedSubscriber(this.recipientRepository),
       new NewReleaseDetectedSubscriber(
         this.recipientRepository,
-        deps.emailClient,
+        emailClient,
         deps.appUrl,
         deps.metrics,
       ),
@@ -58,6 +68,11 @@ export class NotificationModule {
   }
 
   static create(deps: NotificationModuleDeps): NotificationModule {
-    return new NotificationModule(deps);
+    const emailClient =
+      deps.kind === 'client'
+        ? deps.emailClient
+        : new NodemailerEmailClient(deps.config);
+
+    return new NotificationModule(deps, emailClient);
   }
 }

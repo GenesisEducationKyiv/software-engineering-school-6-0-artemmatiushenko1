@@ -12,6 +12,7 @@ describe('NotificationModule', () => {
   it('registers all notification event handlers on the event bus', () => {
     const eventBus = mock<EventBus>();
     const module = NotificationModule.create({
+      kind: 'client',
       db: mock<Database>(),
       emailClient: mock<EmailClient>(),
       appUrl: 'http://localhost:3000',

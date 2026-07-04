@@ -37,8 +37,6 @@ import { createFastifyServerOptions } from '../../src/platform/fastify/create-fa
 import { randomUUID } from 'node:crypto';
 import type { Clock } from '../../src/shared-kernel/clock.js';
 import { SubscriptionTokenScope } from '../../src/modules/subscription/domain/subscription-token-scope.js';
-import { CryptoIdGenerator } from '../../src/modules/subscription/infrastructure/crypto-id-generator.js';
-import { CryptoTokenGenerator } from '../../src/modules/subscription/infrastructure/crypto-token-generator.js';
 
 const subscriptionId = () => randomUUID();
 const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
@@ -169,8 +167,6 @@ describe('Subscription Routes Integration with PGlite', () => {
       githubClient: githubMock,
       emailClient: emailMock,
       clock: clockMock,
-      idGenerator: new CryptoIdGenerator(),
-      tokenGenerator: new CryptoTokenGenerator(),
     });
 
     container.wireEventSubscribers();

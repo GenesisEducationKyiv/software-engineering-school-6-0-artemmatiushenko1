@@ -7,7 +7,6 @@ import { ScannerModule } from './modules/scanner/scanner.module.js';
 import type { Metrics } from './platform/metrics/metrics.interface.js';
 import type { GithubClient } from './modules/github/api/github-client.interface.js';
 import type { EmailClient } from './modules/notification/application/ports/email-client.js';
-import type { Clock } from './shared-kernel/clock.js';
 import type { Logger } from './shared-kernel/logger.js';
 import type { Redis } from 'ioredis';
 import type { TokenGenerator } from './modules/subscription/application/ports/token-generator.js';
@@ -15,6 +14,11 @@ import type { IdGenerator } from './shared-kernel/id-generator.js';
 import { InProcessEventBus } from './platform/event-bus/in-process-event-bus.js';
 import type { EventBus } from './platform/event-bus/event-bus.interface.js';
 import { registerEventSubscribers } from './platform/event-bus/event-subscriber.js';
+import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
+import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
+import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
+import type { Clock } from './shared-kernel/clock.js';
+import { PrometheusMetrics } from './platform/metrics/prometheus-metrics.js';
 
 export interface AppDependencies {
   redis: Redis;
@@ -30,12 +34,12 @@ export interface AppContainerDeps {
   db: Database;
   logger: Logger;
   redis: Redis;
-  metrics: Metrics;
-  clock: Clock;
-  githubClient: GithubClient;
-  emailClient: EmailClient;
-  idGenerator: IdGenerator;
-  tokenGenerator: TokenGenerator;
+  metrics?: Metrics;
+  clock?: Clock;
+  githubClient?: GithubClient;
+  emailClient?: EmailClient;
+  idGenerator?: IdGenerator;
+  tokenGenerator?: TokenGenerator;
   eventBus?: EventBus;
 }
 
@@ -46,40 +50,65 @@ export class AppContainer {
   private readonly scanner: ScannerModule;
   private readonly eventBus: EventBus;
   private eventSubscribersRegistered = false;
+  private readonly metrics: Metrics;
 
   constructor(
     config: AppConfig,
     private readonly deps: AppContainerDeps,
   ) {
     this.eventBus = deps.eventBus ?? new InProcessEventBus();
+    const clock = deps.clock ?? new SystemClock();
+    const idGenerator = deps.idGenerator ?? new CryptoIdGenerator();
+    const tokenGenerator = deps.tokenGenerator ?? new CryptoTokenGenerator();
+    this.metrics = deps.metrics ?? new PrometheusMetrics();
 
-    this.github = GithubModule.create();
+    this.github = GithubModule.create(
+      deps.githubClient
+        ? { kind: 'client', githubClient: deps.githubClient }
+        : {
+            kind: 'config',
+            config: config.github,
+            redis: deps.redis,
+            metrics: this.metrics,
+          },
+    );
 
-    this.notification = NotificationModule.create({
-      db: deps.db,
-      emailClient: deps.emailClient,
-      appUrl: config.appUrl,
-      metrics: deps.metrics,
-    });
+    this.notification = NotificationModule.create(
+      deps.emailClient
+        ? {
+            kind: 'client',
+            db: deps.db,
+            emailClient: deps.emailClient,
+            appUrl: config.appUrl,
+            metrics: this.metrics,
+          }
+        : {
+            kind: 'config',
+            db: deps.db,
+            config: config.email,
+            appUrl: config.appUrl,
+            metrics: this.metrics,
+          },
+    );
 
     this.subscription = SubscriptionModule.create({
+      clock,
+      idGenerator,
+      tokenGenerator,
       db: deps.db,
-      githubClient: deps.githubClient,
+      githubClient: this.github.githubClient,
       logger: deps.logger,
-      clock: deps.clock,
-      idGenerator: deps.idGenerator,
-      tokenGenerator: deps.tokenGenerator,
       eventBus: this.eventBus,
     });
 
     this.scanner = ScannerModule.create({
       db: deps.db,
-      githubClient: deps.githubClient,
+      githubClient: this.github.githubClient,
       logger: deps.logger,
-      clock: deps.clock,
-      metrics: deps.metrics,
+      clock,
+      metrics: this.metrics,
       eventBus: this.eventBus,
-      cronExpression: config.scannerCron,
+      cronExpression: config.scanner.cronExpression,
     });
   }
 
@@ -98,7 +127,7 @@ export class AppContainer {
   build(): AppDependencies {
     return {
       redis: this.deps.redis,
-      metrics: this.deps.metrics,
+      metrics: this.metrics,
       logger: this.deps.logger,
       subscription: this.subscription,
       notification: this.notification,
