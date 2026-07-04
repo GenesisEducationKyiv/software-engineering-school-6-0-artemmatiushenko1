@@ -85,9 +85,9 @@ export class SubscribeUseCase {
       await this.subscriptionRepo.save(subscription, tx);
     });
 
-    const integrationEvents = toPublicApiEvents(subscription.pullEvents());
-    if (integrationEvents.length > 0) {
-      await this.eventBus.publish(integrationEvents);
+    const events = toPublicApiEvents(subscription.pullEvents());
+    if (events.length > 0) {
+      await this.eventBus.publish(events);
     }
 
     this.logger.info('User subscribed', {
