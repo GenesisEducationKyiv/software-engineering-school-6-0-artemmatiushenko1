@@ -7,6 +7,7 @@ import type { RecipientRepository } from '../ports/recipient.repository.js';
 
 export class SubscriptionDeactivatedSubscriber extends EventSubscriber<SubscriptionDeactivatedEvent> {
   readonly eventType = SubscriptionEventType.Deactivated;
+
   constructor(private readonly recipientRepository: RecipientRepository) {
     super();
   }

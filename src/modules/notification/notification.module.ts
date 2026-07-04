@@ -16,7 +16,7 @@ import { NodemailerEmailClient } from './infrastructure/nodemailer-email-client.
 export type NotificationModuleDeps = {
   db: Database;
   appUrl: string;
-  metrics?: NotificationMetrics;
+  metrics: NotificationMetrics;
   emailClient:
     | {
         source: 'client';

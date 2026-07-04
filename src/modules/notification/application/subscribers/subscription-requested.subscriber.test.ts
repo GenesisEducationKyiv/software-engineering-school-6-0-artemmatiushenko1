@@ -3,13 +3,16 @@ import { mock } from 'vitest-mock-extended';
 import type { EmailClient } from '../ports/email-client.js';
 import { SubscriptionEventType } from '../../../subscription/api/events.js';
 import { SubscriptionRequestedSubscriber } from './subscription-requested.subscriber.js';
+import type { NotificationMetrics } from '../ports/notification-metrics.js';
 
 describe('SubscriptionRequestedSubscriber', () => {
   it('sends a subscription confirmation email', async () => {
     const emailClient = mock<EmailClient>();
+    const metrics = mock<NotificationMetrics>();
     const handler = new SubscriptionRequestedSubscriber(
       emailClient,
       'http://localhost:3000',
+      metrics,
     );
 
     await handler.handle({

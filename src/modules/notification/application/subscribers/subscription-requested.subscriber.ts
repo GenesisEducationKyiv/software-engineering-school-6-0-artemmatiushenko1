@@ -10,10 +10,11 @@ import type { NotificationMetrics } from '../ports/notification-metrics.js';
 
 export class SubscriptionRequestedSubscriber extends EventSubscriber<SubscriptionRequestedEvent> {
   readonly eventType = SubscriptionEventType.Requested;
+
   constructor(
     private readonly emailClient: EmailClient,
     private readonly appUrl: string,
-    private readonly metrics?: NotificationMetrics,
+    private readonly metrics: NotificationMetrics,
   ) {
     super();
   }
@@ -33,6 +34,6 @@ export class SubscriptionRequestedSubscriber extends EventSubscriber<Subscriptio
       ...template,
     });
 
-    this.metrics?.incrementNotificationsSent();
+    this.metrics.incrementNotificationsSent();
   }
 }

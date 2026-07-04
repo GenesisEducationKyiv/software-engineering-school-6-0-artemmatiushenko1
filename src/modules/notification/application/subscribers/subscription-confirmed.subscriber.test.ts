@@ -4,6 +4,8 @@ import type { EmailClient } from '../ports/email-client.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
 import { SubscriptionEventType } from '../../../subscription/api/events.js';
 import { SubscriptionConfirmedSubscriber } from './subscription-confirmed.subscriber.js';
+import { Email, Recipient } from '../../domain/index.js';
+import type { NotificationMetrics } from '../ports/notification-metrics.js';
 
 describe('SubscriptionConfirmedSubscriber', () => {
   const event = {
@@ -20,18 +22,20 @@ describe('SubscriptionConfirmedSubscriber', () => {
   it('saves the recipient and sends a subscription confirmed email', async () => {
     const recipientRepository = mock<RecipientRepository>();
     const emailClient = mock<EmailClient>();
+    const metrics = mock<NotificationMetrics>();
     const subscriber = new SubscriptionConfirmedSubscriber(
       recipientRepository,
       emailClient,
       'http://localhost:3000',
+      metrics,
     );
 
     await subscriber.handle(event);
 
     expect(recipientRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
+      Recipient.rehydrate({
         subscriptionId: 'sub-1',
-        email: expect.objectContaining({ value: 'test@example.com' }),
+        email: Email.fromString('test@example.com'),
         unsubscribeToken: 'unsub-token',
       }),
     );
@@ -41,6 +45,7 @@ describe('SubscriptionConfirmedSubscriber', () => {
         text: expect.stringContaining(
           'http://localhost:3000/unsubscribe/unsub-token',
         ),
+        subject: expect.stringContaining('owner/repo'),
       }),
     );
   });

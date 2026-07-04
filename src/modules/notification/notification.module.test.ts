@@ -7,11 +7,13 @@ import { ScannerEventType } from '../scanner/api/events.js';
 import type { EmailClient } from './application/ports/email-client.js';
 import type { Database } from '../../platform/db/types.js';
 import { NotificationModule } from './notification.module.js';
+import type { NotificationMetrics } from './application/ports/notification-metrics.js';
 
 describe('NotificationModule', () => {
   it('registers all notification event handlers on the event bus', () => {
     const eventBus = mock<EventBus>();
     const module = NotificationModule.create({
+      metrics: mock<NotificationMetrics>(),
       db: mock<Database>(),
       appUrl: 'http://localhost:3000',
       emailClient: { source: 'client', instance: mock<EmailClient>() },

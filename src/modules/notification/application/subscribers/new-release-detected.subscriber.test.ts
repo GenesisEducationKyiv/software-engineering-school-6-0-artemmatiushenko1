@@ -5,6 +5,7 @@ import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
 import { ScannerEventType } from '../../../scanner/api/events.js';
+import { RecipientNotFoundError } from '../errors.js';
 import { Recipient } from '../../domain/recipient.js';
 import { NewReleaseDetectedSubscriber } from './new-release-detected.subscriber.js';
 
@@ -49,5 +50,37 @@ describe('NewReleaseDetectedSubscriber', () => {
       }),
     );
     expect(metrics.incrementNotificationsSent).toHaveBeenCalled();
+  });
+
+  it('throws RecipientNotFoundError when recipient does not exist', async () => {
+    const metrics = mock<NotificationMetrics>();
+    const recipientRepository = mock<RecipientRepository>();
+    recipientRepository.findBySubscriptionId.mockResolvedValue(null);
+
+    const emailClient = mock<EmailClient>();
+    const subscriber = new NewReleaseDetectedSubscriber(
+      recipientRepository,
+      emailClient,
+      'http://localhost:3000',
+      metrics,
+    );
+
+    await expect(
+      subscriber.handle({
+        type: ScannerEventType.NewReleaseDetected,
+        aggregateId: 'sub-missing',
+        occurredAt: new Date('2024-01-01T00:00:00.000Z'),
+        payload: {
+          repo: 'owner/repo',
+          tag: 'v1.1.0',
+          releaseName: 'Release 1.1',
+        },
+      }),
+    ).rejects.toThrow(RecipientNotFoundError);
+
+    expect(recipientRepository.findBySubscriptionId).toHaveBeenCalledWith(
+      'sub-missing',
+    );
+    expect(emailClient.sendEmail).not.toHaveBeenCalled();
   });
 });
