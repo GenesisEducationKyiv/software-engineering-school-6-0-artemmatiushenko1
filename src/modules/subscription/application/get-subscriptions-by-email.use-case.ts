@@ -6,8 +6,6 @@ export class GetSubscriptionsByEmailUseCase {
   constructor(private subscriptionRepo: SubscriptionRepository) {}
 
   async execute(email: string): Promise<Subscription[]> {
-    return this.subscriptionRepo.findConfirmedSubscriptionsByEmail(
-      Email.fromString(email),
-    );
+    return this.subscriptionRepo.findConfirmedByEmail(Email.fromString(email));
   }
 }

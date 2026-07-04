@@ -21,12 +21,12 @@ describe('GetSubscriptionsByEmailUseCase', () => {
     const email = 'test@example.com';
     const subscriptions = [createConfirmedSubscription({ id: '1', email })];
 
-    repoMock.findConfirmedSubscriptionsByEmail.mockResolvedValue(subscriptions);
+    repoMock.findConfirmedByEmail.mockResolvedValue(subscriptions);
 
     const result = await getSubscriptionsByEmailUseCase.execute(email);
 
     expect(result).toEqual(subscriptions);
-    expect(repoMock.findConfirmedSubscriptionsByEmail).toHaveBeenCalledWith(
+    expect(repoMock.findConfirmedByEmail).toHaveBeenCalledWith(
       Email.fromString(email),
     );
   });
@@ -34,12 +34,12 @@ describe('GetSubscriptionsByEmailUseCase', () => {
   it('should return empty list for a valid email when there are no subscriptions', async () => {
     const email = 'test@example.com';
 
-    repoMock.findConfirmedSubscriptionsByEmail.mockResolvedValue([]);
+    repoMock.findConfirmedByEmail.mockResolvedValue([]);
 
     const result = await getSubscriptionsByEmailUseCase.execute(email);
 
     expect(result).toEqual([]);
-    expect(repoMock.findConfirmedSubscriptionsByEmail).toHaveBeenCalledWith(
+    expect(repoMock.findConfirmedByEmail).toHaveBeenCalledWith(
       Email.fromString(email),
     );
   });

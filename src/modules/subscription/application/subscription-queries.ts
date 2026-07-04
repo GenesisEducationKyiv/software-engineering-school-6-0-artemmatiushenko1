@@ -11,7 +11,7 @@ export class SubscriptionQueriesImpl implements SubscriptionQueries {
   ) {}
 
   async findAllConfirmedSubscriptions() {
-    return this.subscriptionRepo.findAllConfirmedSubscriptions();
+    return this.subscriptionRepo.findAllConfirmed();
   }
 
   async observeNewRelease(subscriptionId: string, tag: string): Promise<void> {

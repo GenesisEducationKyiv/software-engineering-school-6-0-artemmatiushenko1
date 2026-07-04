@@ -93,9 +93,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     return result ? this.toDomain(result) : null;
   }
 
-  async findConfirmedSubscriptionsByEmail(
-    email: Email,
-  ): Promise<Subscription[]> {
+  async findConfirmedByEmail(email: Email): Promise<Subscription[]> {
     const results = await this.getDb()
       .select()
       .from(subscriptions)
@@ -109,7 +107,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     return results.map((row) => this.toDomain(row));
   }
 
-  async findAllConfirmedSubscriptions(): Promise<Subscription[]> {
+  async findAllConfirmed(): Promise<Subscription[]> {
     const results = await this.getDb()
       .select()
       .from(subscriptions)
