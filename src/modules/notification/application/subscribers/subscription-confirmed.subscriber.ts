@@ -21,7 +21,7 @@ export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<
     private readonly recipientRepository: RecipientRepository,
     private readonly emailClient: EmailClient,
     private readonly appUrl: string,
-    private readonly metrics?: NotificationMetrics,
+    private readonly metrics: NotificationMetrics,
   ) {
     super(idempotencyGuard);
   }

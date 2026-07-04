@@ -12,6 +12,7 @@ export class SubscriptionDeactivatedSubscriber extends EventSubscriber<
   Delivered<SubscriptionDeactivatedEvent>
 > {
   readonly eventType = SubscriptionEventType.Deactivated;
+
   constructor(
     private readonly monitoredRepoRepository: MonitoredRepoRepository,
     private readonly transactionManager: TransactionManager,
@@ -40,7 +41,11 @@ export class SubscriptionDeactivatedSubscriber extends EventSubscriber<
         return;
       }
 
-      monitoredRepo.removeWatcher(watcher);
+      if (monitoredRepo.removeWatcher(watcher)) {
+        await this.monitoredRepoRepository.delete(monitoredRepo, tx);
+        return;
+      }
+
       await this.monitoredRepoRepository.save(monitoredRepo, tx);
     });
   }

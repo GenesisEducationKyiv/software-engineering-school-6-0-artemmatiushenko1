@@ -4,24 +4,18 @@ import { App } from '../../src/app.js';
 import { AppContainer } from '../../src/dependencies.js';
 import { FastifyLogger } from '../../src/platform/logger/fastify-logger.js';
 import { PrometheusMetrics } from '../../src/platform/metrics/prometheus-metrics.js';
-import { SystemClock } from '../../src/modules/subscription/infrastructure/system-clock.js';
 import { mock } from 'vitest-mock-extended';
 import { Redis } from 'ioredis';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/platform/db/schema.js';
-import {
-  MIGRATIONS_FOLDER,
-  runDatabaseMigrations,
-} from '../../src/platform/db/migrate.js';
+import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import { register } from 'prom-client';
 import { TEST_APP_CONFIG } from './constants.js';
 import { createFastifyServerOptions } from '../../src/platform/fastify/create-fastify-server-options.js';
 import type { GithubClient } from '../../src/modules/github/api/github-client.interface.js';
 import type { EmailClient } from '../../src/modules/notification/application/ports/email-client.js';
-import { CryptoTokenGenerator } from '../../src/modules/subscription/infrastructure/crypto-token-generator.js';
-import { CryptoIdGenerator } from '../../src/modules/subscription/infrastructure/crypto-id-generator.js';
 
 describe('Metrics Routes', () => {
   let app: App;
@@ -29,7 +23,7 @@ describe('Metrics Routes', () => {
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
-    await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
+    await runAllDatabaseMigrations(db);
   });
 
   beforeEach(async () => {
@@ -44,12 +38,9 @@ describe('Metrics Routes', () => {
       db,
       logger: new FastifyLogger(fastify.log),
       metrics: new PrometheusMetrics(),
-      clock: new SystemClock(),
       redis: redisMock,
       githubClient: githubMock,
       emailClient: emailMock,
-      idGenerator: new CryptoIdGenerator(),
-      tokenGenerator: new CryptoTokenGenerator(),
     });
 
     const deps = container.build();

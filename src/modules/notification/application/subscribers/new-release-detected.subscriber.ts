@@ -5,7 +5,7 @@ import {
 import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import { IdempotentSubscriber } from '../../../../platform/idempotency-guard/idempotent.subscriber.js';
-import { RecipientNotFoundError } from '../../domain/errors.js';
+import { RecipientNotFoundError } from '../errors.js';
 import { buildUnsubscribeUrl } from '../links.js';
 import { newReleaseNotificationTemplate } from '../templates.js';
 import type { EmailClient } from '../ports/email-client.js';
@@ -16,12 +16,13 @@ export class NewReleaseDetectedSubscriber extends IdempotentSubscriber<
   Delivered<NewReleaseDetectedEvent>
 > {
   readonly eventType = ScannerEventType.NewReleaseDetected;
+
   constructor(
     idempotencyGuard: IdempotencyGuard,
     private readonly recipientRepository: RecipientRepository,
     private readonly emailClient: EmailClient,
     private readonly appUrl: string,
-    private readonly metrics?: NotificationMetrics,
+    private readonly metrics: NotificationMetrics,
   ) {
     super(idempotencyGuard);
   }

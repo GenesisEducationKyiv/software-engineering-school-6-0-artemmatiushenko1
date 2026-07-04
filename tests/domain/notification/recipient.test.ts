@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Email } from './index.js';
-import { Recipient } from './recipient.js';
+import { Email } from '../../../src/modules/notification/domain/index.js';
+import { Recipient } from '../../../src/modules/notification/domain/recipient.js';
 
 describe('Recipient', () => {
   it('creates with email and unsubscribe token', () => {

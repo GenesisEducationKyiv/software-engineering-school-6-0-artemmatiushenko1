@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { RepoPath, ReleaseTag } from './index.js';
-import { EmptyMonitoredRepoError } from './errors.js';
-import { MonitoredRepo } from './monitored-repo.js';
-import { RepoWatcher } from './repo-watcher.js';
+import {
+  RepoPath,
+  ReleaseTag,
+} from '../../../src/modules/scanner/domain/index.js';
+import { EmptyMonitoredRepoError } from '../../../src/modules/scanner/domain/errors.js';
+import { MonitoredRepo } from '../../../src/modules/scanner/domain/monitored-repo.js';
+import { RepoWatcher } from '../../../src/modules/scanner/domain/repo-watcher.js';
 
 function repoPath(value: string): RepoPath {
   return RepoPath.fromString(value);

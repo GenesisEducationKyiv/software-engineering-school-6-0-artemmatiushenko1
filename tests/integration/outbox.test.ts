@@ -2,10 +2,7 @@ import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/platform/db/schema.js';
-import {
-  MIGRATIONS_FOLDER,
-  runDatabaseMigrations,
-} from '../../src/platform/db/migrate.js';
+import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import { DrizzleTransactionManager } from '../../src/platform/db/drizzle-transaction-manager.js';
 import { DrizzleOutboxRepository } from '../../src/platform/outbox/drizzle-outbox.repository.js';
@@ -20,13 +17,13 @@ describe('DrizzleOutboxRepository', () => {
   const sampleEvent = {
     type: 'SubscriptionRequested',
     aggregateId: 'sub-1',
-    occurredAt: new Date('2026-01-01T00:00:00.000Z'),
+    occurredAt: '2026-01-01T00:00:00.000Z',
     payload: { email: 'user@example.com', repo: 'owner/repo' },
   };
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
-    await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
+    await runAllDatabaseMigrations(db);
     outboxRepository = new DrizzleOutboxRepository(db, new CryptoIdGenerator());
     transactionManager = new DrizzleTransactionManager(db);
   });

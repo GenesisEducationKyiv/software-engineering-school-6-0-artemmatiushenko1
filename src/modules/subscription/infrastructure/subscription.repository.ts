@@ -2,7 +2,7 @@ import type {
   Database,
   Transaction as DrizzleTransaction,
 } from '../../../platform/db/types.js';
-import { subscriptions } from '../../../platform/db/schema.js';
+import { subscriptions } from './db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import {
   Subscription,

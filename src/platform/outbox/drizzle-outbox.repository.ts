@@ -46,7 +46,7 @@ export class DrizzleOutboxRepository implements OutboxRepository {
           id: this.idGenerator.next(),
           eventType: event.type,
           aggregateId: event.aggregateId,
-          occurredAt: event.occurredAt,
+          occurredAt: new Date(event.occurredAt),
           payload: event.payload,
         })),
       );

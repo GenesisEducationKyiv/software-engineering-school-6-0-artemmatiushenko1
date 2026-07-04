@@ -1,6 +1,6 @@
 {
-  "id": "304c1e34-3bc5-489c-9bb5-540249482b3b",
-  "prevId": "be83e3c6-1c97-4bfc-9f3a-eb415706eeab",
+  "id": "be83e3c6-1c97-4bfc-9f3a-eb415706eeab",
+  "prevId": "a7c824ec-ab5b-42e2-9ae2-b602263c71c3",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -133,32 +133,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.processed_deliveries": {
-      "name": "processed_deliveries",
-      "schema": "",
-      "columns": {
-        "message_id": {
-          "name": "message_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "processed_at": {
-          "name": "processed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.repo_watchers": {
       "name": "repo_watchers",
       "schema": "",
@@ -204,12 +178,8 @@
           "name": "repo_watchers_repo_monitored_repos_repo_fk",
           "tableFrom": "repo_watchers",
           "tableTo": "monitored_repos",
-          "columnsFrom": [
-            "repo"
-          ],
-          "columnsTo": [
-            "repo"
-          ],
+          "columnsFrom": ["repo"],
+          "columnsTo": ["repo"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -353,11 +323,7 @@
     "public.subscription_status": {
       "name": "subscription_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "confirmed",
-        "unsubscribed"
-      ]
+      "values": ["pending", "confirmed", "unsubscribed"]
     }
   },
   "schemas": {},

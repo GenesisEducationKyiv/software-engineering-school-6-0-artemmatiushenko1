@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { RepoPath } from '../../src/shared-kernel/repo-path.js';
-import { InvalidRepoFormatError } from '../../src/shared-kernel/errors.js';
+import { RepoPath } from '../../../src/shared-kernel/repo-path.js';
+import { InvalidRepoFormatError } from '../../../src/shared-kernel/errors.js';
 
 describe('RepoPath', () => {
   describe('fromString', () => {

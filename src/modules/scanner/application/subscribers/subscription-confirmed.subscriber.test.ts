@@ -17,7 +17,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
   const event = {
     type: SubscriptionEventType.Confirmed,
     aggregateId: 'sub-1',
-    occurredAt: new Date('2024-01-01T00:00:00.000Z'),
+    occurredAt: '2024-01-01T00:00:00.000Z',
     id: 'msg-1',
     payload: {
       email: 'alice@example.com',
@@ -66,14 +66,15 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
       expect.anything(),
     );
     expect(monitoredRepoRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
+      MonitoredRepo.rehydrate({
         repo: RepoPath.fromString('owner/repo'),
         watchers: [
-          expect.objectContaining({
+          RepoWatcher.create({
             subscriptionId: 'sub-1',
             lastNotifiedTag: ReleaseTag.fromString('v1.0.0'),
           }),
         ],
+        lastSeenTag: ReleaseTag.fromString('v1.0.0'),
       }),
       expect.anything(),
     );
@@ -118,8 +119,14 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
     expect(monitoredRepoRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
         watchers: expect.arrayContaining([
-          expect.objectContaining({ subscriptionId: 'sub-0' }),
-          expect.objectContaining({ subscriptionId: 'sub-1' }),
+          expect.objectContaining({
+            subscriptionId: 'sub-0',
+            lastNotifiedTag: ReleaseTag.fromString('v0.9.0'),
+          }),
+          expect.objectContaining({
+            subscriptionId: 'sub-1',
+            lastNotifiedTag: ReleaseTag.fromString('v1.0.0'),
+          }),
         ]),
       }),
       expect.anything(),

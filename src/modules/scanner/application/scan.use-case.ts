@@ -46,7 +46,7 @@ export class ScanUseCase {
     const repo = monitoredRepo.repo.toString();
 
     try {
-      await this.processRepo(monitoredRepo);
+      await this.detectRelease(monitoredRepo);
     } catch (error) {
       this.metrics.incrementScanFailures();
 
@@ -65,7 +65,7 @@ export class ScanUseCase {
     }
   }
 
-  private async processRepo(monitoredRepo: MonitoredRepo): Promise<void> {
+  private async detectRelease(monitoredRepo: MonitoredRepo): Promise<void> {
     const repo = monitoredRepo.repo.toString();
 
     this.logger.info('Processing monitored repo', {
@@ -107,7 +107,7 @@ export class ScanUseCase {
       newReleaseEvents.push({
         type: ScannerEventType.NewReleaseDetected,
         aggregateId: watcher.subscriptionId,
-        occurredAt: this.clock.now(),
+        occurredAt: this.clock.now().toISOString(),
         payload: {
           repo,
           tag: latestRelease.tag,

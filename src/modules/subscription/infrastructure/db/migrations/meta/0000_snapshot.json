@@ -1,129 +1,12 @@
 {
-  "id": "a7c824ec-ab5b-42e2-9ae2-b602263c71c3",
+  "id": "dbc6c23b-6e60-4883-8969-0854b4c2c1e0",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.monitored_repos": {
-      "name": "monitored_repos",
-      "schema": "",
-      "columns": {
-        "repo": {
-          "name": "repo",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "last_seen_tag": {
-          "name": "last_seen_tag",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.notification_recipients": {
-      "name": "notification_recipients",
-      "schema": "",
-      "columns": {
-        "subscription_id": {
-          "name": "subscription_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "unsubscribe_token": {
-          "name": "unsubscribe_token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.repo_watchers": {
-      "name": "repo_watchers",
-      "schema": "",
-      "columns": {
-        "subscription_id": {
-          "name": "subscription_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "repo": {
-          "name": "repo",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "last_notified_tag": {
-          "name": "last_notified_tag",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "repo_watchers_repo_idx": {
-          "name": "repo_watchers_repo_idx",
-          "columns": [
-            {
-              "expression": "repo",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "repo_watchers_repo_monitored_repos_repo_fk": {
-          "name": "repo_watchers_repo_monitored_repos_repo_fk",
-          "tableFrom": "repo_watchers",
-          "tableTo": "monitored_repos",
-          "columnsFrom": [
-            "repo"
-          ],
-          "columnsTo": [
-            "repo"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.subscriptions": {
+    "subscription.subscriptions": {
       "name": "subscriptions",
-      "schema": "",
+      "schema": "subscription",
       "columns": {
         "id": {
           "name": "id",
@@ -146,7 +29,7 @@
         "status": {
           "name": "status",
           "type": "subscription_status",
-          "typeSchema": "public",
+          "typeSchema": "subscription",
           "primaryKey": false,
           "notNull": true,
           "default": "'pending'"
@@ -251,17 +134,15 @@
     }
   },
   "enums": {
-    "public.subscription_status": {
+    "subscription.subscription_status": {
       "name": "subscription_status",
-      "schema": "public",
-      "values": [
-        "pending",
-        "confirmed",
-        "unsubscribed"
-      ]
+      "schema": "subscription",
+      "values": ["pending", "confirmed", "unsubscribed"]
     }
   },
-  "schemas": {},
+  "schemas": {
+    "subscription": "subscription"
+  },
   "sequences": {},
   "roles": {},
   "policies": {},

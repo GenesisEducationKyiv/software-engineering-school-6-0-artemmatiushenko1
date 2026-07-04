@@ -19,7 +19,7 @@ export function toDeliveredEvent(
   return {
     type: message.eventType,
     aggregateId: message.aggregateId,
-    occurredAt: message.occurredAt,
+    occurredAt: message.occurredAt.toISOString(),
     payload: message.payload,
     id: message.id,
   };

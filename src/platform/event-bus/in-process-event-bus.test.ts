@@ -5,7 +5,7 @@ import type { Delivered, IntegrationEvent } from './domain-event-envelope.js';
 const testEvent: Delivered<IntegrationEvent<{ value: number }, 'TestEvent'>> = {
   type: 'TestEvent',
   aggregateId: 'agg-1',
-  occurredAt: new Date('2026-01-01T00:00:00.000Z'),
+  occurredAt: '2026-01-01T00:00:00.000Z',
   payload: { value: 1 },
   id: 'msg-1',
 };

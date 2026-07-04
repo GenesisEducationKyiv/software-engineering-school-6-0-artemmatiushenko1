@@ -18,6 +18,7 @@ import {
 } from '../domain/index.js';
 
 const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
+const FIXED_NOW_ISO = FIXED_NOW.toISOString();
 
 const createWatcher = (
   subscriptionId: string,
@@ -118,7 +119,7 @@ describe('ScanUseCase', () => {
           {
             type: ScannerEventType.NewReleaseDetected,
             aggregateId: '1',
-            occurredAt: FIXED_NOW,
+            occurredAt: FIXED_NOW_ISO,
             payload: {
               repo: 'owner/repo',
               tag: latestRelease.tag,
@@ -173,7 +174,7 @@ describe('ScanUseCase', () => {
           {
             type: ScannerEventType.NewReleaseDetected,
             aggregateId: '2',
-            occurredAt: FIXED_NOW,
+            occurredAt: FIXED_NOW_ISO,
             payload: {
               repo: 'owner/ok',
               tag: latestRelease.tag,

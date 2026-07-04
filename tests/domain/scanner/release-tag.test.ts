@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { ReleaseTag } from './release-tag.js';
-import { InvalidReleaseTagError } from './errors.js';
+import { ReleaseTag } from '../../../src/modules/scanner/domain/release-tag.js';
+import { InvalidReleaseTagError } from '../../../src/modules/scanner/domain/errors.js';
 
 describe('ReleaseTag', () => {
   describe('fromString', () => {

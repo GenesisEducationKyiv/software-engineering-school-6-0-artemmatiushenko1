@@ -8,11 +8,14 @@ export const TEST_APP_CONFIG: AppConfig = {
   host: 'localhost',
   appUrl: 'http://localhost:3000',
   apiPrefix: '/api',
-  githubToken: undefined,
-  scannerCron: '',
   outboxRelayCron: '',
-  githubCacheTtl: 0,
-  githubApiBaseUrl: '',
+  scanner: {
+    cronExpression: '',
+  },
+  github: {
+    githubCacheTtl: 0,
+    githubApiBaseUrl: '',
+  },
   email: {
     type: 'smtp',
     host: 'localhost',

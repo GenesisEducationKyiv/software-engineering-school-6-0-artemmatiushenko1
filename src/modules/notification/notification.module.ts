@@ -1,4 +1,5 @@
 import type { Database } from '../../platform/db/types.js';
+import type { EmailConfig } from './config.js';
 import type { EmailClient } from './application/ports/email-client.js';
 import type { NotificationMetrics } from './application/ports/notification-metrics.js';
 import { DrizzleRecipientRepository } from './infrastructure/recipient.repository.js';
@@ -14,45 +15,53 @@ import { SubscriptionReactivatedSubscriber } from './application/subscribers/sub
 import { SubscriptionConfirmedSubscriber } from './application/subscribers/subscription-confirmed.subscriber.js';
 import { NewReleaseDetectedSubscriber } from './application/subscribers/new-release-detected.subscriber.js';
 import { SubscriptionDeactivatedSubscriber } from './application/subscribers/subscription-deactivated.subscriber.js';
+import { NodemailerEmailClient } from './infrastructure/nodemailer-email-client.js';
 
-export interface NotificationModuleDeps {
+export type NotificationModuleDeps = {
   db: Database;
-  emailClient: EmailClient;
   appUrl: string;
-  metrics?: NotificationMetrics;
-}
-
+  metrics: NotificationMetrics;
+  emailClient:
+    | {
+        source: 'client';
+        instance: EmailClient;
+      }
+    | {
+        source: 'config';
+        config: EmailConfig;
+      };
+};
 export class NotificationModule {
   readonly eventSubscribers: EventSubscriber<Delivered<IntegrationEvent>>[];
 
   private readonly recipientRepository: DrizzleRecipientRepository;
 
-  private constructor(deps: NotificationModuleDeps) {
+  private constructor(deps: NotificationModuleDeps, emailClient: EmailClient) {
     const idempotencyGuard = new DrizzleIdempotencyGuard(deps.db);
     this.recipientRepository = new DrizzleRecipientRepository(deps.db);
     this.eventSubscribers = [
       new SubscriptionRequestedSubscriber(
         idempotencyGuard,
-        deps.emailClient,
+        emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionConfirmationRenewedSubscriber(
         idempotencyGuard,
-        deps.emailClient,
+        emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionReactivatedSubscriber(
         idempotencyGuard,
-        deps.emailClient,
+        emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionConfirmedSubscriber(
         idempotencyGuard,
         this.recipientRepository,
-        deps.emailClient,
+        emailClient,
         deps.appUrl,
         deps.metrics,
       ),
@@ -60,7 +69,7 @@ export class NotificationModule {
       new NewReleaseDetectedSubscriber(
         idempotencyGuard,
         this.recipientRepository,
-        deps.emailClient,
+        emailClient,
         deps.appUrl,
         deps.metrics,
       ),
@@ -68,6 +77,11 @@ export class NotificationModule {
   }
 
   static create(deps: NotificationModuleDeps): NotificationModule {
-    return new NotificationModule(deps);
+    const emailClient =
+      deps.emailClient.source === 'client'
+        ? deps.emailClient.instance
+        : new NodemailerEmailClient(deps.emailClient.config);
+
+    return new NotificationModule(deps, emailClient);
   }
 }

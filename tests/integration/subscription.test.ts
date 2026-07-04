@@ -13,10 +13,7 @@ import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/platform/db/schema.js';
-import {
-  MIGRATIONS_FOLDER,
-  runDatabaseMigrations,
-} from '../../src/platform/db/migrate.js';
+import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import assert from 'assert';
 import {
@@ -37,8 +34,6 @@ import { createFastifyServerOptions } from '../../src/platform/fastify/create-fa
 import { randomUUID } from 'node:crypto';
 import type { Clock } from '../../src/shared-kernel/clock.js';
 import { SubscriptionTokenScope } from '../../src/modules/subscription/domain/subscription-token-scope.js';
-import { CryptoIdGenerator } from '../../src/modules/subscription/infrastructure/crypto-id-generator.js';
-import { CryptoTokenGenerator } from '../../src/modules/subscription/infrastructure/crypto-token-generator.js';
 
 const subscriptionId = () => randomUUID();
 const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
@@ -145,7 +140,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
-    await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
+    await runAllDatabaseMigrations(db);
   });
 
   beforeEach(async () => {
@@ -170,8 +165,6 @@ describe('Subscription Routes Integration with PGlite', () => {
       githubClient: githubMock,
       emailClient: emailMock,
       clock: clockMock,
-      idGenerator: new CryptoIdGenerator(),
-      tokenGenerator: new CryptoTokenGenerator(),
     });
 
     container.wireEventSubscribers();

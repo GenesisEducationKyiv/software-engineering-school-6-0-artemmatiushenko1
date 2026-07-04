@@ -1,7 +1,7 @@
 type EventEnvelopeCore<TPayload = unknown, TEventType = string> = {
   readonly type: TEventType;
   readonly aggregateId: string;
-  readonly occurredAt: Date; // TODO: should be string in UTC ISO format
+  readonly occurredAt: string;
   readonly payload: TPayload;
 };
 

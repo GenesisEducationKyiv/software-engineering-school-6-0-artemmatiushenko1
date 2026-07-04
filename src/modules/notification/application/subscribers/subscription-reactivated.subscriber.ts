@@ -14,11 +14,12 @@ export class SubscriptionReactivatedSubscriber extends IdempotentSubscriber<
   Delivered<SubscriptionReactivatedEvent>
 > {
   readonly eventType = SubscriptionEventType.Reactivated;
+
   constructor(
     idempotencyGuard: IdempotencyGuard,
     private readonly emailClient: EmailClient,
     private readonly appUrl: string,
-    private readonly metrics?: NotificationMetrics,
+    private readonly metrics: NotificationMetrics,
   ) {
     super(idempotencyGuard);
   }
@@ -46,6 +47,6 @@ export class SubscriptionReactivatedSubscriber extends IdempotentSubscriber<
       ...template,
     });
 
-    this.metrics?.incrementNotificationsSent();
+    this.metrics.incrementNotificationsSent();
   }
 }

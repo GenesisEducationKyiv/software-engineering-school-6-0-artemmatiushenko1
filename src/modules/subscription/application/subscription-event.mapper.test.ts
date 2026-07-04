@@ -37,7 +37,7 @@ describe('toPublicApiEvents', () => {
       {
         type: SubscriptionEventType.Requested,
         aggregateId: 'sub-1',
-        occurredAt,
+        occurredAt: occurredAt.toISOString(),
         payload: {
           email: 'test@example.com',
           repo: 'owner/repo',
@@ -68,7 +68,7 @@ describe('toPublicApiEvents', () => {
       {
         type: SubscriptionEventType.ConfirmationRenewed,
         aggregateId: 'sub-1',
-        occurredAt,
+        occurredAt: occurredAt.toISOString(),
         payload: {
           email: 'test@example.com',
           repo: 'owner/repo',
@@ -99,7 +99,7 @@ describe('toPublicApiEvents', () => {
       {
         type: SubscriptionEventType.Reactivated,
         aggregateId: 'sub-1',
-        occurredAt,
+        occurredAt: occurredAt.toISOString(),
         payload: {
           email: 'test@example.com',
           repo: 'owner/repo',
@@ -130,7 +130,7 @@ describe('toPublicApiEvents', () => {
       {
         type: SubscriptionEventType.Confirmed,
         aggregateId: 'sub-1',
-        occurredAt,
+        occurredAt: occurredAt.toISOString(),
         payload: {
           email: 'test@example.com',
           repo: 'owner/repo',
@@ -155,7 +155,7 @@ describe('toPublicApiEvents', () => {
       {
         type: SubscriptionEventType.Deactivated,
         aggregateId: 'sub-1',
-        occurredAt,
+        occurredAt: occurredAt.toISOString(),
         payload: {
           repo: 'owner/repo',
         },

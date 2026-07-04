@@ -50,7 +50,7 @@ describe('OutboxRelay', () => {
       {
         type: 'SubscriptionRequested',
         aggregateId: 'sub-1',
-        occurredAt: sampleMessage.occurredAt,
+        occurredAt: sampleMessage.occurredAt.toISOString(),
         payload: sampleMessage.payload,
         id: 'msg-1',
       },

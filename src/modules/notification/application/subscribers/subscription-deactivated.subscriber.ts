@@ -10,6 +10,7 @@ export class SubscriptionDeactivatedSubscriber extends EventSubscriber<
   Delivered<SubscriptionDeactivatedEvent>
 > {
   readonly eventType = SubscriptionEventType.Deactivated;
+
   constructor(private readonly recipientRepository: RecipientRepository) {
     super();
   }

@@ -1,16 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { Email, RepoPath } from '../../src/shared-kernel/index.js';
-import { SubscriptionToken } from '../../src/modules/subscription/domain/subscription-token.js';
-import { SubscriptionTokenScope } from '../../src/modules/subscription/domain/subscription-token-scope.js';
-import { Subscription } from '../../src/modules/subscription/domain/subscription.js';
-import { SubscriptionStatus } from '../../src/modules/subscription/domain/subscription-status.js';
+import { Email, RepoPath } from '../../../src/shared-kernel/index.js';
+import { SubscriptionToken } from '../../../src/modules/subscription/domain/subscription-token.js';
+import { SubscriptionTokenScope } from '../../../src/modules/subscription/domain/subscription-token-scope.js';
+import { Subscription } from '../../../src/modules/subscription/domain/subscription.js';
+import { SubscriptionStatus } from '../../../src/modules/subscription/domain/subscription-status.js';
 import {
   IllegalStateTransitionError,
   SubscriptionAlreadyConfirmedError,
   SubscriptionAlreadyDeactivatedError,
   WrongTokenScopeError,
-} from '../../src/modules/subscription/domain/errors.js';
-import { SubscriptionDeactivatedEvent } from '../../src/modules/subscription/domain/events.js';
+} from '../../../src/modules/subscription/domain/errors.js';
+import { SubscriptionDeactivatedEvent } from '../../../src/modules/subscription/domain/events.js';
 
 const SUBSCRIPTION_ID = 'sub-1';
 const EMAIL = Email.fromString('test@example.com');

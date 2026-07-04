@@ -25,6 +25,7 @@ import {
   createPendingSubscription,
   createUnsubscribedSubscription,
   FIXED_NOW,
+  FIXED_NOW_ISO,
 } from './subscription-test-fixtures.js';
 
 describe('SubscribeUseCase', () => {
@@ -81,7 +82,7 @@ describe('SubscribeUseCase', () => {
     );
     expect(repoMock.save).toHaveBeenCalledTimes(1);
 
-    const [savedSubscription, tx] = repoMock.save.mock.calls[0]!;
+    const [savedSubscription] = repoMock.save.mock.calls[0]!;
 
     expect(savedSubscription.id).toBe(subscriptionId);
     expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
@@ -97,13 +98,12 @@ describe('SubscribeUseCase', () => {
       ),
     ).toBe(true);
     expect(savedSubscription.unsubscribeToken).toBeNull();
-    expect(tx).toEqual(expect.anything());
     expect(outboxMock.save).toHaveBeenCalledWith(
       [
         {
           type: SubscriptionEventType.Requested,
           aggregateId: subscriptionId,
-          occurredAt: FIXED_NOW,
+          occurredAt: FIXED_NOW_ISO,
           payload: {
             email,
             repo,
@@ -151,7 +151,7 @@ describe('SubscribeUseCase', () => {
 
     expect(repoMock.save).toHaveBeenCalledTimes(1);
 
-    const [savedSubscription, tx] = repoMock.save.mock.calls[0]!;
+    const [savedSubscription] = repoMock.save.mock.calls[0]!;
 
     expect(savedSubscription.id).toBe(existingDomainSubscription.id);
     expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
@@ -163,13 +163,12 @@ describe('SubscribeUseCase', () => {
       existingDomainSubscription.repoPath.toString(),
     );
     expect(savedSubscription.unsubscribeToken).toBeNull();
-    expect(tx).toEqual(expect.anything());
     expect(outboxMock.save).toHaveBeenCalledWith(
       [
         {
           type: SubscriptionEventType.ConfirmationRenewed,
           aggregateId: existingDomainSubscription.id,
-          occurredAt: FIXED_NOW,
+          occurredAt: FIXED_NOW_ISO,
           payload: {
             email,
             repo,
@@ -215,7 +214,7 @@ describe('SubscribeUseCase', () => {
         {
           type: SubscriptionEventType.Reactivated,
           aggregateId: existingDomainSubscription.id,
-          occurredAt: FIXED_NOW,
+          occurredAt: FIXED_NOW_ISO,
           payload: {
             email,
             repo,

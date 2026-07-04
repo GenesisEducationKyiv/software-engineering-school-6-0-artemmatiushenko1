@@ -21,7 +21,7 @@ const toPublicApiEvent = (event: DomainEvent): SubscriptionPublicApiEvent => {
     return {
       type: SubscriptionEventType.Requested,
       aggregateId: event.aggregateId,
-      occurredAt: event.occurredAt,
+      occurredAt: event.occurredAt.toISOString(),
       payload: {
         email: event.payload.email.value,
         repo: event.payload.repoPath.toString(),
@@ -34,7 +34,7 @@ const toPublicApiEvent = (event: DomainEvent): SubscriptionPublicApiEvent => {
     return {
       type: SubscriptionEventType.ConfirmationRenewed,
       aggregateId: event.aggregateId,
-      occurredAt: event.occurredAt,
+      occurredAt: event.occurredAt.toISOString(),
       payload: {
         email: event.payload.email.value,
         repo: event.payload.repoPath.toString(),
@@ -47,7 +47,7 @@ const toPublicApiEvent = (event: DomainEvent): SubscriptionPublicApiEvent => {
     return {
       type: SubscriptionEventType.Reactivated,
       aggregateId: event.aggregateId,
-      occurredAt: event.occurredAt,
+      occurredAt: event.occurredAt.toISOString(),
       payload: {
         email: event.payload.email.value,
         repo: event.payload.repoPath.toString(),
@@ -60,7 +60,7 @@ const toPublicApiEvent = (event: DomainEvent): SubscriptionPublicApiEvent => {
     return {
       type: SubscriptionEventType.Confirmed,
       aggregateId: event.aggregateId,
-      occurredAt: event.occurredAt,
+      occurredAt: event.occurredAt.toISOString(),
       payload: {
         email: event.payload.email.value,
         repo: event.payload.repoPath.toString(),
@@ -73,7 +73,7 @@ const toPublicApiEvent = (event: DomainEvent): SubscriptionPublicApiEvent => {
     return {
       type: SubscriptionEventType.Deactivated,
       aggregateId: event.aggregateId,
-      occurredAt: event.occurredAt,
+      occurredAt: event.occurredAt.toISOString(),
       payload: {
         repo: event.payload.repoPath.toString(),
       },
@@ -84,7 +84,7 @@ const toPublicApiEvent = (event: DomainEvent): SubscriptionPublicApiEvent => {
     return {
       type: SubscriptionEventType.Renewed,
       aggregateId: event.aggregateId,
-      occurredAt: event.occurredAt,
+      occurredAt: event.occurredAt.toISOString(),
       payload: {
         repo: event.payload.repoPath.toString(),
       },

@@ -14,5 +14,3 @@ export type NewReleaseDetectedEvent = IntegrationEvent<
   NewReleaseDetectedPayload,
   typeof ScannerEventType.NewReleaseDetected
 >;
-
-export type ScannerPublicApiEvent = NewReleaseDetectedEvent;
