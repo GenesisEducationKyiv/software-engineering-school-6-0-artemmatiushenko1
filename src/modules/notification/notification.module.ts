@@ -1,4 +1,4 @@
-import type { EmailConfig } from '../../config.js';
+import type { EmailConfig } from './config.js';
 import type { NotificationService } from './api/notification.service.js';
 import { NotificationServiceImpl } from './application/notification.service.js';
 import type { EmailClient } from './application/ports/email-client.js';

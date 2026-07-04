@@ -50,11 +50,9 @@ export class AppContainer {
         ? { kind: 'client', githubClient: deps.githubClient }
         : {
             kind: 'config',
+            config: config.github,
             redis: deps.redis,
             metrics: deps.metrics,
-            githubToken: config.githubToken,
-            githubApiBaseUrl: config.githubApiBaseUrl,
-            githubCacheTtl: config.githubCacheTtl,
           },
     );
 
@@ -91,7 +89,7 @@ export class AppContainer {
       logger: deps.logger,
       clock: deps.clock,
       metrics: deps.metrics,
-      cronExpression: config.scannerCron,
+      cronExpression: config.scanner.cronExpression,
     });
   }
 

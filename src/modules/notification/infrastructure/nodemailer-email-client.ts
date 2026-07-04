@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import type { EmailConfig } from '../../../config.js';
+import type { EmailConfig } from '../config.js';
 import type {
   EmailClient,
   SendEmailOptions,
