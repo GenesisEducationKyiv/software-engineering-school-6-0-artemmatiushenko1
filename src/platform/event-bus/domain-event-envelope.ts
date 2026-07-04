@@ -13,11 +13,3 @@ export type IntegrationEvent<
 
 /** Adds the outbox row id after delivery. */
 export type Delivered<E> = E & { readonly id: string };
-
-export const asDelivered = <T extends IntegrationEvent>(
-  event: T,
-  id: string,
-): Delivered<T> => ({
-  ...event,
-  id,
-});
