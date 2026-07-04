@@ -12,8 +12,6 @@ import {
 import { FastifyLogger } from './platform/logger/fastify-logger.js';
 import { PrometheusMetrics } from './platform/metrics/prometheus-metrics.js';
 import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
-import { CachedOctokitGithubClient } from './modules/github/infrastructure/cached-octokit.client.js';
-import { OctokitGithubClient } from './modules/github/infrastructure/octokit.client.js';
 import { NodemailerEmailClient } from './modules/notification/infrastructure/nodemailer-email-client.js';
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
 import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
@@ -32,12 +30,6 @@ redis.on('error', (err) => {
   logger.error('Redis connection error', err);
 });
 
-const githubClient = new CachedOctokitGithubClient(
-  new OctokitGithubClient(appConfig.githubApiBaseUrl, appConfig.githubToken),
-  redis,
-  appConfig.githubCacheTtl,
-  metrics,
-);
 const emailClient = new NodemailerEmailClient(appConfig.email);
 
 const idGenerator = new CryptoIdGenerator();
@@ -49,7 +41,6 @@ const container = new AppContainer(appConfig, {
   redis,
   metrics,
   clock,
-  githubClient,
   emailClient,
   idGenerator,
   tokenGenerator,

@@ -29,7 +29,7 @@ export interface AppContainerDeps {
   redis: Redis;
   metrics: Metrics;
   clock: Clock;
-  githubClient: GithubClient;
+  githubClient?: GithubClient;
   emailClient: EmailClient;
   idGenerator: IdGenerator;
   tokenGenerator: TokenGenerator;
@@ -45,7 +45,18 @@ export class AppContainer {
     config: AppConfig,
     private readonly deps: AppContainerDeps,
   ) {
-    this.github = GithubModule.create();
+    this.github = GithubModule.create(
+      deps.githubClient
+        ? { kind: 'client', githubClient: deps.githubClient }
+        : {
+            kind: 'config',
+            redis: deps.redis,
+            metrics: deps.metrics,
+            githubToken: config.githubToken,
+            githubApiBaseUrl: config.githubApiBaseUrl,
+            githubCacheTtl: config.githubCacheTtl,
+          },
+    );
 
     this.notification = NotificationModule.create({
       emailClient: deps.emailClient,
@@ -55,7 +66,7 @@ export class AppContainer {
 
     this.subscription = SubscriptionModule.create({
       db: deps.db,
-      githubClient: deps.githubClient,
+      githubClient: this.github.githubClient,
       notificationService: this.notification.notificationService,
       logger: deps.logger,
       clock: deps.clock,
@@ -65,7 +76,7 @@ export class AppContainer {
 
     this.scanner = ScannerModule.create({
       subscriptionQueries: this.subscription.subscriptionQueries,
-      githubClient: deps.githubClient,
+      githubClient: this.github.githubClient,
       notificationService: this.notification.notificationService,
       logger: deps.logger,
       clock: deps.clock,
