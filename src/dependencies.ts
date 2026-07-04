@@ -30,7 +30,7 @@ export interface AppContainerDeps {
   metrics: Metrics;
   clock: Clock;
   githubClient?: GithubClient;
-  emailClient: EmailClient;
+  emailClient?: EmailClient;
   idGenerator: IdGenerator;
   tokenGenerator: TokenGenerator;
 }
@@ -58,11 +58,21 @@ export class AppContainer {
           },
     );
 
-    this.notification = NotificationModule.create({
-      emailClient: deps.emailClient,
-      appUrl: config.appUrl,
-      metrics: deps.metrics,
-    });
+    this.notification = NotificationModule.create(
+      deps.emailClient
+        ? {
+            kind: 'client',
+            emailClient: deps.emailClient,
+            appUrl: config.appUrl,
+            metrics: deps.metrics,
+          }
+        : {
+            kind: 'config',
+            config: config.email,
+            appUrl: config.appUrl,
+            metrics: deps.metrics,
+          },
+    );
 
     this.subscription = SubscriptionModule.create({
       db: deps.db,
