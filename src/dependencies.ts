@@ -7,11 +7,13 @@ import { ScannerModule } from './modules/scanner/scanner.module.js';
 import type { Metrics } from './platform/metrics/metrics.interface.js';
 import type { GithubClient } from './modules/github/api/github-client.interface.js';
 import type { EmailClient } from './modules/notification/application/ports/email-client.js';
-import type { Clock } from './shared-kernel/clock.js';
 import type { Logger } from './shared-kernel/logger.js';
 import type { Redis } from 'ioredis';
-import type { TokenGenerator } from './modules/subscription/application/ports/token-generator.js';
-import type { IdGenerator } from './shared-kernel/id-generator.js';
+import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
+import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
+import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
+import type { Clock } from './shared-kernel/clock.js';
+import { PrometheusMetrics } from './platform/metrics/prometheus-metrics.js';
 
 export interface AppDependencies {
   redis: Redis;
@@ -27,12 +29,10 @@ export interface AppContainerDeps {
   db: Database;
   logger: Logger;
   redis: Redis;
-  metrics: Metrics;
-  clock: Clock;
+  metrics?: Metrics;
   githubClient?: GithubClient;
   emailClient?: EmailClient;
-  idGenerator: IdGenerator;
-  tokenGenerator: TokenGenerator;
+  clock?: Clock;
 }
 
 export class AppContainer {
@@ -40,11 +40,18 @@ export class AppContainer {
   private readonly notification: NotificationModule;
   private readonly subscription: SubscriptionModule;
   private readonly scanner: ScannerModule;
+  private readonly metrics: Metrics;
 
   constructor(
     config: AppConfig,
     private readonly deps: AppContainerDeps,
   ) {
+    const clock = deps.clock ?? new SystemClock();
+    const idGenerator = new CryptoIdGenerator();
+    const tokenGenerator = new CryptoTokenGenerator();
+
+    this.metrics = deps.metrics ?? new PrometheusMetrics();
+
     this.github = GithubModule.create(
       deps.githubClient
         ? { kind: 'client', githubClient: deps.githubClient }
@@ -52,7 +59,7 @@ export class AppContainer {
             kind: 'config',
             config: config.github,
             redis: deps.redis,
-            metrics: deps.metrics,
+            metrics: this.metrics,
           },
     );
 
@@ -62,33 +69,33 @@ export class AppContainer {
             kind: 'client',
             emailClient: deps.emailClient,
             appUrl: config.appUrl,
-            metrics: deps.metrics,
+            metrics: this.metrics,
           }
         : {
             kind: 'config',
             config: config.email,
             appUrl: config.appUrl,
-            metrics: deps.metrics,
+            metrics: this.metrics,
           },
     );
 
     this.subscription = SubscriptionModule.create({
+      clock,
+      idGenerator,
+      tokenGenerator,
       db: deps.db,
       githubClient: this.github.githubClient,
       notificationService: this.notification.notificationService,
       logger: deps.logger,
-      clock: deps.clock,
-      idGenerator: deps.idGenerator,
-      tokenGenerator: deps.tokenGenerator,
     });
 
     this.scanner = ScannerModule.create({
+      clock,
       subscriptionQueries: this.subscription.subscriptionQueries,
       githubClient: this.github.githubClient,
       notificationService: this.notification.notificationService,
       logger: deps.logger,
-      clock: deps.clock,
-      metrics: deps.metrics,
+      metrics: this.metrics,
       cronExpression: config.scanner.cronExpression,
     });
   }
@@ -96,7 +103,7 @@ export class AppContainer {
   build(): AppDependencies {
     return {
       redis: this.deps.redis,
-      metrics: this.deps.metrics,
+      metrics: this.metrics,
       logger: this.deps.logger,
       subscription: this.subscription,
       notification: this.notification,

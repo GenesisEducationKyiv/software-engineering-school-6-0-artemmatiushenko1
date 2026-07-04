@@ -10,17 +10,11 @@ import {
   runDatabaseMigrations,
 } from './platform/db/migrate.js';
 import { FastifyLogger } from './platform/logger/fastify-logger.js';
-import { PrometheusMetrics } from './platform/metrics/prometheus-metrics.js';
-import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
-import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
-import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
 
 const appConfig = createConfig();
 
 const fastify = Fastify(createFastifyServerOptions(appConfig));
 const logger = new FastifyLogger(fastify.log);
-const metrics = new PrometheusMetrics();
-const clock = new SystemClock();
 const redis = new Redis(appConfig.redisUrl, {
   maxRetriesPerRequest: null,
 });
@@ -29,17 +23,10 @@ redis.on('error', (err) => {
   logger.error('Redis connection error', err);
 });
 
-const idGenerator = new CryptoIdGenerator();
-const tokenGenerator = new CryptoTokenGenerator();
-
 const container = new AppContainer(appConfig, {
   db,
   logger,
   redis,
-  metrics,
-  clock,
-  idGenerator,
-  tokenGenerator,
 });
 const deps = container.build();
 
