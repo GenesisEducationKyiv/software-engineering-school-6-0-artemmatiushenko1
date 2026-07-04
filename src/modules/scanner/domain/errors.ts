@@ -15,12 +15,3 @@ export class EmptyMonitoredRepoError extends Error {
     this.name = 'EmptyMonitoredRepoError';
   }
 }
-
-export class RepoWatcherNotFoundError extends Error {
-  readonly code = 'REPO_WATCHER_NOT_FOUND' as const;
-
-  constructor(subscriptionId: string, repo: string) {
-    super(`RepoWatcher not found: ${subscriptionId} in ${repo}`);
-    this.name = 'RepoWatcherNotFoundError';
-  }
-}
