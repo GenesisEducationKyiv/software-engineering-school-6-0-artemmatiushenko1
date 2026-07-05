@@ -15,11 +15,9 @@ import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/id
 import { IdempotentSubscriber } from '../../../../platform/idempotency-guard/idempotent.subscriber.js';
 import type { GithubClient } from '../../../github/api/github-client.interface.js';
 
-export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<
-  Delivered<SubscriptionConfirmedEvent>
-> {
-  readonly eventType = SubscriptionEventType.Confirmed;
+export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<SubscriptionConfirmedEvent> {
   protected readonly name = 'scanner:subscription-confirmed';
+  readonly eventType = SubscriptionEventType.Confirmed;
 
   constructor(
     idempotencyGuard: IdempotencyGuard,

@@ -1,8 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mock } from 'vitest-mock-extended';
-import { SubscriptionEventType } from '../../../subscription/api/events.js';
-import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
+import {
+  SubscriptionEventType,
+  type SubscriptionDeactivatedEvent,
+} from '../../../subscription/api/events.js';
+import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import {
   MonitoredRepo,
   ReleaseTag,
@@ -12,7 +16,7 @@ import {
 import { SubscriptionDeactivatedSubscriber } from './subscription-deactivated.subscriber.js';
 
 describe('Scanner SubscriptionDeactivatedSubscriber', () => {
-  const event = {
+  const event: Delivered<SubscriptionDeactivatedEvent> = {
     type: SubscriptionEventType.Deactivated,
     aggregateId: 'sub-1',
     occurredAt: '2024-01-01T00:00:00.000Z',
@@ -20,7 +24,12 @@ describe('Scanner SubscriptionDeactivatedSubscriber', () => {
     payload: {
       repo: 'owner/repo',
     },
-  } as const;
+  };
+
+  const monitoredRepoRepository = mock<MonitoredRepoRepository>();
+  const transactionManager = mock<TransactionManager>();
+
+  let subscriber: SubscriptionDeactivatedSubscriber;
 
   const createRepoWithWatchers = () => {
     const monitoredRepo = MonitoredRepo.create(
@@ -41,20 +50,22 @@ describe('Scanner SubscriptionDeactivatedSubscriber', () => {
     return monitoredRepo;
   };
 
-  it('removes the watcher and saves the monitored repo', async () => {
-    const monitoredRepoRepository = mock<MonitoredRepoRepository>();
-    monitoredRepoRepository.findByRepo.mockResolvedValue(
-      createRepoWithWatchers(),
-    );
+  beforeEach(() => {
+    vi.resetAllMocks();
 
-    const transactionManager = mock<TransactionManager>();
     transactionManager.run.mockImplementation(async (work) =>
       work({} as never),
     );
 
-    const subscriber = new SubscriptionDeactivatedSubscriber(
+    subscriber = new SubscriptionDeactivatedSubscriber(
       monitoredRepoRepository,
       transactionManager,
+    );
+  });
+
+  it('removes the watcher and saves the monitored repo', async () => {
+    monitoredRepoRepository.findByRepo.mockResolvedValue(
+      createRepoWithWatchers(),
     );
 
     await subscriber.handle(event);
@@ -77,19 +88,7 @@ describe('Scanner SubscriptionDeactivatedSubscriber', () => {
         lastNotifiedTag: null,
       }),
     );
-
-    const monitoredRepoRepository = mock<MonitoredRepoRepository>();
     monitoredRepoRepository.findByRepo.mockResolvedValue(monitoredRepo);
-
-    const transactionManager = mock<TransactionManager>();
-    transactionManager.run.mockImplementation(async (work) =>
-      work({} as never),
-    );
-
-    const subscriber = new SubscriptionDeactivatedSubscriber(
-      monitoredRepoRepository,
-      transactionManager,
-    );
 
     await subscriber.handle(event);
 
@@ -104,18 +103,7 @@ describe('Scanner SubscriptionDeactivatedSubscriber', () => {
   });
 
   it('does nothing when the repo is not monitored', async () => {
-    const monitoredRepoRepository = mock<MonitoredRepoRepository>();
     monitoredRepoRepository.findByRepo.mockResolvedValue(null);
-
-    const transactionManager = mock<TransactionManager>();
-    transactionManager.run.mockImplementation(async (work) =>
-      work({} as never),
-    );
-
-    const subscriber = new SubscriptionDeactivatedSubscriber(
-      monitoredRepoRepository,
-      transactionManager,
-    );
 
     await subscriber.handle(event);
 
@@ -133,19 +121,7 @@ describe('Scanner SubscriptionDeactivatedSubscriber', () => {
         lastNotifiedTag: null,
       }),
     );
-
-    const monitoredRepoRepository = mock<MonitoredRepoRepository>();
     monitoredRepoRepository.findByRepo.mockResolvedValue(monitoredRepo);
-
-    const transactionManager = mock<TransactionManager>();
-    transactionManager.run.mockImplementation(async (work) =>
-      work({} as never),
-    );
-
-    const subscriber = new SubscriptionDeactivatedSubscriber(
-      monitoredRepoRepository,
-      transactionManager,
-    );
 
     await subscriber.handle(event);
 

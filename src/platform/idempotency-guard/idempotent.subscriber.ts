@@ -6,8 +6,8 @@ import { EventSubscriber } from '../event-bus/event-subscriber.js';
 import type { IdempotencyGuard } from './idempotency-guard.js';
 
 export abstract class IdempotentSubscriber<
-  T extends Delivered<IntegrationEvent>,
-> extends EventSubscriber<T> {
+  T extends IntegrationEvent,
+> extends EventSubscriber<Delivered<T>> {
   protected abstract readonly name: string;
 
   constructor(protected readonly idempotencyGuard: IdempotencyGuard) {
@@ -19,7 +19,7 @@ export abstract class IdempotentSubscriber<
   }
 
   protected async claimAndRun(
-    event: T,
+    event: Delivered<T>,
     work: () => Promise<void>,
   ): Promise<void> {
     const key = this.deliveryKey(event.id);

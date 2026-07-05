@@ -12,9 +12,8 @@ import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
 
-export class NewReleaseDetectedSubscriber extends IdempotentSubscriber<
-  Delivered<NewReleaseDetectedEvent>
-> {
+export class NewReleaseDetectedSubscriber extends IdempotentSubscriber<NewReleaseDetectedEvent> {
+  protected readonly name = 'notification:new-release-detected';
   readonly eventType = ScannerEventType.NewReleaseDetected;
 
   constructor(
@@ -27,13 +26,11 @@ export class NewReleaseDetectedSubscriber extends IdempotentSubscriber<
     super(idempotencyGuard);
   }
 
-  protected readonly name = 'notification:new-release-detected';
-
   async handle(event: Delivered<NewReleaseDetectedEvent>): Promise<void> {
-    await this.claimAndRun(event, () => this.deliver(event));
+    await this.claimAndRun(event, () => this.sendNotification(event));
   }
 
-  private async deliver(
+  private async sendNotification(
     event: Delivered<NewReleaseDetectedEvent>,
   ): Promise<void> {
     const recipient = await this.recipientRepository.findBySubscriptionId(
@@ -60,6 +57,6 @@ export class NewReleaseDetectedSubscriber extends IdempotentSubscriber<
       ...template,
     });
 
-    this.metrics?.incrementNotificationsSent();
+    this.metrics.incrementNotificationsSent();
   }
 }

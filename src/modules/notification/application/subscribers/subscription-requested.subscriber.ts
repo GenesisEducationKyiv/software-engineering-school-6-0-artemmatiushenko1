@@ -13,6 +13,7 @@ import type { NotificationMetrics } from '../ports/notification-metrics.js';
 export class SubscriptionRequestedSubscriber extends IdempotentSubscriber<
   Delivered<SubscriptionRequestedEvent>
 > {
+  protected readonly name = 'notification:subscription-requested';
   readonly eventType = SubscriptionEventType.Requested;
 
   constructor(
@@ -23,8 +24,6 @@ export class SubscriptionRequestedSubscriber extends IdempotentSubscriber<
   ) {
     super(idempotencyGuard);
   }
-
-  protected readonly name = 'notification:subscription-requested';
 
   async handle(event: Delivered<SubscriptionRequestedEvent>): Promise<void> {
     await this.claimAndRun(event, () => this.deliver(event));

@@ -11,6 +11,7 @@ import type { TransactionManager } from '../../../../shared-kernel/transaction.j
 export class SubscriptionDeactivatedSubscriber extends EventSubscriber<
   Delivered<SubscriptionDeactivatedEvent>
 > {
+  protected readonly name = 'scanner:subscription-deactivated';
   readonly eventType = SubscriptionEventType.Deactivated;
 
   constructor(

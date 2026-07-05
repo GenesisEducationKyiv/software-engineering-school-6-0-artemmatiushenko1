@@ -16,6 +16,8 @@ export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<
   Delivered<SubscriptionConfirmedEvent>
 > {
   readonly eventType = SubscriptionEventType.Confirmed;
+  protected readonly name = 'notification:subscription-confirmed';
+
   constructor(
     idempotencyGuard: IdempotencyGuard,
     private readonly recipientRepository: RecipientRepository,
@@ -25,8 +27,6 @@ export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<
   ) {
     super(idempotencyGuard);
   }
-
-  protected readonly name = 'notification:subscription-confirmed';
 
   async handle(event: Delivered<SubscriptionConfirmedEvent>): Promise<void> {
     await this.claimAndRun(event, () => this.deliver(event));

@@ -10,9 +10,8 @@ import { subscriptionConfirmationTemplate } from '../templates.js';
 import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 
-export class SubscriptionConfirmationRenewedSubscriber extends IdempotentSubscriber<
-  Delivered<SubscriptionConfirmationRenewedEvent>
-> {
+export class SubscriptionConfirmationRenewedSubscriber extends IdempotentSubscriber<SubscriptionConfirmationRenewedEvent> {
+  protected readonly name = 'notification:subscription-confirmation-renewed';
   readonly eventType = SubscriptionEventType.ConfirmationRenewed;
 
   constructor(
@@ -23,8 +22,6 @@ export class SubscriptionConfirmationRenewedSubscriber extends IdempotentSubscri
   ) {
     super(idempotencyGuard);
   }
-
-  protected readonly name = 'notification:subscription-confirmation-renewed';
 
   async handle(
     event: Delivered<SubscriptionConfirmationRenewedEvent>,

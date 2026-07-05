@@ -9,6 +9,7 @@ import type { RecipientRepository } from '../ports/recipient.repository.js';
 export class SubscriptionDeactivatedSubscriber extends EventSubscriber<
   Delivered<SubscriptionDeactivatedEvent>
 > {
+  protected readonly name = 'notification:subscription-deactivated';
   readonly eventType = SubscriptionEventType.Deactivated;
 
   constructor(private readonly recipientRepository: RecipientRepository) {

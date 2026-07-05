@@ -1,10 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mock } from 'vitest-mock-extended';
-import { SubscriptionEventType } from '../../../subscription/api/events.js';
-import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
-import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
+import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
 import type { GithubClient } from '../../../github/api/github-client.interface.js';
+import {
+  SubscriptionEventType,
+  type SubscriptionConfirmedEvent,
+} from '../../../subscription/api/events.js';
+import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import {
   MonitoredRepo,
   ReleaseTag,
@@ -14,7 +18,7 @@ import {
 import { SubscriptionConfirmedSubscriber } from './subscription-confirmed.subscriber.js';
 
 describe('Scanner SubscriptionConfirmedSubscriber', () => {
-  const event = {
+  const event: Delivered<SubscriptionConfirmedEvent> = {
     type: SubscriptionEventType.Confirmed,
     aggregateId: 'sub-1',
     occurredAt: '2024-01-01T00:00:00.000Z',
@@ -24,34 +28,38 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
       repo: 'owner/repo',
       unsubscribeToken: 'unsub-token',
     },
-  } as const;
+  };
 
-  it('creates a monitored repo and saves a watcher with baseline tag', async () => {
-    const idempotencyGuard = mock<IdempotencyGuard>();
+  const idempotencyGuard = mock<IdempotencyGuard>();
+  const monitoredRepoRepository = mock<MonitoredRepoRepository>();
+  const transactionManager = mock<TransactionManager>();
+  const githubClient = mock<GithubClient>();
+
+  let subscriber: SubscriptionConfirmedSubscriber;
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+
     idempotencyGuard.isProcessed.mockResolvedValue(false);
-
-    const monitoredRepoRepository = mock<MonitoredRepoRepository>();
     monitoredRepoRepository.findByRepo.mockResolvedValue(null);
-
-    const transactionManager = mock<TransactionManager>();
     transactionManager.run.mockImplementation(async (work) =>
       work({} as never),
     );
-
-    const githubClient = mock<GithubClient>();
     githubClient.getLatestRelease.mockResolvedValue({
       tag: 'v1.0.0',
       name: 'v1.0.0',
       publishedAt: null,
     });
 
-    const subscriber = new SubscriptionConfirmedSubscriber(
+    subscriber = new SubscriptionConfirmedSubscriber(
       idempotencyGuard,
       monitoredRepoRepository,
       transactionManager,
       githubClient,
     );
+  });
 
+  it('creates a monitored repo and saves a watcher with baseline tag', async () => {
     await subscriber.handle(event);
 
     expect(idempotencyGuard.isProcessed).toHaveBeenCalledWith(
@@ -81,9 +89,6 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
   });
 
   it('adds a watcher to an existing monitored repo', async () => {
-    const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.isProcessed.mockResolvedValue(false);
-
     const existing = MonitoredRepo.create(RepoPath.fromString('owner/repo'));
     existing.addWatcher(
       RepoWatcher.create({
@@ -91,28 +96,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
         lastNotifiedTag: ReleaseTag.fromString('v0.9.0'),
       }),
     );
-
-    const monitoredRepoRepository = mock<MonitoredRepoRepository>();
     monitoredRepoRepository.findByRepo.mockResolvedValue(existing);
-
-    const transactionManager = mock<TransactionManager>();
-    transactionManager.run.mockImplementation(async (work) =>
-      work({} as never),
-    );
-
-    const githubClient = mock<GithubClient>();
-    githubClient.getLatestRelease.mockResolvedValue({
-      tag: 'v1.0.0',
-      name: 'v1.0.0',
-      publishedAt: null,
-    });
-
-    const subscriber = new SubscriptionConfirmedSubscriber(
-      idempotencyGuard,
-      monitoredRepoRepository,
-      transactionManager,
-      githubClient,
-    );
 
     await subscriber.handle(event);
 
@@ -134,26 +118,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
   });
 
   it('stores null lastNotifiedTag when the repository has no releases', async () => {
-    const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.isProcessed.mockResolvedValue(false);
-
-    const monitoredRepoRepository = mock<MonitoredRepoRepository>();
-    monitoredRepoRepository.findByRepo.mockResolvedValue(null);
-
-    const transactionManager = mock<TransactionManager>();
-    transactionManager.run.mockImplementation(async (work) =>
-      work({} as never),
-    );
-
-    const githubClient = mock<GithubClient>();
     githubClient.getLatestRelease.mockResolvedValue(null);
-
-    const subscriber = new SubscriptionConfirmedSubscriber(
-      idempotencyGuard,
-      monitoredRepoRepository,
-      transactionManager,
-      githubClient,
-    );
 
     await subscriber.handle(event);
 
@@ -170,19 +135,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
   });
 
   it('does not re-fetch GitHub or overwrite watcher on duplicate outbox delivery', async () => {
-    const idempotencyGuard = mock<IdempotencyGuard>();
     idempotencyGuard.isProcessed.mockResolvedValue(true);
-
-    const monitoredRepoRepository = mock<MonitoredRepoRepository>();
-    const transactionManager = mock<TransactionManager>();
-    const githubClient = mock<GithubClient>();
-
-    const subscriber = new SubscriptionConfirmedSubscriber(
-      idempotencyGuard,
-      monitoredRepoRepository,
-      transactionManager,
-      githubClient,
-    );
 
     await subscriber.handle(event);
 
@@ -192,28 +145,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
   });
 
   it('does not mark processed when save fails', async () => {
-    const idempotencyGuard = mock<IdempotencyGuard>();
-    idempotencyGuard.isProcessed.mockResolvedValue(false);
-
-    const monitoredRepoRepository = mock<MonitoredRepoRepository>();
-    monitoredRepoRepository.findByRepo.mockResolvedValue(null);
-
-    const transactionManager = mock<TransactionManager>();
     transactionManager.run.mockRejectedValue(new Error('save failed'));
-
-    const githubClient = mock<GithubClient>();
-    githubClient.getLatestRelease.mockResolvedValue({
-      tag: 'v1.0.0',
-      name: 'v1.0.0',
-      publishedAt: null,
-    });
-
-    const subscriber = new SubscriptionConfirmedSubscriber(
-      idempotencyGuard,
-      monitoredRepoRepository,
-      transactionManager,
-      githubClient,
-    );
 
     await expect(subscriber.handle(event)).rejects.toThrow('save failed');
 

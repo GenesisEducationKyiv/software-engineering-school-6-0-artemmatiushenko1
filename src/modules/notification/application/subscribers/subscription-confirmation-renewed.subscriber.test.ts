@@ -1,35 +1,49 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mock } from 'vitest-mock-extended';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
 import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import type { EmailClient } from '../ports/email-client.js';
-import { SubscriptionEventType } from '../../../subscription/api/events.js';
+import {
+  SubscriptionEventType,
+  type SubscriptionConfirmationRenewedEvent,
+} from '../../../subscription/api/events.js';
 import { SubscriptionConfirmationRenewedSubscriber } from './subscription-confirmation-renewed.subscriber.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 
 describe('SubscriptionConfirmationRenewedSubscriber', () => {
-  it('sends a subscription confirmation email', async () => {
-    const idempotencyGuard = mock<IdempotencyGuard>();
+  const event: Delivered<SubscriptionConfirmationRenewedEvent> = {
+    type: SubscriptionEventType.ConfirmationRenewed,
+    aggregateId: 'sub-1',
+    occurredAt: '2024-01-01T00:00:00.000Z',
+    id: 'msg-1',
+    payload: {
+      email: 'test@example.com',
+      repo: 'owner/repo',
+      confirmationToken: 'token-123',
+    },
+  };
+
+  const idempotencyGuard = mock<IdempotencyGuard>();
+  const emailClient = mock<EmailClient>();
+  const metrics = mock<NotificationMetrics>();
+
+  let subscriber: SubscriptionConfirmationRenewedSubscriber;
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+
     idempotencyGuard.isProcessed.mockResolvedValue(false);
-    const emailClient = mock<EmailClient>();
-    const metrics = mock<NotificationMetrics>();
-    const subscriber = new SubscriptionConfirmationRenewedSubscriber(
+
+    subscriber = new SubscriptionConfirmationRenewedSubscriber(
       idempotencyGuard,
       emailClient,
       'http://localhost:3000',
       metrics,
     );
+  });
 
-    await subscriber.handle({
-      type: SubscriptionEventType.ConfirmationRenewed,
-      aggregateId: 'sub-1',
-      occurredAt: '2024-01-01T00:00:00.000Z',
-      id: 'msg-1',
-      payload: {
-        email: 'test@example.com',
-        repo: 'owner/repo',
-        confirmationToken: 'token-123',
-      },
-    });
+  it('sends a subscription confirmation email', async () => {
+    await subscriber.handle(event);
 
     expect(emailClient.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
