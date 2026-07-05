@@ -12,9 +12,7 @@ import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
 
-export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<
-  Delivered<SubscriptionConfirmedEvent>
-> {
+export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<SubscriptionConfirmedEvent> {
   readonly eventType = SubscriptionEventType.Confirmed;
   protected readonly name = 'notification:subscription-confirmed';
 

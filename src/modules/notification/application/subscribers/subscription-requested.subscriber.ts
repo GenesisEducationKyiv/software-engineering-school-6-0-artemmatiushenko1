@@ -10,9 +10,7 @@ import { subscriptionConfirmationTemplate } from '../templates.js';
 import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 
-export class SubscriptionRequestedSubscriber extends IdempotentSubscriber<
-  Delivered<SubscriptionRequestedEvent>
-> {
+export class SubscriptionRequestedSubscriber extends IdempotentSubscriber<SubscriptionRequestedEvent> {
   protected readonly name = 'notification:subscription-requested';
   readonly eventType = SubscriptionEventType.Requested;
 
