@@ -6,6 +6,8 @@ export const TEST_APP_CONFIG: AppConfig = {
   redisUrl: '',
   port: 3000,
   host: 'localhost',
+  grpcPort: 50051,
+  grpcHost: 'localhost',
   appUrl: 'http://localhost:3000',
   apiPrefix: '/api',
   outboxRelayCron: '',

@@ -21,6 +21,8 @@ const AppConfigSchema = z.object({
   apiPrefix: z.string().default('/api'),
   port: z.coerce.number().default(3000),
   host: z.string().default('0.0.0.0'),
+  grpcPort: z.coerce.number().default(50051),
+  grpcHost: z.string().default('0.0.0.0'),
   outboxRelayCron: z.string().default('*/3 * * * * *'), // Default to every 3 seconds
   outboxMaxRetries: z.coerce.number().default(10),
   email: EmailConfigSchema,
@@ -39,6 +41,8 @@ export const createConfig = () =>
     apiPrefix: process.env.API_PREFIX,
     port: process.env.PORT,
     host: process.env.HOST,
+    grpcPort: process.env.GRPC_PORT,
+    grpcHost: process.env.GRPC_HOST,
     outboxRelayCron: process.env.OUTBOX_RELAY_CRON,
     outboxMaxRetries: process.env.OUTBOX_MAX_RETRIES,
     github: getGithubConfigFromEnv(),

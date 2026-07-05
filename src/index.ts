@@ -7,6 +7,11 @@ import { db } from './platform/db/client.js';
 import { createFastifyServerOptions } from './platform/fastify/create-fastify-server-options.js';
 import { runAllDatabaseMigrations } from './platform/db/migrate.js';
 import { FastifyLogger } from './platform/logger/fastify-logger.js';
+import {
+  bindGrpcServer,
+  createGrpcServer,
+} from './platform/grpc/create-grpc-server.js';
+import { registerSubscriptionGrpc } from './modules/subscription/infrastructure/grpc/register-subscription-grpc.js';
 
 const appConfig = createConfig();
 
@@ -32,7 +37,17 @@ deps.logger.info('Running database migrations...');
 await runAllDatabaseMigrations(db);
 deps.logger.info('Migrations completed successfully.');
 
-const app = await App.create(appConfig, deps, fastify);
+const grpcServer = createGrpcServer();
+registerSubscriptionGrpc(grpcServer, deps.subscription);
+
+const grpcAddress = `${appConfig.grpcHost}:${appConfig.grpcPort}`;
+const boundGrpcPort = await bindGrpcServer(grpcServer, grpcAddress);
+deps.logger.info('gRPC server listening', {
+  host: appConfig.grpcHost,
+  port: boundGrpcPort,
+});
+
+const app = await App.create(appConfig, deps, fastify, grpcServer);
 
 await app.start();
 
