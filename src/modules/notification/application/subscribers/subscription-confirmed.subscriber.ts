@@ -27,19 +27,21 @@ export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<Subscr
   }
 
   async handle(event: Delivered<SubscriptionConfirmedEvent>): Promise<void> {
-    await this.claimAndRun(event, () => this.deliver(event));
+    await this.claimAndRun(event, async () => {
+      const recipient = Recipient.create(
+        event.aggregateId,
+        Email.fromString(event.payload.email),
+        event.payload.unsubscribeToken,
+      );
+      await this.recipientRepository.save(recipient);
+
+      await this.sendNotification(event);
+    });
   }
 
-  private async deliver(
+  private async sendNotification(
     event: Delivered<SubscriptionConfirmedEvent>,
   ): Promise<void> {
-    const recipient = Recipient.create(
-      event.aggregateId,
-      Email.fromString(event.payload.email),
-      event.payload.unsubscribeToken,
-    );
-    await this.recipientRepository.save(recipient);
-
     const unsubscribeUrl = buildUnsubscribeUrl(
       this.appUrl,
       event.payload.unsubscribeToken,
