@@ -30,6 +30,8 @@
     "*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
     "@fastify/static": "^9.1.0",
     "@fastify/swagger": "^9.7.0",
     "@fastify/swagger-ui": "^5.2.5",
