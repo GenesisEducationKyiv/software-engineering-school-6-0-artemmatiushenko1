@@ -6,6 +6,33 @@ export const clearEmails = async (request: APIRequestContext) => {
   await request.delete(`${MAILPIT_URL}/api/v1/messages`);
 };
 
+export const waitForEmailWithSubject = async (
+  request: APIRequestContext,
+  subjectIncludes: string,
+  maxAttempts = 30,
+) => {
+  for (let i = 0; i < maxAttempts; i++) {
+    const response = await request.get(`${MAILPIT_URL}/api/v1/messages`);
+    const data = (await response.json()) as {
+      messages?: Array<{ Subject: string }>;
+    };
+
+    const found = data.messages?.some((message) =>
+      message.Subject.includes(subjectIncludes),
+    );
+
+    if (found) {
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  throw new Error(
+    `Email with subject containing "${subjectIncludes}" not found after retries`,
+  );
+};
+
 export const getLinkFromEmail = async (page: Page, linkText: string) => {
   const latestEmailUrl = `${MAILPIT_URL}/view/latest.html`;
 

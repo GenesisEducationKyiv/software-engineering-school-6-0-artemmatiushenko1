@@ -1,7 +1,7 @@
 import { EXISTING_REPO, NON_EXISTING_REPO } from './mocks/github/constants.js';
 import { test, expect } from '@playwright/test';
-import { db } from '../../src/platform/db/client.js';
-import * as schema from '../../src/platform/db/schema.js';
+import { resetTestData } from './utils/db.js';
+import { resetGithubMockRelease } from './utils/github-mock.js';
 import { clearEmails, getLinkFromEmail } from './utils/email.js';
 
 const TEST_EMAIL = 'test-e2e@example.com';
@@ -9,7 +9,8 @@ const TEST_EMAIL = 'test-e2e@example.com';
 const EXISTING_REPO_FULL_NAME = `${EXISTING_REPO.owner}/${EXISTING_REPO.name}`;
 
 test.afterEach(async ({ request }) => {
-  await db.delete(schema.subscriptions);
+  await resetTestData();
+  await resetGithubMockRelease(request);
   await clearEmails(request);
 });
 

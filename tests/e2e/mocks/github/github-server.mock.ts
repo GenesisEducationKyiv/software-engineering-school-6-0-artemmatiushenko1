@@ -1,7 +1,20 @@
 import fastify from 'fastify';
-import { EXISTING_REPO, NON_EXISTING_REPO } from './constants.js';
+import {
+  EXISTING_REPO,
+  INITIAL_RELEASE,
+  NON_EXISTING_REPO,
+  type ReleaseFixture,
+} from './constants.js';
 
 const server = fastify({ logger: true });
+
+let latestRelease: ReleaseFixture = { ...INITIAL_RELEASE };
+
+const toGithubRelease = (release: ReleaseFixture) => ({
+  tag_name: release.tag,
+  name: release.name,
+  published_at: release.publishedAt,
+});
 
 server.get(
   `/repos/${EXISTING_REPO.owner}/${EXISTING_REPO.name}`,
@@ -20,11 +33,25 @@ server.get(
 server.get(
   `/repos/${EXISTING_REPO.owner}/${EXISTING_REPO.name}/releases/latest`,
   (_, reply) => {
-    return reply.status(200).send({
-      tag_name: 'v18.2.0',
-      name: 'v18.2.0',
-      published_at: '2022-06-14T17:15:21Z',
-    });
+    return reply.status(200).send(toGithubRelease(latestRelease));
+  },
+);
+
+server.post('/test/reset-release', (_, reply) => {
+  latestRelease = { ...INITIAL_RELEASE };
+  return reply.send({ ok: true, release: latestRelease });
+});
+
+server.post<{ Body: { tag: string; name?: string; publishedAt?: string } }>(
+  '/test/publish-release',
+  (request, reply) => {
+    const { tag, name, publishedAt } = request.body;
+    latestRelease = {
+      tag,
+      name: name ?? tag,
+      publishedAt: publishedAt ?? new Date().toISOString(),
+    };
+    return reply.send({ ok: true, release: latestRelease });
   },
 );
 

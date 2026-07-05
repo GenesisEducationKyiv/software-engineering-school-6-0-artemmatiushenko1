@@ -75,7 +75,9 @@ services:
       HOST: 0.0.0.0
       APP_URL: http://api:3000
       API_PREFIX: /api
-      SCANNER_CRON: '*/10 * * * *'
+      SCANNER_CRON: '*/2 * * * * *'
+      OUTBOX_RELAY_CRON: '*/1 * * * * *'
+      GITHUB_CACHE_TTL: '1'
       EMAIL_TYPE: smtp
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
@@ -114,7 +116,6 @@ services:
       HOST: 0.0.0.0
       APP_URL: http://api:3000
       API_PREFIX: /api
-      SCANNER_CRON: '*/10 * * * *'
       EMAIL_TYPE: smtp
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
