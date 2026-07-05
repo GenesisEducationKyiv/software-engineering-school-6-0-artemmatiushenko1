@@ -26,10 +26,10 @@ export class SubscriptionConfirmationRenewedSubscriber extends IdempotentSubscri
   async handle(
     event: Delivered<SubscriptionConfirmationRenewedEvent>,
   ): Promise<void> {
-    await this.claimAndRun(event, () => this.deliver(event));
+    await this.claimAndRun(event, () => this.sendNotification(event));
   }
 
-  private async deliver(
+  private async sendNotification(
     event: Delivered<SubscriptionConfirmationRenewedEvent>,
   ): Promise<void> {
     const confirmUrl = buildConfirmUrl(

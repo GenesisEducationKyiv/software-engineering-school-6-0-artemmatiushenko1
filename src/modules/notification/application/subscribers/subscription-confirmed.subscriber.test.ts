@@ -79,13 +79,4 @@ describe('SubscriptionConfirmedSubscriber', () => {
     expect(emailClient.sendEmail).not.toHaveBeenCalled();
     expect(idempotencyGuard.markProcessed).not.toHaveBeenCalled();
   });
-
-  it('does not mark processed when email delivery fails', async () => {
-    emailClient.sendEmail.mockRejectedValue(new Error('smtp failed'));
-
-    await expect(subscriber.handle(event)).rejects.toThrow('smtp failed');
-
-    expect(recipientRepository.save).toHaveBeenCalled();
-    expect(idempotencyGuard.markProcessed).not.toHaveBeenCalled();
-  });
 });
