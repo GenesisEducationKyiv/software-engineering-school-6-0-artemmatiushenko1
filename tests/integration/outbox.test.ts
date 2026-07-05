@@ -72,4 +72,40 @@ describe('DrizzleOutboxRepository', () => {
     const afterMark = await fetchPending(10);
     expect(afterMark).toHaveLength(0);
   });
+
+  it('excludes dead-lettered messages from fetchPending', async () => {
+    await transactionManager.run(async (tx) => {
+      await outboxRepository.save([sampleEvent], tx);
+    });
+
+    const pending = await fetchPending(10);
+    await outboxRepository.moveToDeadLetter(
+      pending[0]!.id,
+      'permanent failure',
+    );
+
+    const afterDeadLetter = await fetchPending(10);
+    expect(afterDeadLetter).toHaveLength(0);
+    expect(await outboxRepository.countDeadLetters()).toBe(1);
+  });
+
+  it('increments attempt_count on recordFailure', async () => {
+    await transactionManager.run(async (tx) => {
+      await outboxRepository.save([sampleEvent], tx);
+    });
+
+    const pending = await fetchPending(10);
+    const messageId = pending[0]!.id;
+
+    const attempts = await outboxRepository.recordFailure(
+      messageId,
+      'first failure',
+    );
+
+    expect(attempts).toBe(1);
+
+    const afterFailure = await fetchPending(10);
+    expect(afterFailure[0]?.attemptCount).toBe(1);
+    expect(afterFailure[0]?.lastError).toBe('first failure');
+  });
 });

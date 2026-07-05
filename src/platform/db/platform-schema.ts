@@ -1,5 +1,12 @@
-import { isNull } from 'drizzle-orm';
-import { pgSchema, text, timestamp, index, jsonb } from 'drizzle-orm/pg-core';
+import { and, isNull } from 'drizzle-orm';
+import {
+  pgSchema,
+  text,
+  timestamp,
+  index,
+  jsonb,
+  integer,
+} from 'drizzle-orm/pg-core';
 
 export const platformSchema = pgSchema('platform');
 
@@ -25,10 +32,13 @@ export const outboxMessages = platformSchema.table(
       .defaultNow()
       .notNull(),
     processedAt: timestamp('processed_at', { withTimezone: true }),
+    attemptCount: integer('attempt_count').default(0).notNull(),
+    lastError: text('last_error'),
+    deadLetteredAt: timestamp('dead_lettered_at', { withTimezone: true }),
   },
   (table) => [
     index('outbox_messages_pending_idx')
       .on(table.createdAt)
-      .where(isNull(table.processedAt)),
+      .where(and(isNull(table.processedAt), isNull(table.deadLetteredAt))!),
   ],
 );

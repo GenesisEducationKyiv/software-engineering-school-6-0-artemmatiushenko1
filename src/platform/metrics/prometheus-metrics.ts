@@ -1,5 +1,6 @@
 import {
   Counter,
+  Gauge,
   Histogram,
   register,
   collectDefaultMetrics,
@@ -57,6 +58,33 @@ export class PrometheusMetrics implements Metrics {
     buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
   });
 
+  private outboxRelayFailures = new Counter({
+    name: 'outbox_relay_failures_total',
+    help: 'Total number of outbox relay delivery failures',
+    labelNames: ['event_type'],
+  });
+
+  private outboxDeadLetters = new Counter({
+    name: 'outbox_dead_letters_total',
+    help: 'Total number of outbox messages moved to dead letter',
+    labelNames: ['event_type'],
+  });
+
+  private outboxPendingMessages = new Gauge({
+    name: 'outbox_pending_messages',
+    help: 'Current number of pending outbox messages',
+  });
+
+  private outboxDeadLetterMessages = new Gauge({
+    name: 'outbox_dead_letter_messages',
+    help: 'Current number of dead-lettered outbox messages',
+  });
+
+  private outboxOldestPendingAgeSeconds = new Gauge({
+    name: 'outbox_oldest_pending_age_seconds',
+    help: 'Age in seconds of the oldest pending outbox message',
+  });
+
   incrementNotificationsSent(): void {
     this.notificationsSent.inc();
   }
@@ -90,6 +118,26 @@ export class PrometheusMetrics implements Metrics {
     const labels = { method, route, status_code: statusCode };
     this.httpRequests.inc(labels);
     this.httpRequestDuration.observe({ method, route }, durationSeconds);
+  }
+
+  incrementOutboxRelayFailures(eventType: string): void {
+    this.outboxRelayFailures.inc({ event_type: eventType });
+  }
+
+  incrementOutboxDeadLetters(eventType: string): void {
+    this.outboxDeadLetters.inc({ event_type: eventType });
+  }
+
+  setOutboxPendingMessages(count: number): void {
+    this.outboxPendingMessages.set(count);
+  }
+
+  setOutboxDeadLetterMessages(count: number): void {
+    this.outboxDeadLetterMessages.set(count);
+  }
+
+  setOutboxOldestPendingAgeSeconds(ageSeconds: number): void {
+    this.outboxOldestPendingAgeSeconds.set(ageSeconds);
   }
 
   async getMetrics(): Promise<string> {

@@ -9,6 +9,7 @@ export const TEST_APP_CONFIG: AppConfig = {
   appUrl: 'http://localhost:3000',
   apiPrefix: '/api',
   outboxRelayCron: '',
+  outboxMaxRetries: 10,
   scanner: {
     cronExpression: '',
   },

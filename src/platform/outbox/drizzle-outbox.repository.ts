@@ -1,4 +1,4 @@
-import { asc, inArray, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type {
   Database,
   Transaction as DrizzleTransaction,
@@ -31,6 +31,9 @@ export class DrizzleOutboxRepository implements OutboxRepository {
       payload: row.payload,
       createdAt: row.createdAt,
       processedAt: row.processedAt,
+      attemptCount: row.attemptCount,
+      lastError: row.lastError,
+      deadLetteredAt: row.deadLetteredAt,
     };
   }
 
@@ -59,7 +62,12 @@ export class DrizzleOutboxRepository implements OutboxRepository {
     const rows = await this.getDb(tx)
       .select()
       .from(outboxMessages)
-      .where(isNull(outboxMessages.processedAt))
+      .where(
+        and(
+          isNull(outboxMessages.processedAt),
+          isNull(outboxMessages.deadLetteredAt),
+        ),
+      )
       .orderBy(asc(outboxMessages.createdAt))
       .limit(limit)
       .for('update', { skipLocked: true });
@@ -76,5 +84,71 @@ export class DrizzleOutboxRepository implements OutboxRepository {
       .update(outboxMessages)
       .set({ processedAt: new Date() })
       .where(inArray(outboxMessages.id, ids));
+  }
+
+  async recordFailure(id: string, error: string): Promise<number> {
+    const [row] = await this.db
+      .update(outboxMessages)
+      .set({
+        attemptCount: sql`${outboxMessages.attemptCount} + 1`,
+        lastError: error,
+      })
+      .where(eq(outboxMessages.id, id))
+      .returning({ attemptCount: outboxMessages.attemptCount });
+
+    if (!row) {
+      throw new Error(`Outbox message not found: ${id}`);
+    }
+
+    return row.attemptCount;
+  }
+
+  async moveToDeadLetter(id: string, error: string): Promise<void> {
+    await this.db
+      .update(outboxMessages)
+      .set({
+        deadLetteredAt: new Date(),
+        lastError: error,
+      })
+      .where(eq(outboxMessages.id, id));
+  }
+
+  async countPending(): Promise<number> {
+    const [row] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(outboxMessages)
+      .where(
+        and(
+          isNull(outboxMessages.processedAt),
+          isNull(outboxMessages.deadLetteredAt),
+        ),
+      );
+
+    return row?.count ?? 0;
+  }
+
+  async countDeadLetters(): Promise<number> {
+    const [row] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(outboxMessages)
+      .where(sql`${outboxMessages.deadLetteredAt} is not null`);
+
+    return row?.count ?? 0;
+  }
+
+  async oldestPendingAgeSeconds(): Promise<number> {
+    const [row] = await this.db
+      .select({
+        ageSeconds: sql<number>`coalesce(extract(epoch from (now() - min(${outboxMessages.createdAt}))), 0)::int`,
+      })
+      .from(outboxMessages)
+      .where(
+        and(
+          isNull(outboxMessages.processedAt),
+          isNull(outboxMessages.deadLetteredAt),
+        ),
+      );
+
+    return row?.ageSeconds ?? 0;
   }
 }

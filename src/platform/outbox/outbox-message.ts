@@ -11,6 +11,9 @@ export type OutboxMessage = {
   readonly payload: unknown;
   readonly createdAt: Date;
   readonly processedAt: Date | null;
+  readonly attemptCount: number;
+  readonly lastError: string | null;
+  readonly deadLetteredAt: Date | null;
 };
 
 export function toDeliveredEvent(

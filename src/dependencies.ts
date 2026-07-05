@@ -76,6 +76,8 @@ export class AppContainer {
       this.eventBus,
       transactionManager,
       deps.logger,
+      this.metrics,
+      config.outboxMaxRetries,
     );
 
     this.github = GithubModule.create({

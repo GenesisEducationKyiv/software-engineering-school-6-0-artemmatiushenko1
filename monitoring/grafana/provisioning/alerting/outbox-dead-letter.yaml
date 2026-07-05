@@ -1,0 +1,105 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: outbox
+    folder: GitHub Release Notifier
+    interval: 1m
+    rules:
+      - uid: outbox-dead-letter
+        title: Outbox message dead-lettered
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: sum(increase(outbox_dead_letters_total[5m])) > 0 or outbox_dead_letter_messages > 0
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              expression: A
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: Outbox message(s) dead-lettered
+          description: >-
+            One or more outbox messages exceeded max retries. Inspect
+            platform.outbox_messages and replay after fixing the root cause.
+        labels:
+          severity: warning
+
+      - uid: outbox-stuck-pending
+        title: Outbox pending messages stuck
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: outbox_oldest_pending_age_seconds > 900 and outbox_pending_messages > 0
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              expression: A
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: Outbox has stuck pending messages
+          description: >-
+            The oldest pending outbox message is older than 15 minutes. Check
+            relay logs and subscriber errors before messages are dead-lettered.
+        labels:
+          severity: warning
