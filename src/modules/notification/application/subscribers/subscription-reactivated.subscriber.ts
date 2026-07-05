@@ -24,7 +24,7 @@ export class SubscriptionReactivatedSubscriber extends IdempotentSubscriber<Subs
   }
 
   async handle(event: Delivered<SubscriptionReactivatedEvent>): Promise<void> {
-    await this.claimAndRun(event, () => this.sendNotification(event));
+    await this.runIfNotProcessed(event, () => this.sendNotification(event));
   }
 
   private async sendNotification(

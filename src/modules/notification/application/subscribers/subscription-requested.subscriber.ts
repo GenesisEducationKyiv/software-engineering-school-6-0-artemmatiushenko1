@@ -24,7 +24,7 @@ export class SubscriptionRequestedSubscriber extends IdempotentSubscriber<Subscr
   }
 
   async handle(event: Delivered<SubscriptionRequestedEvent>): Promise<void> {
-    await this.claimAndRun(event, () => this.sendNotification(event));
+    await this.runIfNotProcessed(event, () => this.sendNotification(event));
   }
 
   private async sendNotification(

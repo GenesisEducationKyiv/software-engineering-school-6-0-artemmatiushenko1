@@ -29,7 +29,7 @@ export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<Subscr
   }
 
   async handle(event: Delivered<SubscriptionConfirmedEvent>): Promise<void> {
-    await this.claimAndRun(event, () => this.addWatcher(event));
+    await this.runIfNotProcessed(event, () => this.addWatcher(event));
   }
 
   private async addWatcher(

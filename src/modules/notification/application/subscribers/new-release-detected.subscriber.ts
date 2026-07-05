@@ -27,7 +27,7 @@ export class NewReleaseDetectedSubscriber extends IdempotentSubscriber<NewReleas
   }
 
   async handle(event: Delivered<NewReleaseDetectedEvent>): Promise<void> {
-    await this.claimAndRun(event, () => this.sendNotification(event));
+    await this.runIfNotProcessed(event, () => this.sendNotification(event));
   }
 
   private async sendNotification(

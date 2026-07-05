@@ -27,7 +27,7 @@ export class SubscriptionConfirmedSubscriber extends IdempotentSubscriber<Subscr
   }
 
   async handle(event: Delivered<SubscriptionConfirmedEvent>): Promise<void> {
-    await this.claimAndRun(event, async () => {
+    await this.runIfNotProcessed(event, async () => {
       const recipient = Recipient.create(
         event.aggregateId,
         Email.fromString(event.payload.email),

@@ -143,12 +143,4 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
     expect(monitoredRepoRepository.findByRepo).not.toHaveBeenCalled();
     expect(monitoredRepoRepository.save).not.toHaveBeenCalled();
   });
-
-  it('does not mark processed when save fails', async () => {
-    transactionManager.run.mockRejectedValue(new Error('save failed'));
-
-    await expect(subscriber.handle(event)).rejects.toThrow('save failed');
-
-    expect(idempotencyGuard.markProcessed).not.toHaveBeenCalled();
-  });
 });

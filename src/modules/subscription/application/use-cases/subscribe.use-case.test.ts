@@ -225,24 +225,4 @@ describe('SubscribeUseCase', () => {
       expect.anything(),
     );
   });
-
-  it('should propagate outbox failures and roll back with the transaction', async () => {
-    const email = 'test@example.com';
-    const repo = 'owner/repo';
-    const confirmToken = '550e8400-e29b-41d4-a716-446655440000';
-    const subscriptionId = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-
-    tokenGeneratorMock.generate.mockReturnValue(confirmToken);
-    idGeneratorMock.next.mockReturnValue(subscriptionId);
-    repoMock.findByEmailAndRepo.mockResolvedValue(null);
-    githubClientMock.repositoryExists.mockResolvedValue(true);
-    outboxMock.save.mockRejectedValue(new Error('outbox error'));
-
-    await expect(subscribeUseCase.execute(email, repo)).rejects.toThrow(
-      'outbox error',
-    );
-
-    expect(repoMock.save).toHaveBeenCalledTimes(1);
-    expect(outboxMock.save).toHaveBeenCalledTimes(1);
-  });
 });

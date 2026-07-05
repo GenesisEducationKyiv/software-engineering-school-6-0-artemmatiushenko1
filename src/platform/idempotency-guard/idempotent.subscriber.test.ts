@@ -24,7 +24,7 @@ class TestSubscriber extends IdempotentSubscriber<TestEvent> {
   }
 
   async handle(event: TestEvent): Promise<void> {
-    await this.claimAndRun(event, () => this.onWork(event));
+    await this.runIfNotProcessed(event, () => this.onWork(event));
   }
 }
 

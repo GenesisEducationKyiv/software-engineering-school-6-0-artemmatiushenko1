@@ -18,7 +18,7 @@ export abstract class IdempotentSubscriber<
     return `${id}:${this.name}`;
   }
 
-  protected async claimAndRun(
+  protected async runIfNotProcessed(
     event: Delivered<T>,
     work: () => Promise<void>,
   ): Promise<void> {
