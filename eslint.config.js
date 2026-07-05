@@ -43,6 +43,6 @@ export default defineConfig(
     },
   },
   {
-    ignores: ['node_modules/', 'client/', 'coverage/'],
+    ignores: ['node_modules/', 'client/', 'coverage/', '**/grpc/generated/'],
   },
 );

@@ -5,19 +5,15 @@ import {
   isDomainError,
   resolveDomainErrorGrpc,
 } from '../../../../platform/grpc/domain-error-grpc.js';
-
-type SubscribeRequest = { email?: string; repo?: string };
-type ConfirmRequest = { token?: string };
-type UnsubscribeRequest = { token?: string };
-type ListSubscriptionsRequest = { email?: string };
-type SuccessResponse = { message: string };
-type SubscriptionMessage = {
-  email: string;
-  repo: string;
-  confirmed: boolean;
-  lastSeenTag?: string;
-};
-type ListSubscriptionsResponse = { subscriptions: SubscriptionMessage[] };
+import type {
+  ConfirmRequest,
+  ListSubscriptionsRequest,
+  ListSubscriptionsResponse,
+  SubscribeRequest,
+  SubscriptionServiceServer,
+  SuccessResponse,
+  UnsubscribeRequest,
+} from './generated/subscription.js';
 
 const runUnary = async <T>(
   callback: grpc.sendUnaryData<T>,
@@ -40,12 +36,12 @@ const runUnary = async <T>(
 
 export const createSubscriptionServiceHandlers = (
   module: SubscriptionModule,
-): grpc.UntypedServiceImplementation => ({
+): SubscriptionServiceServer => ({
   subscribe: (
     call: grpc.ServerUnaryCall<SubscribeRequest, SuccessResponse>,
     callback: grpc.sendUnaryData<SuccessResponse>,
   ) => {
-    const { email = '', repo = '' } = call.request;
+    const { email, repo } = call.request;
 
     void runUnary(callback, async () => {
       await module.subscribeUseCase.execute(email, repo);
@@ -60,7 +56,7 @@ export const createSubscriptionServiceHandlers = (
     call: grpc.ServerUnaryCall<ConfirmRequest, SuccessResponse>,
     callback: grpc.sendUnaryData<SuccessResponse>,
   ) => {
-    const { token = '' } = call.request;
+    const { token } = call.request;
 
     void runUnary(callback, async () => {
       await module.confirmUseCase.execute(token);
@@ -75,7 +71,7 @@ export const createSubscriptionServiceHandlers = (
     call: grpc.ServerUnaryCall<UnsubscribeRequest, SuccessResponse>,
     callback: grpc.sendUnaryData<SuccessResponse>,
   ) => {
-    const { token = '' } = call.request;
+    const { token } = call.request;
 
     void runUnary(callback, async () => {
       await module.unsubscribeUseCase.execute(token);
@@ -93,7 +89,7 @@ export const createSubscriptionServiceHandlers = (
     >,
     callback: grpc.sendUnaryData<ListSubscriptionsResponse>,
   ) => {
-    const { email = '' } = call.request;
+    const { email } = call.request;
 
     void runUnary(callback, async () => {
       const subscriptions =
