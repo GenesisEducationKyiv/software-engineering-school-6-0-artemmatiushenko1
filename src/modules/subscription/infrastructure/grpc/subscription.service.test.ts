@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as grpc from '@grpc/grpc-js';
-import { SubscriptionStatus } from '../../domain/subscription-status.js';
+import {
+  Email,
+  RepoPath,
+  Subscription,
+  SubscriptionStatus,
+  SubscriptionToken,
+  SubscriptionTokenScope,
+} from '../../domain/index.js';
 import type { SubscriptionModule } from '../../subscription.module.js';
 import { createSubscriptionServiceHandlers } from './subscription.service.js';
 import {
@@ -10,6 +17,12 @@ import {
   UnsubscribeRequest,
 } from './generated/subscription.js';
 import { mock } from 'vitest-mock-extended';
+import type { SubscribeUseCase } from '../../application/use-cases/subscribe.use-case.js';
+import type { ConfirmUseCase } from '../../application/use-cases/confirm.use-case.js';
+import type { UnsubscribeUseCase } from '../../application/use-cases/unsubscribe.use-case.js';
+import type { GetSubscriptionsByEmailUseCase } from '../../application/use-cases/get-subscriptions-by-email.use-case.js';
+
+const tokenExpiresAt = new Date('2026-01-01T13:00:00Z');
 
 const invokeUnary = <TRequest, TResponse>(
   handler: (
@@ -34,10 +47,10 @@ const invokeUnary = <TRequest, TResponse>(
   });
 
 describe('subscription gRPC handlers', () => {
-  const subscribeUseCase = { execute: vi.fn() };
-  const confirmUseCase = { execute: vi.fn() };
-  const unsubscribeUseCase = { execute: vi.fn() };
-  const getSubscriptionsByEmailUseCase = { execute: vi.fn() };
+  const subscribeUseCase = mock<SubscribeUseCase>();
+  const confirmUseCase = mock<ConfirmUseCase>();
+  const unsubscribeUseCase = mock<UnsubscribeUseCase>();
+  const getSubscriptionsByEmailUseCase = mock<GetSubscriptionsByEmailUseCase>();
 
   const module = mock<SubscriptionModule>({
     subscribeUseCase,
@@ -105,16 +118,34 @@ describe('subscription gRPC handlers', () => {
 
   it('should map listSubscriptions to the gRPC response shape', async () => {
     getSubscriptionsByEmailUseCase.execute.mockResolvedValue([
-      {
-        email: { value: 'test@example.com' },
-        repoPath: { toString: () => 'owner/confirmed' },
+      Subscription.rehydrate({
+        id: '1',
+        email: Email.fromString('test@example.com'),
+        repoPath: RepoPath.fromString('owner/confirmed'),
         status: SubscriptionStatus.Confirmed,
-      },
-      {
-        email: { value: 'test@example.com' },
-        repoPath: { toString: () => 'owner/pending' },
+        confirmationToken: SubscriptionToken.rehydrate({
+          value: '550e8400-e29b-41d4-a716-446655440000',
+          scope: SubscriptionTokenScope.Confirm,
+          expiresAt: tokenExpiresAt,
+        }),
+        unsubscribeToken: SubscriptionToken.rehydrate({
+          value: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+          scope: SubscriptionTokenScope.Unsubscribe,
+          expiresAt: null,
+        }),
+      }),
+      Subscription.rehydrate({
+        id: '2',
+        email: Email.fromString('test@example.com'),
+        repoPath: RepoPath.fromString('owner/pending'),
         status: SubscriptionStatus.Pending,
-      },
+        confirmationToken: SubscriptionToken.rehydrate({
+          value: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+          scope: SubscriptionTokenScope.Confirm,
+          expiresAt: tokenExpiresAt,
+        }),
+        unsubscribeToken: null,
+      }),
     ]);
 
     const { error, response } = await invokeUnary(
