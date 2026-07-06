@@ -1,10 +1,7 @@
 import * as grpc from '@grpc/grpc-js';
 import type { SubscriptionModule } from '../../subscription.module.js';
 import { SubscriptionStatus } from '../../domain/index.js';
-import {
-  isDomainError,
-  resolveDomainErrorGrpc,
-} from '../../../../platform/grpc/domain-error-grpc.js';
+import { runUnary } from '../../../../platform/grpc/run-unary.js';
 import type {
   ConfirmRequest,
   ListSubscriptionsRequest,
@@ -14,25 +11,6 @@ import type {
   SuccessResponse,
   UnsubscribeRequest,
 } from './generated/subscription.js';
-
-const runUnary = async <T>(
-  callback: grpc.sendUnaryData<T>,
-  handler: () => Promise<T>,
-): Promise<void> => {
-  try {
-    callback(null, await handler());
-  } catch (error) {
-    if (isDomainError(error)) {
-      callback(resolveDomainErrorGrpc(error));
-      return;
-    }
-
-    callback({
-      code: grpc.status.INTERNAL,
-      message: error instanceof Error ? error.message : 'Internal server error',
-    });
-  }
-};
 
 export const createSubscriptionServiceHandlers = (
   module: SubscriptionModule,

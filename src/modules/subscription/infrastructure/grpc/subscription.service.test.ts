@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as grpc from '@grpc/grpc-js';
-import { InvalidEmailError } from '../../../../shared-kernel/errors.js';
-import { SubscriptionNotFoundError } from '../../application/errors.js';
 import { SubscriptionStatus } from '../../domain/subscription-status.js';
 import type { SubscriptionModule } from '../../subscription.module.js';
 import { createSubscriptionServiceHandlers } from './subscription.service.js';
@@ -54,146 +52,93 @@ describe('subscription gRPC handlers', () => {
     vi.resetAllMocks();
   });
 
-  describe('subscribe', () => {
-    it('should delegate to subscribe use case and return success message', async () => {
-      subscribeUseCase.execute.mockResolvedValue(undefined);
+  it('should delegate subscribe to use case and return success message', async () => {
+    subscribeUseCase.execute.mockResolvedValue(undefined);
 
-      const { error, response } = await invokeUnary(
-        handlers.subscribe,
-        SubscribeRequest.create({
+    const { error, response } = await invokeUnary(
+      handlers.subscribe,
+      SubscribeRequest.create({
+        email: 'test@example.com',
+        repo: 'owner/repo',
+      }),
+    );
+
+    expect(error).toBeNull();
+    expect(subscribeUseCase.execute).toHaveBeenCalledWith(
+      'test@example.com',
+      'owner/repo',
+    );
+    expect(response).toEqual({
+      message: 'Subscription successful. Confirmation email sent.',
+    });
+  });
+
+  it('should delegate confirm to use case and return success message', async () => {
+    confirmUseCase.execute.mockResolvedValue(undefined);
+
+    const { error, response } = await invokeUnary(
+      handlers.confirm,
+      ConfirmRequest.create({ token: 'confirm-token' }),
+    );
+
+    expect(error).toBeNull();
+    expect(confirmUseCase.execute).toHaveBeenCalledWith('confirm-token');
+    expect(response).toEqual({
+      message: 'Subscription confirmed successfully',
+    });
+  });
+
+  it('should delegate unsubscribe to use case and return success message', async () => {
+    unsubscribeUseCase.execute.mockResolvedValue(undefined);
+
+    const { error, response } = await invokeUnary(
+      handlers.unsubscribe,
+      UnsubscribeRequest.create({ token: 'unsubscribe-token' }),
+    );
+
+    expect(error).toBeNull();
+    expect(unsubscribeUseCase.execute).toHaveBeenCalledWith(
+      'unsubscribe-token',
+    );
+    expect(response).toEqual({ message: 'Unsubscribed successfully' });
+  });
+
+  it('should map listSubscriptions to the gRPC response shape', async () => {
+    getSubscriptionsByEmailUseCase.execute.mockResolvedValue([
+      {
+        email: { value: 'test@example.com' },
+        repoPath: { toString: () => 'owner/confirmed' },
+        status: SubscriptionStatus.Confirmed,
+      },
+      {
+        email: { value: 'test@example.com' },
+        repoPath: { toString: () => 'owner/pending' },
+        status: SubscriptionStatus.Pending,
+      },
+    ]);
+
+    const { error, response } = await invokeUnary(
+      handlers.listSubscriptions,
+      ListSubscriptionsRequest.create({ email: 'test@example.com' }),
+    );
+
+    expect(error).toBeNull();
+    expect(getSubscriptionsByEmailUseCase.execute).toHaveBeenCalledWith(
+      'test@example.com',
+    );
+    expect(response).toEqual({
+      subscriptions: [
+        {
           email: 'test@example.com',
-          repo: 'owner/repo',
-        }),
-      );
-
-      expect(error).toBeNull();
-      expect(subscribeUseCase.execute).toHaveBeenCalledWith(
-        'test@example.com',
-        'owner/repo',
-      );
-      expect(response).toEqual({
-        message: 'Subscription successful. Confirmation email sent.',
-      });
-    });
-
-    it('should map domain errors to gRPC status', async () => {
-      subscribeUseCase.execute.mockRejectedValue(new InvalidEmailError(''));
-
-      const { error, response } = await invokeUnary(
-        handlers.subscribe,
-        SubscribeRequest.create({ email: '', repo: 'owner/repo' }),
-      );
-
-      expect(response).toBeUndefined();
-      expect(error).toMatchObject({
-        code: grpc.status.INVALID_ARGUMENT,
-        message: 'Invalid email format: ',
-      });
-    });
-  });
-
-  describe('confirm', () => {
-    it('should delegate to confirm use case and return success message', async () => {
-      confirmUseCase.execute.mockResolvedValue(undefined);
-
-      const { error, response } = await invokeUnary(
-        handlers.confirm,
-        ConfirmRequest.create({ token: 'confirm-token' }),
-      );
-
-      expect(error).toBeNull();
-      expect(confirmUseCase.execute).toHaveBeenCalledWith('confirm-token');
-      expect(response).toEqual({
-        message: 'Subscription confirmed successfully',
-      });
-    });
-
-    it('should map domain errors to gRPC status', async () => {
-      confirmUseCase.execute.mockRejectedValue(new SubscriptionNotFoundError());
-
-      const { error } = await invokeUnary(
-        handlers.confirm,
-        ConfirmRequest.create({ token: 'missing-token' }),
-      );
-
-      expect(error).toMatchObject({
-        code: grpc.status.NOT_FOUND,
-        message: 'Subscription not found',
-      });
-    });
-  });
-
-  describe('unsubscribe', () => {
-    it('should delegate to unsubscribe use case and return success message', async () => {
-      unsubscribeUseCase.execute.mockResolvedValue(undefined);
-
-      const { error, response } = await invokeUnary(
-        handlers.unsubscribe,
-        UnsubscribeRequest.create({ token: 'unsubscribe-token' }),
-      );
-
-      expect(error).toBeNull();
-      expect(unsubscribeUseCase.execute).toHaveBeenCalledWith(
-        'unsubscribe-token',
-      );
-      expect(response).toEqual({ message: 'Unsubscribed successfully' });
-    });
-  });
-
-  describe('listSubscriptions', () => {
-    it('should map subscriptions to the gRPC response shape', async () => {
-      getSubscriptionsByEmailUseCase.execute.mockResolvedValue([
-        {
-          email: { value: 'test@example.com' },
-          repoPath: { toString: () => 'owner/confirmed' },
-          status: SubscriptionStatus.Confirmed,
+          repo: 'owner/confirmed',
+          confirmed: true,
         },
         {
-          email: { value: 'test@example.com' },
-          repoPath: { toString: () => 'owner/pending' },
-          status: SubscriptionStatus.Pending,
+          email: 'test@example.com',
+          repo: 'owner/pending',
+          confirmed: false,
         },
-      ]);
-
-      const { error, response } = await invokeUnary(
-        handlers.listSubscriptions,
-        ListSubscriptionsRequest.create({ email: 'test@example.com' }),
-      );
-
-      expect(error).toBeNull();
-      expect(getSubscriptionsByEmailUseCase.execute).toHaveBeenCalledWith(
-        'test@example.com',
-      );
-      expect(response).toEqual({
-        subscriptions: [
-          {
-            email: 'test@example.com',
-            repo: 'owner/confirmed',
-            confirmed: true,
-          },
-          {
-            email: 'test@example.com',
-            repo: 'owner/pending',
-            confirmed: false,
-          },
-        ],
-      });
-    });
-
-    it('should map domain errors to gRPC status', async () => {
-      getSubscriptionsByEmailUseCase.execute.mockRejectedValue(
-        new InvalidEmailError(''),
-      );
-
-      const { error } = await invokeUnary(
-        handlers.listSubscriptions,
-        ListSubscriptionsRequest.create({ email: '' }),
-      );
-
-      expect(error).toMatchObject({
-        code: grpc.status.INVALID_ARGUMENT,
-        message: 'Invalid email format: ',
-      });
+      ],
     });
   });
 });
