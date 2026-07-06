@@ -104,11 +104,16 @@ The app container is not published to the host directly. **nginx** listens on po
 
 ### Running Locally
 
-1. Install dependencies:
+1. Install [protobuf](https://github.com/protocolbuffers/protobuf) (`protoc` must be on your `PATH`; e.g. `brew install protobuf` on macOS).
+2. Install dependencies:
    ```bash
    npm install
    ```
-2. Start the development server:
+3. Generate gRPC TypeScript types from the `.proto` definitions (required after install and whenever `subscription.proto` changes; generated files are not committed):
+   ```bash
+   npm run proto:generate
+   ```
+4. Start the development server:
    ```bash
    npm run dev
    ```
