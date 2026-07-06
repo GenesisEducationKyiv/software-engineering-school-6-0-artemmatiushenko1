@@ -15,7 +15,7 @@ export const runUnary = async <T>(
 
     callback({
       code: grpc.status.INTERNAL,
-      message: error instanceof Error ? error.message : 'Internal server error',
+      details: error instanceof Error ? error.message : 'Internal server error',
     });
   }
 };

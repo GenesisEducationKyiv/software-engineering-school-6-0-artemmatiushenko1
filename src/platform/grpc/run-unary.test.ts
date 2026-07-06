@@ -22,7 +22,7 @@ describe('runUnary', () => {
     expect(callback).toHaveBeenCalledWith(
       expect.objectContaining({
         code: grpc.status.INVALID_ARGUMENT,
-        message: 'Invalid email format: bad',
+        details: 'Invalid email format: bad',
       }),
     );
   });
@@ -36,7 +36,7 @@ describe('runUnary', () => {
 
     expect(callback).toHaveBeenCalledWith({
       code: grpc.status.INTERNAL,
-      message: 'boom',
+      details: 'boom',
     });
   });
 });

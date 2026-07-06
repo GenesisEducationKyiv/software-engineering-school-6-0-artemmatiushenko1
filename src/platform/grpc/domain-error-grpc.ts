@@ -50,11 +50,7 @@ const domainErrorGrpcStatusEntries = [
   readonly [DomainErrorConstructor, grpc.status]
 >;
 
-export type DomainErrorGrpcResponse = {
-  code: grpc.status;
-  message: string;
-  metadata: grpc.Metadata;
-};
+export type DomainErrorGrpcResponse = grpc.StatusObject;
 
 export const resolveDomainErrorGrpcStatus = (
   error: DomainError,
@@ -76,7 +72,7 @@ export const resolveDomainErrorGrpc = (
 
   return {
     code: resolveDomainErrorGrpcStatus(error),
-    message: error.message,
+    details: error.message,
     metadata,
   };
 };

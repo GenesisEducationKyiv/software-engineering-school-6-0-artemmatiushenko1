@@ -66,7 +66,7 @@ describe('domain error grpc mapping', () => {
 
     expect(response).toEqual({
       code: grpc.status.INVALID_ARGUMENT,
-      message: error.message,
+      details: error.message,
       metadata: expect.any(grpc.Metadata),
     });
     expect(response.metadata.get(domainErrorCodeMetadataKey)).toEqual([
