@@ -83,20 +83,11 @@ export class AppContainer {
     private readonly deps: AppContainerDeps,
   ) {
     this.eventBus = deps.eventBus ?? new InProcessEventBus();
+    this.metrics = AppContainer.createMetrics();
+
     const clock = deps.clock ?? new SystemClock();
     const idGenerator = deps.idGenerator ?? new CryptoIdGenerator();
     const tokenGenerator = deps.tokenGenerator ?? new CryptoTokenGenerator();
-
-    const metricsRegistry = new Registry();
-    collectDefaultMetrics({ register: metricsRegistry });
-    this.metrics = {
-      notification: new PrometheusNotificationMetrics(metricsRegistry),
-      scanner: new PrometheusScannerMetrics(metricsRegistry),
-      cache: new PrometheusCacheMetrics(metricsRegistry),
-      http: new PrometheusHttpMetrics(metricsRegistry),
-      outbox: new PrometheusOutboxMetrics(metricsRegistry),
-      exporter: new PrometheusExporter(metricsRegistry),
-    };
 
     const transactionManager = new DrizzleTransactionManager(deps.db);
     const outboxRepository = new DrizzleOutboxRepository(deps.db, idGenerator);
@@ -149,6 +140,20 @@ export class AppContainer {
       outbox,
       cronExpression: config.scanner.cronExpression,
     });
+  }
+
+  private static createMetrics(): AppMetrics {
+    const registry = new Registry();
+    collectDefaultMetrics({ register: registry });
+
+    return {
+      notification: new PrometheusNotificationMetrics(registry),
+      scanner: new PrometheusScannerMetrics(registry),
+      cache: new PrometheusCacheMetrics(registry),
+      http: new PrometheusHttpMetrics(registry),
+      outbox: new PrometheusOutboxMetrics(registry),
+      exporter: new PrometheusExporter(registry),
+    };
   }
 
   wireEventSubscribers(): void {
