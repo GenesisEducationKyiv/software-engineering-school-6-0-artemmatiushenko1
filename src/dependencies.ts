@@ -156,7 +156,7 @@ export class AppContainer {
     };
   }
 
-  wireEventSubscribers(): void {
+  private wireEventSubscribers(): void {
     if (this.eventSubscribersRegistered) {
       return;
     }
@@ -169,6 +169,8 @@ export class AppContainer {
   }
 
   build(): AppDependencies {
+    this.wireEventSubscribers();
+
     return {
       redis: this.deps.redis,
       httpMetrics: this.metrics.http,
