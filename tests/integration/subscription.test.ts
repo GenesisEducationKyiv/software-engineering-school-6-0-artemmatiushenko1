@@ -12,6 +12,7 @@ import { App } from '../../src/app.js';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/db-schema.js';
+import { migrationModules } from '../../src/db-migrations.js';
 import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import assert from 'assert';
@@ -138,7 +139,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
-    await runAllDatabaseMigrations(db);
+    await runAllDatabaseMigrations(db, migrationModules);
   });
 
   beforeEach(async () => {

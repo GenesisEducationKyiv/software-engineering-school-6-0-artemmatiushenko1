@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/db-schema.js';
+import { migrationModules } from '../../src/db-migrations.js';
 import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import { DrizzleTransactionManager } from '../../src/platform/db/drizzle-transaction-manager.js';
@@ -23,7 +24,7 @@ describe('DrizzleOutboxRepository', () => {
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
-    await runAllDatabaseMigrations(db);
+    await runAllDatabaseMigrations(db, migrationModules);
     outboxRepository = new DrizzleOutboxRepository(db, new CryptoIdGenerator());
     transactionManager = new DrizzleTransactionManager(db);
   });

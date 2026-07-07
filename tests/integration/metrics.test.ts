@@ -8,6 +8,7 @@ import { Redis } from 'ioredis';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/db-schema.js';
+import { migrationModules } from '../../src/db-migrations.js';
 import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import { TEST_APP_CONFIG } from './constants.js';
@@ -21,7 +22,7 @@ describe('Metrics Routes', () => {
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
-    await runAllDatabaseMigrations(db);
+    await runAllDatabaseMigrations(db, migrationModules);
   });
 
   beforeEach(async () => {
