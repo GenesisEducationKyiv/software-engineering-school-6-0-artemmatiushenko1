@@ -24,7 +24,6 @@ import { type AppDependencies } from './dependencies.js';
 import { msToSeconds } from './utils/time.utils.js';
 import { REQUEST_ID_HEADER } from './platform/fastify/constants.js';
 import { runWithRequestLogger } from './platform/logger/request-log-context.js';
-import { OutboxRelayCron } from './platform/outbox/outbox-relay.cron.js';
 import { shutdownGrpcServer } from './platform/grpc/create-grpc-server.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -35,7 +34,6 @@ export class App {
   private readonly deps: AppDependencies;
   private readonly config: AppConfig;
   private readonly grpcServer?: grpc.Server;
-  private outboxRelayCron?: OutboxRelayCron;
 
   private constructor(
     config: AppConfig,
@@ -191,12 +189,7 @@ export class App {
   }
 
   startOutboxRelayCron() {
-    this.outboxRelayCron = new OutboxRelayCron(
-      this.config.outboxRelayCron,
-      this.deps.outboxRelay,
-      this.deps.logger,
-    );
-    this.outboxRelayCron.start();
+    this.deps.outboxRelay.start();
   }
 
   public async start() {
@@ -224,7 +217,7 @@ export class App {
         await this.deps.scanner.stopCron();
         this.deps.logger.info('Scanner tasks stopped.');
 
-        await this.outboxRelayCron?.stop();
+        await this.deps.outboxRelay.stop();
         this.deps.logger.info('Outbox relay stopped.');
 
         if (this.grpcServer) {
