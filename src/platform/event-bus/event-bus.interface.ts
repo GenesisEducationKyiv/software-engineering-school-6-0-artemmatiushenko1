@@ -6,4 +6,5 @@ export interface EventBus {
     eventType: T['type'],
     callback: (event: T) => void | Promise<void>,
   ): void;
+  dispose(): void;
 }
