@@ -25,7 +25,6 @@ const container = new AppContainer(appConfig, {
   logger,
   redis,
 });
-container.wireEventSubscribers();
 const deps = container.build();
 
 deps.logger.info('Running database migrations...');
