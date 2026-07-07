@@ -7,7 +7,7 @@ import { mock } from 'vitest-mock-extended';
 import { Redis } from 'ioredis';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import * as schema from '../../src/platform/db/schema.js';
+import * as schema from '../../src/db-schema.js';
 import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import { TEST_APP_CONFIG } from './constants.js';
@@ -17,7 +17,7 @@ import type { EmailClient } from '../../src/modules/notification/application/por
 
 describe('Metrics Routes', () => {
   let app: App;
-  let db: Database;
+  let db: Database<typeof schema>;
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });

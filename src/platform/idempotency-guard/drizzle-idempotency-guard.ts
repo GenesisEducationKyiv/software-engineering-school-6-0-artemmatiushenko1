@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { processedDeliveries } from '../db/schema.js';
+import { processedDeliveries } from '../db/platform-schema.js';
 import type { Database } from '../db/types.js';
 import type { IdempotencyGuard } from './idempotency-guard.js';
 

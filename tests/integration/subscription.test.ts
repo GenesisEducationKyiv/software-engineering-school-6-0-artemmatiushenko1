@@ -11,7 +11,7 @@ import Fastify from 'fastify';
 import { App } from '../../src/app.js';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import * as schema from '../../src/platform/db/schema.js';
+import * as schema from '../../src/db-schema.js';
 import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import assert from 'assert';
@@ -38,7 +38,7 @@ const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
 
 describe('Subscription Routes Integration with PGlite', () => {
   let app: App;
-  let db: Database;
+  let db: Database<typeof schema>;
   let deps: AppDependencies;
 
   const findSubscriptionToken = async (

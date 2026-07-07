@@ -13,6 +13,9 @@ COPY src/modules/subscription/infrastructure/db/schema.ts ./src/modules/subscrip
 COPY src/modules/scanner/infrastructure/db/schema.ts ./src/modules/scanner/infrastructure/db/schema.ts
 COPY src/modules/notification/infrastructure/db/schema.ts ./src/modules/notification/infrastructure/db/schema.ts
 
+COPY src/db-schema.ts ./src/db-schema.ts
+COPY src/db-client.ts ./src/db-client.ts
+
 COPY src/config.ts ./src/config.ts
 COPY src/modules/scanner/config.ts ./src/modules/scanner/config.ts
 COPY src/modules/notification/config.ts ./src/modules/notification/config.ts

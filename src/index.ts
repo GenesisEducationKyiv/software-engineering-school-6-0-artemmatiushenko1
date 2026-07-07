@@ -3,7 +3,7 @@ import { Redis } from 'ioredis';
 import { App } from './app.js';
 import { AppContainer } from './dependencies.js';
 import { createConfig } from './config.js';
-import { db } from './platform/db/client.js';
+import { db } from './db-client.js';
 import { createFastifyServerOptions } from './platform/fastify/create-fastify-server-options.js';
 import { runAllDatabaseMigrations } from './platform/db/migrate.js';
 import { FastifyLogger } from './platform/logger/fastify-logger.js';

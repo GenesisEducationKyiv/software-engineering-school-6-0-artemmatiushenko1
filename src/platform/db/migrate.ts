@@ -6,7 +6,6 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { migrate as migrateNodePg } from 'drizzle-orm/node-postgres/migrator';
 import { migrate as migratePglite } from 'drizzle-orm/pglite/migrator';
 import { PgliteDatabase } from 'drizzle-orm/pglite';
-import * as schema from './schema.js';
 import type { Database } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,15 +49,11 @@ const MODULE_MIGRATION_FOLDERS: ModuleMigrationConfig[] = [
   },
 ];
 
-const isPgliteDatabase = (
-  db: Database,
-): db is PgliteDatabase<typeof schema> => {
+const isPgliteDatabase = (db: Database): db is PgliteDatabase => {
   return is(db, PgliteDatabase);
 };
 
-const isPostgresDatabase = (
-  db: Database,
-): db is NodePgDatabase<typeof schema> => {
+const isPostgresDatabase = (db: Database): db is NodePgDatabase => {
   return is(db, NodePgDatabase);
 };
 

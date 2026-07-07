@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import * as schema from '../../src/platform/db/schema.js';
+import * as schema from '../../src/db-schema.js';
 import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import { DrizzleIdempotencyGuard } from '../../src/platform/idempotency-guard/drizzle-idempotency-guard.js';
 
 describe('DrizzleIdempotencyGuard', () => {
-  let db: Database;
+  let db: Database<typeof schema>;
   let idempotencyGuard: DrizzleIdempotencyGuard;
 
   beforeAll(async () => {
