@@ -3,7 +3,6 @@ import Fastify from 'fastify';
 import { App } from '../../src/app.js';
 import { AppContainer } from '../../src/dependencies.js';
 import { FastifyLogger } from '../../src/platform/logger/fastify-logger.js';
-import { PrometheusMetrics } from '../../src/platform/metrics/prometheus-metrics.js';
 import { mock } from 'vitest-mock-extended';
 import { Redis } from 'ioredis';
 import { PGlite } from '@electric-sql/pglite';
@@ -37,7 +36,6 @@ describe('Metrics Routes', () => {
     const container = new AppContainer(TEST_APP_CONFIG, {
       db,
       logger: new FastifyLogger(fastify.log),
-      metrics: new PrometheusMetrics(),
       redis: redisMock,
       githubClient: githubMock,
       emailClient: emailMock,

@@ -26,7 +26,6 @@ import { AppContainer, type AppDependencies } from '../../src/dependencies.js';
 import type { GithubClient } from '../../src/modules/github/api/github-client.interface.js';
 import type { EmailClient } from '../../src/modules/notification/application/ports/email-client.js';
 import { FastifyLogger } from '../../src/platform/logger/fastify-logger.js';
-import { PrometheusMetrics } from '../../src/platform/metrics/prometheus-metrics.js';
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
 import { TEST_APP_CONFIG } from './constants.js';
@@ -160,7 +159,6 @@ describe('Subscription Routes Integration with PGlite', () => {
     const container = new AppContainer(TEST_APP_CONFIG, {
       db,
       logger: new FastifyLogger(fastify.log),
-      metrics: new PrometheusMetrics(),
       redis: redisMock,
       githubClient: githubMock,
       emailClient: emailMock,

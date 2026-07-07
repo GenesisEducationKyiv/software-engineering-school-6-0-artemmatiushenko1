@@ -89,7 +89,7 @@ export class App {
       const route = request.routeOptions?.url ?? 'unknown';
       const durationSeconds = msToSeconds(reply.elapsedTime);
 
-      this.deps.metrics.recordHttpRequest(
+      this.deps.httpMetrics.recordHttpRequest(
         request.method,
         route,
         reply.statusCode,
@@ -168,7 +168,7 @@ export class App {
 
   private async setupRoutes() {
     registerHealthRoute(this.fastify);
-    registerMetricsRoute(this.fastify, this.deps.metrics);
+    registerMetricsRoute(this.fastify, this.deps.metricsExporter);
 
     await this.fastify.register(
       (fastify) => {

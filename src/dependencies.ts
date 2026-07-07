@@ -4,7 +4,19 @@ import { GithubModule } from './modules/github/github.module.js';
 import { NotificationModule } from './modules/notification/notification.module.js';
 import { SubscriptionModule } from './modules/subscription/subscription.module.js';
 import { ScannerModule } from './modules/scanner/scanner.module.js';
-import type { Metrics } from './platform/metrics/metrics.interface.js';
+import { collectDefaultMetrics } from 'prom-client';
+import type { CacheMetrics } from './modules/github/api/cache-metrics.interface.js';
+import { PrometheusCacheMetrics } from './modules/github/infrastructure/prometheus-cache-metrics.js';
+import type { NotificationMetrics } from './modules/notification/application/ports/notification-metrics.js';
+import { PrometheusNotificationMetrics } from './modules/notification/infrastructure/prometheus-notification-metrics.js';
+import type { ScannerMetrics } from './modules/scanner/application/ports/scanner-metrics.interface.js';
+import { PrometheusScannerMetrics } from './modules/scanner/infrastructure/prometheus-scanner-metrics.js';
+import type { HttpMetrics } from './platform/metrics/http-metrics.interface.js';
+import type { MetricsExporter } from './platform/metrics/metrics-exporter.interface.js';
+import type { OutboxMetrics } from './platform/metrics/outbox-metrics.interface.js';
+import { PrometheusExporter } from './platform/metrics/prometheus-exporter.js';
+import { PrometheusHttpMetrics } from './platform/metrics/prometheus-http-metrics.js';
+import { PrometheusOutboxMetrics } from './platform/metrics/prometheus-outbox-metrics.js';
 import type { GithubClient } from './modules/github/api/github-client.interface.js';
 import type { EmailClient } from './modules/notification/application/ports/email-client.js';
 import type { Logger } from './shared-kernel/logger.js';
@@ -22,11 +34,20 @@ import { SystemClock } from './modules/subscription/infrastructure/system-clock.
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
 import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
 import type { Clock } from './shared-kernel/clock.js';
-import { PrometheusMetrics } from './platform/metrics/prometheus-metrics.js';
+
+type AppMetrics = {
+  notification: NotificationMetrics;
+  scanner: ScannerMetrics;
+  cache: CacheMetrics;
+  http: HttpMetrics;
+  outbox: OutboxMetrics;
+  exporter: MetricsExporter;
+};
 
 export interface AppDependencies {
   redis: Redis;
-  metrics: Metrics;
+  httpMetrics: HttpMetrics;
+  metricsExporter: MetricsExporter;
   logger: Logger;
   subscription: SubscriptionModule;
   notification: NotificationModule;
@@ -39,7 +60,6 @@ export interface AppContainerDeps {
   db: Database;
   logger: Logger;
   redis: Redis;
-  metrics?: Metrics;
   clock?: Clock;
   githubClient?: GithubClient;
   emailClient?: EmailClient;
@@ -56,7 +76,7 @@ export class AppContainer {
   private readonly eventBus: EventBus;
   private readonly outboxRelay: OutboxRelay;
   private eventSubscribersRegistered = false;
-  private readonly metrics: Metrics;
+  private readonly metrics: AppMetrics;
 
   constructor(
     config: AppConfig,
@@ -66,7 +86,16 @@ export class AppContainer {
     const clock = deps.clock ?? new SystemClock();
     const idGenerator = deps.idGenerator ?? new CryptoIdGenerator();
     const tokenGenerator = deps.tokenGenerator ?? new CryptoTokenGenerator();
-    this.metrics = deps.metrics ?? new PrometheusMetrics();
+
+    collectDefaultMetrics();
+    this.metrics = {
+      notification: new PrometheusNotificationMetrics(),
+      scanner: new PrometheusScannerMetrics(),
+      cache: new PrometheusCacheMetrics(),
+      http: new PrometheusHttpMetrics(),
+      outbox: new PrometheusOutboxMetrics(),
+      exporter: new PrometheusExporter(),
+    };
 
     const transactionManager = new DrizzleTransactionManager(deps.db);
     const outboxRepository = new DrizzleOutboxRepository(deps.db, idGenerator);
@@ -76,7 +105,7 @@ export class AppContainer {
       this.eventBus,
       transactionManager,
       deps.logger,
-      this.metrics,
+      this.metrics.outbox,
       config.outboxMaxRetries,
     );
 
@@ -87,14 +116,14 @@ export class AppContainer {
             source: 'config',
             config: config.github,
             redis: deps.redis,
-            metrics: this.metrics,
+            metrics: this.metrics.cache,
           },
     });
 
     this.notification = NotificationModule.create({
       db: deps.db,
       appUrl: config.appUrl,
-      metrics: this.metrics,
+      metrics: this.metrics.notification,
       emailClient: deps.emailClient
         ? { source: 'client', instance: deps.emailClient }
         : { source: 'config', config: config.email },
@@ -115,7 +144,7 @@ export class AppContainer {
       githubClient: this.github.githubClient,
       logger: deps.logger,
       clock,
-      metrics: this.metrics,
+      metrics: this.metrics.scanner,
       outbox,
       cronExpression: config.scanner.cronExpression,
     });
@@ -136,7 +165,8 @@ export class AppContainer {
   build(): AppDependencies {
     return {
       redis: this.deps.redis,
-      metrics: this.metrics,
+      httpMetrics: this.metrics.http,
+      metricsExporter: this.metrics.exporter,
       logger: this.deps.logger,
       subscription: this.subscription,
       notification: this.notification,
