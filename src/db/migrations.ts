@@ -1,10 +1,10 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
-import type { MigrationModuleConfig } from './platform/db/migrate.js';
+import type { MigrationModuleConfig } from '../platform/db/migrate.js';
 
 const projectRoot = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  '..',
+  '../..',
 );
 
 export const migrationModules: MigrationModuleConfig[] = [

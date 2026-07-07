@@ -1,5 +1,5 @@
-import { db } from '../../../src/db-client.js';
-import * as schema from '../../../src/db-schema.js';
+import { db } from '../../../src/db/client.js';
+import * as schema from '../../../src/db/schema.js';
 
 export const resetTestData = async () => {
   await db.delete(schema.repoWatchers);
