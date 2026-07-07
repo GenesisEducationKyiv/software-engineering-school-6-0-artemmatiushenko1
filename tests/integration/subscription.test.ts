@@ -9,7 +9,6 @@ import {
 } from 'vitest';
 import Fastify from 'fastify';
 import { App } from '../../src/app.js';
-import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/platform/db/schema.js';
@@ -143,7 +142,6 @@ describe('Subscription Routes Integration with PGlite', () => {
   });
 
   beforeEach(async () => {
-    register.clear();
     vi.resetAllMocks();
 
     githubMock.repositoryExists.mockResolvedValue(true);

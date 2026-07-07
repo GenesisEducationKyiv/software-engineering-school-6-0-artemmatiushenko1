@@ -4,7 +4,7 @@ import { GithubModule } from './modules/github/github.module.js';
 import { NotificationModule } from './modules/notification/notification.module.js';
 import { SubscriptionModule } from './modules/subscription/subscription.module.js';
 import { ScannerModule } from './modules/scanner/scanner.module.js';
-import { collectDefaultMetrics } from 'prom-client';
+import { collectDefaultMetrics, Registry } from 'prom-client';
 import type { CacheMetrics } from './modules/github/api/cache-metrics.interface.js';
 import { PrometheusCacheMetrics } from './modules/github/infrastructure/prometheus-cache-metrics.js';
 import type { NotificationMetrics } from './modules/notification/application/ports/notification-metrics.js';
@@ -87,14 +87,15 @@ export class AppContainer {
     const idGenerator = deps.idGenerator ?? new CryptoIdGenerator();
     const tokenGenerator = deps.tokenGenerator ?? new CryptoTokenGenerator();
 
-    collectDefaultMetrics();
+    const metricsRegistry = new Registry();
+    collectDefaultMetrics({ register: metricsRegistry });
     this.metrics = {
-      notification: new PrometheusNotificationMetrics(),
-      scanner: new PrometheusScannerMetrics(),
-      cache: new PrometheusCacheMetrics(),
-      http: new PrometheusHttpMetrics(),
-      outbox: new PrometheusOutboxMetrics(),
-      exporter: new PrometheusExporter(),
+      notification: new PrometheusNotificationMetrics(metricsRegistry),
+      scanner: new PrometheusScannerMetrics(metricsRegistry),
+      cache: new PrometheusCacheMetrics(metricsRegistry),
+      http: new PrometheusHttpMetrics(metricsRegistry),
+      outbox: new PrometheusOutboxMetrics(metricsRegistry),
+      exporter: new PrometheusExporter(metricsRegistry),
     };
 
     const transactionManager = new DrizzleTransactionManager(deps.db);

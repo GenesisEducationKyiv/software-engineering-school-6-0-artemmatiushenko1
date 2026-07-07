@@ -1,33 +1,46 @@
-import { Counter, Gauge } from 'prom-client';
+import { Counter, Gauge, type Registry } from 'prom-client';
 import type { OutboxMetrics } from './outbox-metrics.interface.js';
 
 export class PrometheusOutboxMetrics implements OutboxMetrics {
-  private readonly outboxRelayFailures = new Counter({
-    name: 'outbox_relay_failures_total',
-    help: 'Total number of outbox relay delivery failures',
-    labelNames: ['event_type'],
-  });
+  private readonly outboxRelayFailures: Counter;
+  private readonly outboxDeadLetters: Counter;
+  private readonly outboxPendingMessages: Gauge;
+  private readonly outboxDeadLetterMessages: Gauge;
+  private readonly outboxOldestPendingAgeSeconds: Gauge;
 
-  private readonly outboxDeadLetters = new Counter({
-    name: 'outbox_dead_letters_total',
-    help: 'Total number of outbox messages moved to dead letter',
-    labelNames: ['event_type'],
-  });
+  constructor(registry: Registry) {
+    this.outboxRelayFailures = new Counter({
+      name: 'outbox_relay_failures_total',
+      help: 'Total number of outbox relay delivery failures',
+      labelNames: ['event_type'],
+      registers: [registry],
+    });
 
-  private readonly outboxPendingMessages = new Gauge({
-    name: 'outbox_pending_messages',
-    help: 'Current number of pending outbox messages',
-  });
+    this.outboxDeadLetters = new Counter({
+      name: 'outbox_dead_letters_total',
+      help: 'Total number of outbox messages moved to dead letter',
+      labelNames: ['event_type'],
+      registers: [registry],
+    });
 
-  private readonly outboxDeadLetterMessages = new Gauge({
-    name: 'outbox_dead_letter_messages',
-    help: 'Current number of dead-lettered outbox messages',
-  });
+    this.outboxPendingMessages = new Gauge({
+      name: 'outbox_pending_messages',
+      help: 'Current number of pending outbox messages',
+      registers: [registry],
+    });
 
-  private readonly outboxOldestPendingAgeSeconds = new Gauge({
-    name: 'outbox_oldest_pending_age_seconds',
-    help: 'Age in seconds of the oldest pending outbox message',
-  });
+    this.outboxDeadLetterMessages = new Gauge({
+      name: 'outbox_dead_letter_messages',
+      help: 'Current number of dead-lettered outbox messages',
+      registers: [registry],
+    });
+
+    this.outboxOldestPendingAgeSeconds = new Gauge({
+      name: 'outbox_oldest_pending_age_seconds',
+      help: 'Age in seconds of the oldest pending outbox message',
+      registers: [registry],
+    });
+  }
 
   incrementOutboxRelayFailures(eventType: string): void {
     this.outboxRelayFailures.inc({ event_type: eventType });

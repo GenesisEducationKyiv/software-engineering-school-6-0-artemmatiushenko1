@@ -10,7 +10,6 @@ import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/platform/db/schema.js';
 import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
-import { register } from 'prom-client';
 import { TEST_APP_CONFIG } from './constants.js';
 import { createFastifyServerOptions } from '../../src/platform/fastify/create-fastify-server-options.js';
 import type { GithubClient } from '../../src/modules/github/api/github-client.interface.js';
@@ -26,8 +25,6 @@ describe('Metrics Routes', () => {
   });
 
   beforeEach(async () => {
-    register.clear();
-
     const fastify = Fastify(createFastifyServerOptions(TEST_APP_CONFIG));
     const redisMock = mock<Redis>();
     const githubMock = mock<GithubClient>();
