@@ -39,4 +39,16 @@ describe('InProcessEventBus', () => {
 
     expect(order).toEqual([1, 2]);
   });
+
+  it('dispose clears subscribers so later publishes are no-ops', async () => {
+    const bus = new InProcessEventBus();
+    const handler = vi.fn();
+
+    bus.subscribe('TestEvent', handler);
+    bus.dispose();
+
+    await bus.publish([testEvent]);
+
+    expect(handler).not.toHaveBeenCalled();
+  });
 });
