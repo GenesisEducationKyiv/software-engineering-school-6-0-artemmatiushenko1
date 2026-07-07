@@ -23,7 +23,6 @@ import { type AppDependencies } from './dependencies.js';
 import { msToSeconds } from './utils/time.utils.js';
 import { REQUEST_ID_HEADER } from './platform/fastify/constants.js';
 import { runWithRequestLogger } from './platform/logger/request-log-context.js';
-import { OutboxRelayCron } from './platform/outbox/outbox-relay.cron.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,7 +31,6 @@ export class App {
   public readonly fastify: FastifyInstance;
   private readonly deps: AppDependencies;
   private readonly config: AppConfig;
-  private outboxRelayCron?: OutboxRelayCron;
 
   private constructor(
     config: AppConfig,
@@ -185,12 +183,7 @@ export class App {
   }
 
   startOutboxRelayCron() {
-    this.outboxRelayCron = new OutboxRelayCron(
-      this.config.outboxRelayCron,
-      this.deps.outboxRelay,
-      this.deps.logger,
-    );
-    this.outboxRelayCron.start();
+    this.deps.outboxRelay.start();
   }
 
   public async start() {
@@ -218,7 +211,7 @@ export class App {
         await this.deps.scanner.stopCron();
         this.deps.logger.info('Scanner tasks stopped.');
 
-        await this.outboxRelayCron?.stop();
+        await this.deps.outboxRelay.stop();
         this.deps.logger.info('Outbox relay stopped.');
 
         await this.deps.redis.quit();

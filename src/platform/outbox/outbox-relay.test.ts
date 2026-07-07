@@ -1,12 +1,34 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import type { EventBus } from '../event-bus/event-bus.interface.js';
 import type { Logger } from '../../shared-kernel/logger.js';
 import type { TransactionManager } from '../../shared-kernel/transaction.js';
 import type { OutboxMetrics } from '../metrics/outbox-metrics.interface.js';
+import type { Scheduler, ScheduledTaskHandle } from '../scheduler/scheduler.js';
 import type { OutboxRepository } from './outbox.repository.js';
 import type { OutboxMessage } from './outbox-message.js';
 import { OutboxRelay } from './outbox-relay.js';
+
+class FakeScheduler implements Scheduler {
+  readonly scheduledTasks: Array<() => Promise<void> | void> = [];
+  readonly stop = vi.fn(async () => {});
+
+  schedule(
+    _cronExpression: string,
+    task: () => Promise<void> | void,
+  ): ScheduledTaskHandle {
+    this.scheduledTasks.push(task);
+    return { stop: this.stop };
+  }
+
+  async invokeLatest(): Promise<void> {
+    const task = this.scheduledTasks.at(-1);
+    if (!task) {
+      throw new Error('No scheduled task');
+    }
+    await task();
+  }
+}
 
 describe('OutboxRelay', () => {
   const outboxRepository = mock<OutboxRepository>();
@@ -14,6 +36,8 @@ describe('OutboxRelay', () => {
   const transactionManager = mock<TransactionManager>();
   const logger = mock<Logger>();
   const metrics = mock<OutboxMetrics>();
+  const scheduler = new FakeScheduler();
+  const cronExpression = '*/3 * * * * *';
   const maxRetries = 3;
 
   const sampleMessage: OutboxMessage = {
@@ -29,16 +53,23 @@ describe('OutboxRelay', () => {
     deadLetteredAt: null,
   };
 
-  const relay = new OutboxRelay(
-    outboxRepository,
-    eventBus,
-    transactionManager,
-    logger,
-    metrics,
-    maxRetries,
-  );
+  const createRelay = (expression = cronExpression) =>
+    new OutboxRelay(
+      outboxRepository,
+      eventBus,
+      transactionManager,
+      logger,
+      metrics,
+      scheduler,
+      expression,
+      maxRetries,
+    );
+
+  const relay = createRelay();
 
   beforeEach(() => {
+    scheduler.scheduledTasks.length = 0;
+    scheduler.stop.mockClear();
     outboxRepository.fetchPending.mockReset();
     outboxRepository.markProcessed.mockReset();
     outboxRepository.recordFailure.mockReset();
@@ -185,5 +216,61 @@ describe('OutboxRelay', () => {
       'msg-2',
       'publish failed',
     );
+  });
+
+  it('start does not schedule when cron expression is empty', () => {
+    const idleRelay = createRelay('');
+
+    idleRelay.start();
+
+    expect(scheduler.scheduledTasks).toHaveLength(0);
+  });
+
+  it('start schedules a task that runs runOnce', async () => {
+    outboxRepository.fetchPending.mockResolvedValue([]);
+
+    relay.start();
+    await scheduler.invokeLatest();
+
+    expect(scheduler.scheduledTasks).toHaveLength(1);
+    expect(outboxRepository.fetchPending).toHaveBeenCalled();
+  });
+
+  it('scheduled tick logs infra failures without throwing', async () => {
+    transactionManager.run.mockRejectedValue(new Error('db unavailable'));
+
+    relay.start();
+    await scheduler.invokeLatest();
+
+    expect(logger.error).toHaveBeenCalledWith(
+      'Scheduled outbox relay failed',
+      expect.objectContaining({ message: 'db unavailable' }),
+    );
+  });
+
+  it('stop awaits in-flight runOnce and blocks new runs', async () => {
+    const stoppingRelay = createRelay();
+    let resolvePublish!: () => void;
+    const publishBlocked = new Promise<void>((resolve) => {
+      resolvePublish = resolve;
+    });
+
+    outboxRepository.fetchPending.mockResolvedValue([sampleMessage]);
+    eventBus.publish.mockReturnValue(publishBlocked);
+
+    stoppingRelay.start();
+    const run = stoppingRelay.runOnce();
+    const stopped = stoppingRelay.stop();
+
+    resolvePublish();
+    await run;
+    await stopped;
+
+    expect(scheduler.stop).toHaveBeenCalled();
+
+    outboxRepository.fetchPending.mockClear();
+    await stoppingRelay.runOnce();
+
+    expect(outboxRepository.fetchPending).not.toHaveBeenCalled();
   });
 });
