@@ -5,10 +5,8 @@ import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import YAML from 'yaml';
 import type { OpenAPIV2 } from 'openapi-types';
-import {
-  isDomainError,
-  resolveDomainErrorHttpResponse,
-} from './platform/http/domain-error-registry.js';
+import { isDomainError } from './shared-kernel/domain-error.js';
+import { resolveDomainErrorHttpResponse } from './platform/http/domain-error-http.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

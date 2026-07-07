@@ -1,68 +1,23 @@
 import * as grpc from '@grpc/grpc-js';
 import {
-  InvalidEmailError,
-  InvalidRepoFormatError,
-} from '../../shared-kernel/errors.js';
-import { InvalidReleaseTagError } from '../../modules/scanner/domain/errors.js';
-import {
-  InvalidTokenError,
-  TokenAlreadyUsedError,
-  TokenExpiredError,
-  IllegalStateTransitionError,
-  WrongTokenScopeError,
-  SubscriptionAlreadyDeactivatedError,
-  SubscriptionAlreadyConfirmedError,
-} from '../../modules/subscription/domain/errors.js';
-import {
-  RepoNotFoundError,
-  AlreadySubscribedError,
-  SubscriptionNotFoundError,
-} from '../../modules/subscription/application/errors.js';
-import { GithubRateLimitError } from '../../modules/github/domain/errors.js';
-import {
-  domainErrorRegistry,
-  isDomainError,
+  ErrorCategory,
   type DomainError,
-} from '../http/domain-error-registry.js';
-
-export { isDomainError };
+} from '../../shared-kernel/domain-error.js';
 
 export const domainErrorCodeMetadataKey = 'domain_error_code';
 
-type DomainErrorConstructor = (typeof domainErrorRegistry)[number];
-
-const domainErrorGrpcStatusEntries = [
-  [InvalidEmailError, grpc.status.INVALID_ARGUMENT],
-  [InvalidRepoFormatError, grpc.status.INVALID_ARGUMENT],
-  [RepoNotFoundError, grpc.status.NOT_FOUND],
-  [AlreadySubscribedError, grpc.status.ALREADY_EXISTS],
-  [SubscriptionNotFoundError, grpc.status.NOT_FOUND],
-  [InvalidTokenError, grpc.status.INVALID_ARGUMENT],
-  [WrongTokenScopeError, grpc.status.INVALID_ARGUMENT],
-  [IllegalStateTransitionError, grpc.status.INVALID_ARGUMENT],
-  [TokenExpiredError, grpc.status.INVALID_ARGUMENT],
-  [TokenAlreadyUsedError, grpc.status.INVALID_ARGUMENT],
-  [InvalidReleaseTagError, grpc.status.INVALID_ARGUMENT],
-  [GithubRateLimitError, grpc.status.RESOURCE_EXHAUSTED],
-  [SubscriptionAlreadyConfirmedError, grpc.status.FAILED_PRECONDITION],
-  [SubscriptionAlreadyDeactivatedError, grpc.status.FAILED_PRECONDITION],
-] as const satisfies ReadonlyArray<
-  readonly [DomainErrorConstructor, grpc.status]
->;
+const categoryGrpcStatus: Record<ErrorCategory, grpc.status> = {
+  [ErrorCategory.Validation]: grpc.status.INVALID_ARGUMENT,
+  [ErrorCategory.NotFound]: grpc.status.NOT_FOUND,
+  [ErrorCategory.AlreadyExists]: grpc.status.ALREADY_EXISTS,
+  [ErrorCategory.ConflictingState]: grpc.status.ABORTED,
+  [ErrorCategory.RateLimited]: grpc.status.RESOURCE_EXHAUSTED,
+};
 
 export type DomainErrorGrpcResponse = grpc.StatusObject;
 
-export const resolveDomainErrorGrpcStatus = (
-  error: DomainError,
-): grpc.status => {
-  for (const [ErrorClass, status] of domainErrorGrpcStatusEntries) {
-    if (error instanceof ErrorClass) {
-      return status;
-    }
-  }
-
-  throw new Error(`Unmapped domain error: ${error.code}`);
-};
+export const resolveDomainErrorGrpcStatus = (error: DomainError): grpc.status =>
+  categoryGrpcStatus[error.category];
 
 export const resolveDomainErrorGrpc = (
   error: DomainError,
@@ -76,7 +31,3 @@ export const resolveDomainErrorGrpc = (
     metadata,
   };
 };
-
-export const grpcMappedDomainErrors = domainErrorGrpcStatusEntries.map(
-  ([ErrorClass]) => ErrorClass,
-);

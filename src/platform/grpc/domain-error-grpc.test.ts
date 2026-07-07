@@ -20,10 +20,8 @@ import {
   AlreadySubscribedError,
   SubscriptionNotFoundError,
 } from '../../modules/subscription/application/errors.js';
-import { domainErrorRegistry } from '../http/domain-error-registry.js';
 import {
   domainErrorCodeMetadataKey,
-  grpcMappedDomainErrors,
   resolveDomainErrorGrpc,
   resolveDomainErrorGrpcStatus,
 } from './domain-error-grpc.js';
@@ -51,11 +49,8 @@ describe('domain error grpc mapping', () => {
     [new TokenAlreadyUsedError(), grpc.status.INVALID_ARGUMENT],
     [new InvalidReleaseTagError(''), grpc.status.INVALID_ARGUMENT],
     [new GithubRateLimitError(), grpc.status.RESOURCE_EXHAUSTED],
-    [new SubscriptionAlreadyConfirmedError(), grpc.status.FAILED_PRECONDITION],
-    [
-      new SubscriptionAlreadyDeactivatedError(),
-      grpc.status.FAILED_PRECONDITION,
-    ],
+    [new SubscriptionAlreadyConfirmedError(), grpc.status.ABORTED],
+    [new SubscriptionAlreadyDeactivatedError(), grpc.status.ABORTED],
   ])('should map %s to gRPC status %i', (error, status) => {
     expect(resolveDomainErrorGrpcStatus(error)).toBe(status);
   });
@@ -72,9 +67,5 @@ describe('domain error grpc mapping', () => {
     expect(response.metadata.get(domainErrorCodeMetadataKey)).toEqual([
       error.code,
     ]);
-  });
-
-  it('should map every registered domain error to a gRPC status', () => {
-    expect(grpcMappedDomainErrors).toEqual([...domainErrorRegistry]);
   });
 });

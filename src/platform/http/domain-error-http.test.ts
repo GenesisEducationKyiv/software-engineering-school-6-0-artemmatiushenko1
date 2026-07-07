@@ -20,13 +20,11 @@ import {
   SubscriptionNotFoundError,
 } from '../../modules/subscription/application/errors.js';
 import {
-  domainErrorRegistry,
   resolveDomainErrorHttpStatus,
   resolveDomainErrorHttpResponse,
-  httpMappedDomainErrors,
-} from './domain-error-registry.js';
+} from './domain-error-http.js';
 
-describe('domain error registry', () => {
+describe('domain error http mapping', () => {
   it.each([
     [new InvalidRepoFormatError('owner'), 400],
     [new InvalidEmailError('bad'), 400],
@@ -56,9 +54,5 @@ describe('domain error registry', () => {
         code: error.code,
       },
     });
-  });
-
-  it('should map every registered domain error to an HTTP status', () => {
-    expect(httpMappedDomainErrors).toEqual([...domainErrorRegistry]);
   });
 });

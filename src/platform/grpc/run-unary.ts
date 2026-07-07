@@ -1,5 +1,6 @@
 import * as grpc from '@grpc/grpc-js';
-import { isDomainError, resolveDomainErrorGrpc } from './domain-error-grpc.js';
+import { isDomainError } from '../../shared-kernel/domain-error.js';
+import { resolveDomainErrorGrpc } from './domain-error-grpc.js';
 
 export const runUnary = async <T>(
   callback: grpc.sendUnaryData<T>,

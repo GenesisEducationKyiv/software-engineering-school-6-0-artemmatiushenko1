@@ -1,9 +1,14 @@
-export class InvalidReleaseTagError extends Error {
+import {
+  DomainError,
+  ErrorCategory,
+} from '../../../shared-kernel/domain-error.js';
+
+export class InvalidReleaseTagError extends DomainError {
   readonly code = 'INVALID_RELEASE_TAG' as const;
+  readonly category = ErrorCategory.Validation;
 
   constructor(tag: string) {
     super(`Invalid release tag: ${tag}`);
-    this.name = 'InvalidReleaseTagError';
   }
 }
 
