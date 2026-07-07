@@ -27,4 +27,8 @@ export class InProcessEventBus implements EventBus {
     handlers.push(callback as EventHandler);
     this.subscribers.set(eventType, handlers);
   }
+
+  dispose(): void {
+    this.subscribers.clear();
+  }
 }
