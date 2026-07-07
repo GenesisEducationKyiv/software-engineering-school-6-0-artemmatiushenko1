@@ -29,6 +29,7 @@ import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-man
 import { DrizzleOutboxRepository } from './platform/outbox/drizzle-outbox.repository.js';
 import type { Outbox } from './platform/outbox/outbox.js';
 import { OutboxRelay } from './platform/outbox/outbox-relay.js';
+import { NodeCronScheduler } from './platform/scheduler/node-cron-scheduler.js';
 import { registerEventSubscribers } from './platform/event-bus/event-subscriber.js';
 import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
@@ -98,6 +99,8 @@ export class AppContainer {
       transactionManager,
       deps.logger,
       this.metrics.outbox,
+      new NodeCronScheduler(),
+      config.outboxRelayCron,
       config.outboxMaxRetries,
     );
 
