@@ -166,7 +166,6 @@ describe('Subscription Routes Integration with PGlite', () => {
       clock: clockMock,
     });
 
-    container.wireEventSubscribers();
     const deps = container.build();
     app = await App.create(TEST_APP_CONFIG, deps, fastify);
   });
