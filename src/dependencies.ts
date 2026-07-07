@@ -186,4 +186,11 @@ export class AppContainer {
       outboxRelay: this.outboxRelay,
     };
   }
+
+  async dispose(): Promise<void> {
+    await this.scanner.stopCron();
+    await this.outboxRelay.stop();
+    this.eventBus.dispose();
+    await this.deps.redis.quit();
+  }
 }

@@ -46,7 +46,7 @@ deps.logger.info('gRPC server listening', {
   port: boundGrpcPort,
 });
 
-const app = await App.create(appConfig, deps, fastify, grpcServer);
+const app = await App.create(appConfig, container, fastify, grpcServer);
 
 await app.start();
 

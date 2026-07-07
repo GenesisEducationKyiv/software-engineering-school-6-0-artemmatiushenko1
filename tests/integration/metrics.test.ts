@@ -38,8 +38,7 @@ describe('Metrics Routes', () => {
       emailClient: emailMock,
     });
 
-    const deps = container.build();
-    app = await App.create(TEST_APP_CONFIG, deps, fastify);
+    app = await App.create(TEST_APP_CONFIG, container, fastify);
   });
 
   it('should return metrics on /metrics', async () => {

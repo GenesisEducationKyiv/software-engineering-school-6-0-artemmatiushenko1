@@ -164,7 +164,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     });
 
     deps = container.build();
-    app = await App.create(TEST_APP_CONFIG, deps, fastify);
+    app = await App.create(TEST_APP_CONFIG, container, fastify);
   });
 
   const relayEvents = () => deps.outboxRelay.runOnce();
