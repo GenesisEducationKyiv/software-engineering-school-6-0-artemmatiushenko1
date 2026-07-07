@@ -32,8 +32,8 @@ Cross-cutting ports under **`src/domain/shared/`**:
 
 Enforcement:
 
-- **`scripts/check-domain-purity.sh`** — fails if domain/application code imports `pg`, `drizzle`, `fastify`, `zod`, etc.
-- Wired into Husky pre-commit and CI.
+- **`tests/architecture/domain-purity.test.ts`** — fails if domain/application code imports `pg`, `drizzle`, `fastify`, `zod`, etc.
+- Runs with `npm test` (pre-commit and CI).
 
 ## Consequences
 
@@ -46,5 +46,5 @@ Enforcement:
 **Negative / trade-offs**
 
 - More mapping code between DB rows and rich domain objects.
-- Domain purity script is a grep-based guard — it catches obvious violations, not all architectural leaks.
+- Domain purity architecture test catches obvious forbidden imports, not all architectural leaks.
 - Token lifecycle moves into the aggregate; the separate token manager abstraction is removed.

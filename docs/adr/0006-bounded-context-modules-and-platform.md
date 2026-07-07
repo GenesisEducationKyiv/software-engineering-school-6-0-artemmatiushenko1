@@ -40,7 +40,7 @@ Module-specific adapters (repositories, email client, Octokit wrapper) stay insi
 
 **`shared-kernel/`** — move `Clock`, `IdGenerator`, `Logger`, `TransactionManager` from `src/domain/shared/`; framework-free contracts not owned by any one context.
 
-**Domain colocation** — remove top-level `src/domain/`; each module owns its domain package. Domain purity check scans `src/modules/*/domain/`.
+**Domain colocation** — remove top-level `src/domain/`; each module owns its domain package. Architecture tests under `tests/architecture/` scan `src/modules/*/domain/` and `application/` for forbidden infrastructure imports, and enforce cross-module imports via `api/` only.
 
 **Per-module metrics** — replace monolithic `src/domain/metrics.ts` with module-specific ports (`NotificationMetrics`, `ScannerMetrics`, `CacheMetrics`); `platform/metrics/metrics.interface.ts` composes them for the composition root.
 

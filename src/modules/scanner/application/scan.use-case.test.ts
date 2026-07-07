@@ -6,7 +6,7 @@ import type { GithubClient } from '../../github/api/github-client.interface.js';
 import type { Logger } from '../../../shared-kernel/logger.js';
 import type { Clock } from '../../../shared-kernel/index.js';
 import type { Outbox } from '../../../platform/outbox/outbox.js';
-import { GithubRateLimitError } from '../../github/domain/errors.js';
+import { GithubRateLimitError } from '../../github/api/errors.js';
 import { ScannerEventType } from '../api/events.js';
 import { mock } from 'vitest-mock-extended';
 import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
