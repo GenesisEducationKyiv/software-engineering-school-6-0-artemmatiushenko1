@@ -11,6 +11,7 @@ import * as schema from '../../src/db/schema.js';
 import { migrationModules } from '../../src/db/migrations.js';
 import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
+import { FakeScheduler } from '../../src/platform/scheduler/fake-scheduler.js';
 import { TEST_APP_CONFIG } from './constants.js';
 import { createFastifyServerOptions } from '../../src/platform/fastify/create-fastify-server-options.js';
 import type { GithubClient } from '../../src/modules/github/api/github-client.interface.js';
@@ -37,6 +38,7 @@ describe('Metrics Routes', () => {
       redis: redisMock,
       githubClient: githubMock,
       emailClient: emailMock,
+      scheduler: new FakeScheduler(),
     });
 
     app = await App.create(TEST_APP_CONFIG, container, fastify);

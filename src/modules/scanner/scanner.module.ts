@@ -7,6 +7,7 @@ import type { ScannerMetrics } from './application/ports/scanner-metrics.interfa
 import { DrizzleMonitoredRepoRepository } from './infrastructure/monitored-repo.repository.js';
 import { DrizzleTransactionManager } from '../../platform/db/drizzle-transaction-manager.js';
 import type { Outbox } from '../../platform/outbox/outbox.js';
+import type { Scheduler } from '../../platform/scheduler/scheduler.js';
 import { DrizzleIdempotencyGuard } from '../../platform/idempotency-guard/drizzle-idempotency-guard.js';
 import type {
   Delivered,
@@ -25,6 +26,7 @@ export interface ScannerModuleDeps {
   metrics: ScannerMetrics;
   outbox: Outbox;
   cronExpression: string;
+  scheduler: Scheduler;
 }
 
 export class ScannerModule {
@@ -78,6 +80,7 @@ export class ScannerModule {
       this.deps.cronExpression,
       this.scanUseCase,
       this.deps.logger,
+      this.deps.scheduler,
     );
     this.scanCron.start();
   }

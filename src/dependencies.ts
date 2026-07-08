@@ -30,6 +30,7 @@ import { DrizzleOutboxRepository } from './platform/outbox/drizzle-outbox.reposi
 import type { Outbox } from './platform/outbox/outbox.js';
 import { OutboxRelay } from './platform/outbox/outbox-relay.js';
 import { NodeCronScheduler } from './platform/scheduler/node-cron-scheduler.js';
+import type { Scheduler } from './platform/scheduler/scheduler.js';
 import { registerEventSubscribers } from './platform/event-bus/event-subscriber.js';
 import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
@@ -67,6 +68,7 @@ export interface AppContainerDeps {
   idGenerator?: IdGenerator;
   tokenGenerator?: TokenGenerator;
   eventBus?: EventBus;
+  scheduler?: Scheduler;
 }
 
 export class AppContainer {
@@ -88,6 +90,7 @@ export class AppContainer {
     const clock = deps.clock ?? new SystemClock();
     const idGenerator = deps.idGenerator ?? new CryptoIdGenerator();
     const tokenGenerator = deps.tokenGenerator ?? new CryptoTokenGenerator();
+    const scheduler = deps.scheduler ?? new NodeCronScheduler();
 
     const transactionManager = new DrizzleTransactionManager(deps.db);
     const outboxRepository = new DrizzleOutboxRepository(deps.db, idGenerator);
@@ -98,7 +101,7 @@ export class AppContainer {
       transactionManager,
       deps.logger,
       this.metrics.outbox,
-      new NodeCronScheduler(),
+      scheduler,
       config.outboxRelayCron,
       config.outboxMaxRetries,
     );
@@ -141,6 +144,7 @@ export class AppContainer {
       metrics: this.metrics.scanner,
       outbox,
       cronExpression: config.scanner.cronExpression,
+      scheduler,
     });
   }
 
