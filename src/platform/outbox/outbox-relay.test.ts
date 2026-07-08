@@ -1,34 +1,13 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { mock } from 'vitest-mock-extended';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { mock, mockReset } from 'vitest-mock-extended';
 import type { EventBus } from '../event-bus/event-bus.interface.js';
 import type { Logger } from '../../shared-kernel/logger.js';
 import type { TransactionManager } from '../../shared-kernel/transaction.js';
 import type { OutboxMetrics } from '../metrics/outbox-metrics.interface.js';
-import type { Scheduler, ScheduledTaskHandle } from '../scheduler/scheduler.js';
+import { FakeScheduler } from '../scheduler/fake-scheduler.js';
 import type { OutboxRepository } from './outbox.repository.js';
 import type { OutboxMessage } from './outbox-message.js';
 import { OutboxRelay } from './outbox-relay.js';
-
-class FakeScheduler implements Scheduler {
-  readonly scheduledTasks: Array<() => Promise<void> | void> = [];
-  readonly stop = vi.fn(async () => {});
-
-  schedule(
-    _cronExpression: string,
-    task: () => Promise<void> | void,
-  ): ScheduledTaskHandle {
-    this.scheduledTasks.push(task);
-    return { stop: this.stop };
-  }
-
-  async invokeLatest(): Promise<void> {
-    const task = this.scheduledTasks.at(-1);
-    if (!task) {
-      throw new Error('No scheduled task');
-    }
-    await task();
-  }
-}
 
 describe('OutboxRelay', () => {
   const outboxRepository = mock<OutboxRepository>();
@@ -69,22 +48,12 @@ describe('OutboxRelay', () => {
 
   beforeEach(() => {
     scheduler.scheduledTasks.length = 0;
-    scheduler.stop.mockClear();
-    outboxRepository.fetchPending.mockReset();
-    outboxRepository.markProcessed.mockReset();
-    outboxRepository.recordFailure.mockReset();
-    outboxRepository.moveToDeadLetter.mockReset();
-    outboxRepository.countPending.mockReset();
-    outboxRepository.countDeadLetters.mockReset();
-    outboxRepository.oldestPendingAgeSeconds.mockReset();
-    eventBus.publish.mockReset();
-    transactionManager.run.mockReset();
-    logger.error.mockReset();
-    metrics.incrementOutboxRelayFailures.mockReset();
-    metrics.incrementOutboxDeadLetters.mockReset();
-    metrics.setOutboxPendingMessages.mockReset();
-    metrics.setOutboxDeadLetterMessages.mockReset();
-    metrics.setOutboxOldestPendingAgeSeconds.mockReset();
+    scheduler.stopCalls = 0;
+    mockReset(outboxRepository);
+    mockReset(eventBus);
+    mockReset(transactionManager);
+    mockReset(logger);
+    mockReset(metrics);
 
     outboxRepository.recordFailure.mockResolvedValue(1);
     outboxRepository.countPending.mockResolvedValue(0);
@@ -266,7 +235,7 @@ describe('OutboxRelay', () => {
     await run;
     await stopped;
 
-    expect(scheduler.stop).toHaveBeenCalled();
+    expect(scheduler.stopCalls).toBe(1);
 
     outboxRepository.fetchPending.mockClear();
     await stoppingRelay.runOnce();
