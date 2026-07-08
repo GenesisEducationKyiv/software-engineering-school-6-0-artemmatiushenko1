@@ -76,7 +76,6 @@ export class AppContainer {
   private readonly scanner: ScannerModule;
   private readonly eventBus: EventBus;
   private readonly outboxRelay: OutboxRelay;
-  private eventSubscribersRegistered = false;
   private readonly metrics: AppMetrics;
 
   constructor(
@@ -160,19 +159,15 @@ export class AppContainer {
   }
 
   private wireEventSubscribers(): void {
-    if (this.eventSubscribersRegistered) {
-      return;
-    }
-
     for (const module of [this.notification, this.scanner]) {
       registerEventSubscribers(this.eventBus, module.eventSubscribers);
     }
-
-    this.eventSubscribersRegistered = true;
   }
 
   build(): AppDependencies {
     this.wireEventSubscribers();
+    this.outboxRelay.start();
+    this.scanner.startCron();
 
     return {
       redis: this.deps.redis,

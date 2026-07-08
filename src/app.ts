@@ -184,14 +184,6 @@ export class App {
     );
   }
 
-  startScannerCron() {
-    this.deps.scanner.startCron();
-  }
-
-  startOutboxRelayCron() {
-    this.deps.outboxRelay.start();
-  }
-
   public async start() {
     try {
       const { port, host } = this.config;

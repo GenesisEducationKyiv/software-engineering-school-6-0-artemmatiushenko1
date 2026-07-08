@@ -50,6 +50,3 @@ deps.logger.info('gRPC server listening', {
 const app = await App.create(appConfig, container, fastify, grpcServer);
 
 await app.start();
-
-app.startScannerCron();
-app.startOutboxRelayCron();
