@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { mock } from 'vitest-mock-extended';
+import { mock, mockReset } from 'vitest-mock-extended';
 import type { EventBus } from '../event-bus/event-bus.interface.js';
 import type { Logger } from '../../shared-kernel/logger.js';
 import type { TransactionManager } from '../../shared-kernel/transaction.js';
@@ -49,21 +49,11 @@ describe('OutboxRelay', () => {
   beforeEach(() => {
     scheduler.scheduledTasks.length = 0;
     scheduler.stopCalls = 0;
-    outboxRepository.fetchPending.mockReset();
-    outboxRepository.markProcessed.mockReset();
-    outboxRepository.recordFailure.mockReset();
-    outboxRepository.moveToDeadLetter.mockReset();
-    outboxRepository.countPending.mockReset();
-    outboxRepository.countDeadLetters.mockReset();
-    outboxRepository.oldestPendingAgeSeconds.mockReset();
-    eventBus.publish.mockReset();
-    transactionManager.run.mockReset();
-    logger.error.mockReset();
-    metrics.incrementOutboxRelayFailures.mockReset();
-    metrics.incrementOutboxDeadLetters.mockReset();
-    metrics.setOutboxPendingMessages.mockReset();
-    metrics.setOutboxDeadLetterMessages.mockReset();
-    metrics.setOutboxOldestPendingAgeSeconds.mockReset();
+    mockReset(outboxRepository);
+    mockReset(eventBus);
+    mockReset(transactionManager);
+    mockReset(logger);
+    mockReset(metrics);
 
     outboxRepository.recordFailure.mockResolvedValue(1);
     outboxRepository.countPending.mockResolvedValue(0);
