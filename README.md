@@ -183,25 +183,4 @@ If you need to run tests locally with the Playwright UI:
 
 ## Database Schema
 
-The service uses PostgreSQL with the following schema, managed by Drizzle ORM:
-
-```mermaid
-erDiagram
-    subscriptions ||--o{ subscription_tokens : "has"
-    subscriptions {
-        serial id PK
-        text email
-        text repo
-        boolean confirmed
-        text last_seen_tag
-        timestamp created_at
-    }
-    subscription_tokens {
-        serial id PK
-        text token
-        integer subscription_id FK
-        scope_enum scope
-        timestamp expires_at
-        timestamp created_at
-    }
-```
+PostgreSQL with per-module schemas (`subscription`, `scanner`, `notification`, `platform`), managed by Drizzle ORM. See [docs/sdd.md](./docs/sdd.md#data-model) for the current data model.
