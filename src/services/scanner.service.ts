@@ -6,6 +6,7 @@ import { NotificationService } from './notification.service.js';
 import type { Logger } from '../domain/logger.js';
 import { GithubRateLimitError } from '../domain/errors.js';
 import type { Metrics } from '../domain/metrics.js';
+import { msToSeconds } from '../utils/time.utils.js';
 
 export class ScannerService {
   constructor(
@@ -20,18 +21,21 @@ export class ScannerService {
     const startTime = Date.now();
     this.metrics?.incrementScanTotal();
 
-    const activeSubscriptions =
-      await this.subscriptionRepo.findAllConfirmedSubscriptions();
+    try {
+      const activeSubscriptions =
+        await this.subscriptionRepo.findAllConfirmedSubscriptions();
 
-    this.logger.info(
-      `Found ${activeSubscriptions.length} active subscriptions to scan.`,
-    );
+      this.logger.info('Active subscriptions found for scan', {
+        count: activeSubscriptions.length,
+      });
 
-    for (const sub of activeSubscriptions) {
-      await this.safeScanSubscription(sub);
+      for (const sub of activeSubscriptions) {
+        await this.safeScanSubscription(sub);
+      }
+    } finally {
+      const endTime = Date.now();
+      this.metrics?.recordScanDuration(msToSeconds(endTime - startTime));
     }
-    const durationSeconds = (Date.now() - startTime) / 1000;
-    this.recordScanDuration(durationSeconds);
   }
 
   private async safeScanSubscription(sub: Subscription): Promise<void> {
@@ -47,39 +51,43 @@ export class ScannerService {
         throw error;
       }
       this.logger.error(
-        `Error scanning ${sub.repo}:`,
+        'Error scanning subscription',
         error instanceof Error ? error : new Error(String(error)),
+        { repo: sub.repo, subscriptionId: sub.id },
       );
     }
   }
 
   private async scanSubscription(sub: Subscription): Promise<void> {
-    this.logger.info(`Processing subscription for ${sub.repo} (${sub.email})`);
+    this.logger.info('Processing subscription', {
+      subscriptionId: sub.id,
+      repo: sub.repo,
+      email: sub.email,
+    });
     const { owner, repo } = parseRepoPath(sub.repo);
 
     const latestRelease = await this.githubClient.getLatestRelease(owner, repo);
 
     if (!latestRelease) {
-      this.logger.info(`No releases found for ${sub.repo}`);
+      this.logger.info('No releases found', { repo: sub.repo });
       return;
     }
 
     if (latestRelease.tag !== sub.lastSeenTag) {
-      this.logger.info(
-        `New release for ${sub.repo}: ${latestRelease.tag} (was ${sub.lastSeenTag ?? 'none'})`,
-      );
+      this.logger.info('New release detected', {
+        repo: sub.repo,
+        tag: latestRelease.tag,
+        previousTag: sub.lastSeenTag ?? null,
+      });
 
       await this.notificationService.notifyNewRelease(sub, latestRelease);
 
       await this.subscriptionRepo.updateLastSeenTag(sub.id, latestRelease.tag);
     } else {
-      this.logger.info(
-        `No new releases for ${sub.repo} (current: ${sub.lastSeenTag})`,
-      );
+      this.logger.info('No new releases', {
+        repo: sub.repo,
+        currentTag: sub.lastSeenTag,
+      });
     }
-  }
-
-  private recordScanDuration(durationSeconds: number): void {
-    this.metrics?.recordScanDuration(durationSeconds);
   }
 }

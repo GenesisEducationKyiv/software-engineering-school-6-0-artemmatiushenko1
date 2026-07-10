@@ -3,13 +3,12 @@ import { App } from './app.js';
 import { AppContainer } from './dependencies.js';
 import { createConfig } from './config.js';
 import { db } from './db/index.js';
+import { createFastifyServerOptions } from './infrastructure/fastify/create-fastify-server-options.js';
 import { MIGRATIONS_FOLDER, runDatabaseMigrations } from './db/migrate.js';
 
-const fastify = Fastify({
-  logger: true,
-});
-
 const appConfig = createConfig();
+
+const fastify = Fastify(createFastifyServerOptions(appConfig));
 const container = new AppContainer(appConfig, fastify.log, db);
 const deps = container.build();
 

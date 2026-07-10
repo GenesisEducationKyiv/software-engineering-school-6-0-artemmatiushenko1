@@ -1,0 +1,30 @@
+filebeat.inputs:
+  - type: container
+    paths:
+      - '/var/lib/docker/containers/*/*.log'
+    processors:
+      - decode_json_fields:
+          fields: ['message']
+          target: ''
+          overwrite_keys: true
+      - drop_fields:
+          fields: ['message']
+          ignore_missing: true
+      - add_docker_metadata:
+          host: 'unix:///var/run/docker.sock'
+      - drop_event:
+          when:
+            not:
+              equals:
+                container.name: 'github-release-notifier-app'
+
+processors:
+  - add_host_metadata: ~
+
+output.elasticsearch:
+  hosts: ['http://elasticsearch:9200']
+  index: 'github-release-notifier-%{+yyyy.MM.dd}'
+
+setup.template.name: 'github-release-notifier'
+setup.template.pattern: 'github-release-notifier-*'
+setup.ilm.enabled: false

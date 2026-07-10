@@ -90,8 +90,9 @@ describe('ScannerService', () => {
       await scannerService.scan();
 
       expect(loggerMock.error).toHaveBeenCalledWith(
-        'Error scanning owner/fail:',
+        'Error scanning subscription',
         expect.any(Error),
+        { repo: 'owner/fail', subscriptionId: 1 },
       );
       expect(notificationServiceMock.notifyNewRelease).toHaveBeenCalledWith(
         sub2,

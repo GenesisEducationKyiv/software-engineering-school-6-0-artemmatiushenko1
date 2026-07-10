@@ -81,17 +81,26 @@ The service operates on two core processes: **Subscription Management** and **Au
 
 ### Running with Docker (Recommended)
 
-The easiest way to run the entire system is using Docker Compose:
+**App stack only** (Postgres, Redis, Mailpit, API):
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
+
+**App + monitoring** (Prometheus, Grafana, Elasticsearch, Kibana, Filebeat):
+
+```bash
+docker compose -f docker-compose.yaml -f monitoring/docker-compose.yaml up --build
+```
+
+See [monitoring/README.md](./monitoring/README.md) for the monitoring stack architecture, service URLs, and configuration.
 
 Once the containers are running, the application will be accessible at:
 
 - **Web Interface**: [http://localhost:3000](http://localhost:3000)
 - **API Documentation (Swagger)**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
-- **Prometheus Metrics**: [http://localhost:3000/metrics](http://localhost:3000/metrics)
+
+The app container is not published to the host directly. **nginx** listens on port 3000 and proxies public traffic to the app. `/metrics` is blocked at the proxy and is only reachable on the internal Docker network (scraped by Prometheus).
 
 ### Running Locally
 
@@ -104,15 +113,13 @@ Once the containers are running, the application will be accessible at:
    npm run dev
    ```
 
-## Monitoring & Metrics
+## Observability
 
-- **Metrics Endpoint**: `http://localhost:3000/metrics`
-- **Key Indicators**:
-  - `subscription_requests_total`: Total number of subscription attempts.
-  - `notifications_sent_total`: Total number of emails sent.
-  - `scanner_runs_total`: Total number of repository scans.
-  - `cache_hits_total`: GitHub API cache hit count.
-  - `cache_misses_total`: GitHub API cache miss count.
+The API emits **structured JSON logs** (Pino) to stdout and exposes **Prometheus metrics** at `/metrics` on the internal network (HTTP RED plus business counters for notifications, scans, and cache hits). In Docker, nginx blocks public access to `/metrics`; only Prometheus scrapes it directly via `app:3000`.
+
+Start the optional monitoring stack together with the app (see [monitoring/README.md](./monitoring/README.md)) to scrape metrics into Grafana and ship logs to Kibana.
+
+When running locally with `npm run dev` (`NODE_ENV=development`), logs are automatically formatted for readability. Docker/production output stays JSON for Filebeat.
 
 ## Testing
 
@@ -167,6 +174,8 @@ If you need to run tests locally with the Playwright UI:
 - `src/routes`: API route definitions.
 - `client/`: Frontend application code.
 - `drizzle/`: Database migrations.
+- `nginx/`: Public reverse proxy (blocks `/metrics` from the internet).
+- `monitoring/`: Prometheus, Grafana, and ELK stack — see [monitoring/README.md](./monitoring/README.md).
 
 ## Database Schema
 

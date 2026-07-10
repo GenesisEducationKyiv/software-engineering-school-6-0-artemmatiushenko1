@@ -24,7 +24,6 @@ import {
   subscriptionConfirmationTemplate,
   subscriptionConfirmedTemplate,
 } from '../infrastructure/email/templates.js';
-import type { Metrics } from '../domain/metrics.js';
 
 export class SubscriptionService {
   constructor(
@@ -35,7 +34,6 @@ export class SubscriptionService {
     private transactionManager: TransactionManager,
     private logger: Logger,
     private appUrl: string,
-    private metrics?: Metrics,
   ) {}
 
   async subscribe(email: string, repoPath: string): Promise<Subscription> {
@@ -51,8 +49,6 @@ export class SubscriptionService {
 
     const validatedRepo = repoResult.data;
     const validatedEmail = emailResult.data;
-
-    this.metrics?.incrementSubscriptionRequests(validatedRepo);
 
     const { owner, repo } = parseRepoPath(validatedRepo);
 
@@ -111,7 +107,10 @@ export class SubscriptionService {
       ...template,
     });
 
-    this.logger.info(`User ${email} subscribed to ${repoPath}`);
+    this.logger.info('User subscribed', {
+      email: validatedEmail,
+      repoPath: validatedRepo,
+    });
 
     return subscription;
   }
@@ -177,11 +176,10 @@ export class SubscriptionService {
     const sub = await this.subscriptionRepo.findSubscriptionById(
       token.subscriptionId,
     );
+
     if (!sub) {
       throw new SubscriptionNotFoundError(token.subscriptionId);
     }
-
-    this.metrics?.incrementSubscriptionConfirmations(sub.repo);
 
     const unsubscribeToken =
       await this.tokenManager.getTokenBySubscriptionIdAndScope(
@@ -201,7 +199,9 @@ export class SubscriptionService {
       ...template,
     });
 
-    this.logger.info(`Subscription confirmed for token ${tokenValue}`);
+    this.logger.info('Subscription confirmed', {
+      subscriptionId: token.subscriptionId,
+    });
   }
 
   async unsubscribe(tokenValue: string): Promise<void> {
@@ -216,18 +216,13 @@ export class SubscriptionService {
       throw new InvalidTokenError();
     }
 
-    const sub = await this.subscriptionRepo.findSubscriptionById(
-      token.subscriptionId,
-    );
-    if (sub) {
-      this.metrics?.incrementUnsubscribeRequests(sub.repo);
-    }
-
     await this.transactionManager.run(async (tx) => {
       await this.subscriptionRepo.deleteSubscription(token.subscriptionId, tx);
       await this.tokenManager.invalidateToken(tokenValue, tx);
     });
 
-    this.logger.info(`User unsubscribed via token ${tokenValue}`);
+    this.logger.info('User unsubscribed', {
+      subscriptionId: token.subscriptionId,
+    });
   }
 }

@@ -27,10 +27,9 @@ export class NotificationService {
       );
 
     if (!unsubscribeToken) {
-      this.logger.error(
+      throw new TokenNotFoundError(
         `No unsubscribe token found for subscription ${subscription.id}`,
       );
-      throw new TokenNotFoundError();
     }
 
     const unsubscribeUrl = `${this.appUrl}/unsubscribe/${unsubscribeToken.token}`;
@@ -47,6 +46,6 @@ export class NotificationService {
       ...template,
     });
 
-    this.metrics?.incrementNotificationsSent(subscription.repo);
+    this.metrics?.incrementNotificationsSent();
   }
 }

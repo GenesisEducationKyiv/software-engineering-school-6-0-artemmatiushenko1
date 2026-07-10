@@ -15,6 +15,9 @@ import { healthRoutes } from './routes/health.routes.js';
 import cron, { type ScheduledTask } from 'node-cron';
 import { CommonErrorResponseDtoSchema } from './dtos/response.dto.js';
 import { type AppDependencies } from './dependencies.js';
+import { msToSeconds } from './utils/time.utils.js';
+import { REQUEST_ID_HEADER } from './infrastructure/fastify/constants.js';
+import { runWithRequestLogger } from './infrastructure/logger/request-log-context.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,14 +49,52 @@ export class App {
   }
 
   private async initialize(): Promise<void> {
+    this.setupHttpLogging();
     await this.serveStaticFiles();
     await this.setupSwagger();
     this.setupErrorHandler();
     await this.setupRoutes();
   }
 
+  private setupHttpLogging(): void {
+    this.fastify.addHook('onRequest', (request, reply, done) => {
+      reply.header(REQUEST_ID_HEADER, request.id);
+
+      const requestLogger = request.log.child({
+        method: request.method,
+        route: request.url,
+        ip: request.ip,
+      });
+
+      request.log = requestLogger;
+
+      runWithRequestLogger(requestLogger, () => {
+        done();
+      });
+    });
+
+    this.fastify.addHook('onResponse', async (request, reply) => {
+      const route = request.routeOptions?.url ?? 'unknown';
+      const durationSeconds = msToSeconds(reply.elapsedTime);
+
+      this.deps.metrics.recordHttpRequest(
+        request.method,
+        route,
+        reply.statusCode,
+        durationSeconds,
+      );
+
+      this.deps.logger.info('Request completed', {
+        statusCode: reply.statusCode,
+        responseTime: reply.elapsedTime,
+      });
+    });
+  }
+
   private setupErrorHandler() {
     this.fastify.setErrorHandler((error, _, reply) => {
+      this.deps.logger.error('Request error', error as Error);
+
       if (error instanceof DomainError) {
         return reply.status(error.status).send(
           CommonErrorResponseDtoSchema.parse({
@@ -62,8 +103,6 @@ export class App {
           }),
         );
       }
-
-      this.deps.logger.error('Request error:', error as Error);
 
       reply.status(500).send(
         CommonErrorResponseDtoSchema.parse({
@@ -131,13 +170,13 @@ export class App {
 
   startScannerCron() {
     this.scanTask = cron.schedule(this.config.scannerCron, async () => {
-      this.deps.logger.info('Starting scheduled scan...');
+      this.deps.logger.info('Starting scheduled scan');
       try {
         await this.deps.scannerService.scan();
-        this.deps.logger.info('Scheduled scan completed.');
+        this.deps.logger.info('Scheduled scan completed');
       } catch (error) {
         if (error instanceof Error) {
-          this.deps.logger.error('Scheduled scan failed.', error);
+          this.deps.logger.error('Scheduled scan failed', error);
         } else {
           throw error;
         }
@@ -164,9 +203,7 @@ export class App {
 
   private setupGracefulShutdown() {
     const shutdown = async (signal: string) => {
-      this.deps.logger.info(
-        `Received ${signal}. Starting graceful shutdown...`,
-      );
+      this.deps.logger.info('Starting graceful shutdown', { signal });
 
       try {
         await this.scanTask?.stop();
