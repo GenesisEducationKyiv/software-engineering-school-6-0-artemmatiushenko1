@@ -1,37 +1,15 @@
-import { z } from 'zod';
+import type { Subscription } from './subscription/subscription.js';
 
-export const RepoPathSchema = z
-  .string()
-  .regex(/^[a-zA-Z0-9-]+\/[a-zA-Z0-9._-]+$/, {
-    message: "Invalid repository format. Expected 'owner/repo'",
-  });
+export interface SubscriptionService {
+  subscribe(email: string, repoPath: string): Promise<void>;
 
-export const SubscriptionSchema = z.object({
-  id: z.number().int(),
-  email: z.email(),
-  repo: z.string(),
-  confirmed: z.boolean(),
-  lastSeenTag: z.string().nullable(),
-  createdAt: z.date(),
-});
+  getSubscriptionsByEmail(email: string): Promise<Subscription[]>;
 
-export type Subscription = z.infer<typeof SubscriptionSchema>;
+  findAllConfirmedSubscriptions(): Promise<Subscription[]>;
 
-export const SubscriptionTokenScopeSchema = z.enum([
-  'subscribe',
-  'unsubscribe',
-]);
-export type SubscriptionTokenScope = z.infer<
-  typeof SubscriptionTokenScopeSchema
->;
+  observeNewRelease(subscriptionId: string, tag: string): Promise<void>;
 
-export const SubscriptionTokenSchema = z.object({
-  id: z.number().int(),
-  token: z.string(),
-  subscriptionId: z.number().int(),
-  scope: SubscriptionTokenScopeSchema,
-  expiresAt: z.date(),
-  createdAt: z.date(),
-});
+  confirm(token: string): Promise<void>;
 
-export type SubscriptionToken = z.infer<typeof SubscriptionTokenSchema>;
+  unsubscribe(token: string): Promise<void>;
+}

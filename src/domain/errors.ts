@@ -1,70 +1,79 @@
-export class DomainError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string,
-    public readonly status: number = 400,
-  ) {
-    super(message);
-    this.name = 'DomainError';
-  }
-}
+import {
+  InvalidEmailError,
+  InvalidRepoFormatError,
+  InvalidTokenError,
+  TokenAlreadyUsedError,
+  TokenExpiredError,
+  InvalidReleaseTagError,
+  IllegalStateTransitionError,
+  WrongTokenScopeError,
+  SubscriptionAlreadyDeactivatedError,
+  SubscriptionAlreadyConfirmedError,
+} from './subscription/errors.js';
 
-export class InvalidRepoFormatError extends DomainError {
+export {
+  InvalidEmailError,
+  InvalidRepoFormatError,
+  InvalidTokenError,
+  TokenAlreadyUsedError,
+  TokenExpiredError,
+  InvalidReleaseTagError,
+  IllegalStateTransitionError,
+  WrongTokenScopeError,
+};
+
+export class RepoNotFoundError extends Error {
+  readonly code = 'REPO_NOT_FOUND' as const;
+
   constructor(repoPath: string) {
-    super(
-      `Invalid repository format: ${repoPath}. Expected 'owner/repo'`,
-      'INVALID_REPO_FORMAT',
-      400,
-    );
+    super(`Repository not found: ${repoPath}`);
   }
 }
 
-export class InvalidEmailError extends DomainError {
-  constructor(email: string) {
-    super(`Invalid email format: ${email}`, 'INVALID_EMAIL', 400);
-  }
-}
+export class AlreadySubscribedError extends Error {
+  readonly code = 'ALREADY_SUBSCRIBED' as const;
 
-export class RepoNotFoundError extends DomainError {
-  constructor(repoPath: string) {
-    super(`Repository not found: ${repoPath}`, 'REPO_NOT_FOUND', 404);
-  }
-}
-
-export class AlreadySubscribedError extends DomainError {
   constructor(email: string, repoPath: string) {
-    super(
-      `${email} is already subscribed to ${repoPath}`,
-      'ALREADY_SUBSCRIBED',
-      409,
-    );
+    super(`${email} is already subscribed to ${repoPath}`);
   }
 }
 
-export class SubscriptionNotFoundError extends DomainError {
-  constructor(subscriptionId: number) {
-    super(
-      `Subscription not found: ${subscriptionId}`,
-      'SUBSCRIPTION_NOT_FOUND',
-      404,
-    );
-  }
-}
+export class SubscriptionNotFoundError extends Error {
+  readonly code = 'SUBSCRIPTION_NOT_FOUND' as const;
 
-export class TokenNotFoundError extends DomainError {
-  constructor(message: string = 'Token not found') {
-    super(message, 'TOKEN_NOT_FOUND', 404);
-  }
-}
-
-export class InvalidTokenError extends DomainError {
-  constructor(reason: string = 'Invalid token') {
-    super(reason, 'INVALID_TOKEN', 400);
-  }
-}
-
-export class GithubRateLimitError extends DomainError {
   constructor() {
-    super('GitHub API rate limit exceeded', 'GITHUB_RATE_LIMIT', 429);
+    super(`Subscription not found`);
   }
 }
+
+export class GithubRateLimitError extends Error {
+  readonly code = 'GITHUB_RATE_LIMIT' as const;
+
+  constructor() {
+    super('GitHub API rate limit exceeded');
+  }
+}
+
+export const domainErrorTypes = [
+  InvalidEmailError,
+  InvalidRepoFormatError,
+  RepoNotFoundError,
+  AlreadySubscribedError,
+  SubscriptionNotFoundError,
+  InvalidTokenError,
+  WrongTokenScopeError,
+  IllegalStateTransitionError,
+  TokenExpiredError,
+  TokenAlreadyUsedError,
+  InvalidReleaseTagError,
+  GithubRateLimitError,
+  SubscriptionAlreadyConfirmedError,
+  SubscriptionAlreadyDeactivatedError,
+] as const;
+
+export type DomainError = InstanceType<(typeof domainErrorTypes)[number]>;
+
+export type DomainErrorCodeType = DomainError['code'];
+
+export const isDomainError = (error: unknown): error is DomainError =>
+  domainErrorTypes.some((ErrorClass) => error instanceof ErrorClass);

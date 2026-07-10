@@ -1,8 +1,8 @@
 import nodemailer from 'nodemailer';
-import type { EmailOptions, EmailService } from '../../domain/email.js';
+import type { SendEmailOptions, EmailClient } from '../../domain/email.js';
 import type { EmailConfig } from '../../config.js';
 
-export class NodemailerEmailService implements EmailService {
+export class NodemailerEmailClient implements EmailClient {
   private transporter: nodemailer.Transporter;
   private from: string;
 
@@ -37,7 +37,7 @@ export class NodemailerEmailService implements EmailService {
     }
   }
 
-  async sendEmail(options: EmailOptions): Promise<void> {
+  async sendEmail(options: SendEmailOptions): Promise<void> {
     await this.transporter.sendMail({
       from: this.from,
       to: options.to,

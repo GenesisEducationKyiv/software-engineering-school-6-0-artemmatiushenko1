@@ -108,7 +108,7 @@ The app container is not published to the host directly. **nginx** listens on po
    ```bash
    npm install
    ```
-2. Start the development server (requires local Postgres and Redis):
+2. Start the development server:
    ```bash
    npm run dev
    ```

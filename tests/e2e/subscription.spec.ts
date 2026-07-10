@@ -9,7 +9,6 @@ const TEST_EMAIL = 'test-e2e@example.com';
 const EXISTING_REPO_FULL_NAME = `${EXISTING_REPO.owner}/${EXISTING_REPO.name}`;
 
 test.afterEach(async ({ request }) => {
-  await db.delete(schema.subscriptionTokens);
   await db.delete(schema.subscriptions);
   await clearEmails(request);
 });
@@ -95,7 +94,7 @@ test.describe('Subscription Flow', () => {
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
       'Confirmation Failed',
     );
-    await expect(page.locator('text=Token not found')).toBeVisible();
+    await expect(page.locator('text=Subscription not found')).toBeVisible();
 
     await page.goto(secondConfirmLink);
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
@@ -192,7 +191,7 @@ test.describe('Subscription Flow', () => {
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
       'Confirmation Failed',
     );
-    await expect(page.locator('text=Token not found')).toBeVisible();
+    await expect(page.locator('text=Subscription not found')).toBeVisible();
   });
 
   test('should show an error for an invalid unsubscribe token', async ({
@@ -202,6 +201,6 @@ test.describe('Subscription Flow', () => {
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
       'Unsubscribe Failed',
     );
-    await expect(page.locator('text=Token not found')).toBeVisible();
+    await expect(page.locator('text=Subscription not found')).toBeVisible();
   });
 });

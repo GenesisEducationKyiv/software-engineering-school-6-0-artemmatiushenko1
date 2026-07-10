@@ -1,36 +1,41 @@
 import {
   pgTable,
-  serial,
   text,
   timestamp,
-  boolean,
   pgEnum,
-  integer,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
-export const scopeEnum = pgEnum('scope', ['subscribe', 'unsubscribe']);
+export const subscriptionStatusEnum = pgEnum('subscription_status', [
+  'pending',
+  'confirmed',
+  'unsubscribed',
+]);
 
 export const subscriptions = pgTable(
   'subscriptions',
   {
-    id: serial('id').primaryKey(),
+    id: text('id').primaryKey(),
     email: text('email').notNull(),
     repo: text('repo').notNull(),
-    confirmed: boolean('confirmed').default(false).notNull(),
+    status: subscriptionStatusEnum('status').default('pending').notNull(),
     lastSeenTag: text('last_seen_tag'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    confirmToken: text('confirm_token').notNull(),
+    confirmExpiresAt: timestamp('confirm_expires_at', {
+      withTimezone: true,
+    }).notNull(),
+    confirmUsedAt: timestamp('confirm_used_at', { withTimezone: true }),
+    unsubscribeToken: text('unsubscribe_token'),
+    unsubscribeUsedAt: timestamp('unsubscribe_used_at', {
+      withTimezone: true,
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
-  (table) => [uniqueIndex('email_repo_unique').on(table.email, table.repo)],
+  (table) => [
+    uniqueIndex('email_repo_unique').on(table.email, table.repo),
+    uniqueIndex('confirm_token_unique').on(table.confirmToken),
+    uniqueIndex('unsubscribe_token_unique').on(table.unsubscribeToken),
+  ],
 );
-
-export const subscriptionTokens = pgTable('subscription_tokens', {
-  id: serial('id').primaryKey(),
-  token: text('token').notNull(),
-  subscriptionId: integer('subscription_id')
-    .notNull()
-    .references(() => subscriptions.id, { onDelete: 'cascade' }),
-  scope: scopeEnum('scope').notNull(),
-  expiresAt: timestamp('expires_at').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});

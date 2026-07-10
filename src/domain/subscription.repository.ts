@@ -1,57 +1,27 @@
 import type {
   Subscription,
-  SubscriptionToken,
+  Email,
+  RepoPath,
   SubscriptionTokenScope,
-} from './subscription.js';
-import type { DomainTransaction } from './transaction-manager.js';
+} from './subscription/index.js';
+import type { DomainTransaction } from './shared/transaction-manager.js';
 
 export interface SubscriptionRepository {
-  createSubscription(
-    data: { email: string; repo: string },
-    tx?: DomainTransaction,
-  ): Promise<Subscription>;
+  findById(id: string): Promise<Subscription | null>;
 
-  findByEmailAndRepo(email: string, repo: string): Promise<Subscription | null>;
+  findByEmailAndRepo(
+    email: Email,
+    repoPath: RepoPath,
+  ): Promise<Subscription | null>;
 
-  findSubscriptionById(id: number): Promise<Subscription | null>;
-
-  findConfirmedSubscriptionsByEmail(email: string): Promise<Subscription[]>;
-
-  findAllConfirmedSubscriptions(): Promise<Subscription[]>;
-
-  findSubscriptionsByEmail(email: string): Promise<Subscription[]>;
-
-  confirmSubscription(id: number, tx?: DomainTransaction): Promise<void>;
-
-  updateLastSeenTag(
-    id: number,
-    tag: string,
-    tx?: DomainTransaction,
-  ): Promise<void>;
-
-  deleteSubscription(id: number, tx?: DomainTransaction): Promise<void>;
-
-  createToken(
-    data: {
-      subscriptionId: number;
-      token: string;
-      scope: SubscriptionTokenScope;
-      expiresAt: Date;
-    },
-    tx?: DomainTransaction,
-  ): Promise<SubscriptionToken>;
-
-  findToken(
+  findByToken(
     token: string,
     scope: SubscriptionTokenScope,
-  ): Promise<SubscriptionToken | null>;
+  ): Promise<Subscription | null>;
 
-  findTokenByValue(token: string): Promise<SubscriptionToken | null>;
+  save(subscription: Subscription, tx?: DomainTransaction): Promise<void>;
 
-  findTokenBySubscriptionIdAndScope(
-    subscriptionId: number,
-    scope: SubscriptionTokenScope,
-  ): Promise<SubscriptionToken | null>;
+  findConfirmedSubscriptionsByEmail(email: Email): Promise<Subscription[]>;
 
-  deleteToken(token: string, tx?: DomainTransaction): Promise<void>;
+  findAllConfirmedSubscriptions(): Promise<Subscription[]>;
 }

@@ -2,196 +2,119 @@ import type {
   Database,
   Transaction as DrizzleTransaction,
 } from '../db/types.js';
-import { subscriptions, subscriptionTokens } from '../db/schema.js';
+import { subscriptions } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import {
-  SubscriptionSchema,
-  SubscriptionTokenSchema,
-} from '../domain/subscription.js';
-import type {
   Subscription,
-  SubscriptionToken,
+  Email,
+  RepoPath,
   SubscriptionTokenScope,
-} from '../domain/subscription.js';
+  SubscriptionStatus,
+} from '../domain/subscription/index.js';
+import {
+  SubscriptionRowMapper,
+  SubscriptionRowSchema,
+} from './subscription-row.mapper.js';
 import type { SubscriptionRepository } from '../domain/subscription.repository.js';
-import type { DomainTransaction } from '../domain/transaction-manager.js';
+import type { DomainTransaction } from '../domain/shared/index.js';
 
 export class DrizzleSubscriptionRepository implements SubscriptionRepository {
+  private readonly subscriptionMapper = new SubscriptionRowMapper();
+
   constructor(private db: Database) {}
 
   private getDb(tx?: DomainTransaction): Database | DrizzleTransaction {
     return (tx as unknown as DrizzleTransaction) ?? this.db;
   }
 
-  async createSubscription(
-    data: { email: string; repo: string },
-    tx?: DomainTransaction,
-  ): Promise<Subscription> {
-    const [result] = await this.getDb(tx)
-      .insert(subscriptions)
-      .values({
-        email: data.email,
-        repo: data.repo,
-        confirmed: false,
-      })
-      .returning();
+  private toDomain(row: unknown): Subscription {
+    return this.subscriptionMapper.toDomain(SubscriptionRowSchema.parse(row));
+  }
 
-    return SubscriptionSchema.parse(result);
+  async findByToken(
+    token: string,
+    scope: SubscriptionTokenScope,
+  ): Promise<Subscription | null> {
+    const tokenColumn =
+      scope === SubscriptionTokenScope.Confirm
+        ? subscriptions.confirmToken
+        : subscriptions.unsubscribeToken;
+
+    const [result] = await this.getDb()
+      .select()
+      .from(subscriptions)
+      .where(eq(tokenColumn, token))
+      .limit(1);
+
+    return result ? this.toDomain(result) : null;
   }
 
   async findByEmailAndRepo(
-    email: string,
-    repo: string,
+    email: Email,
+    repoPath: RepoPath,
   ): Promise<Subscription | null> {
     const [result] = await this.getDb()
       .select()
       .from(subscriptions)
-      .where(and(eq(subscriptions.email, email), eq(subscriptions.repo, repo)))
+      .where(
+        and(
+          eq(subscriptions.email, email.value),
+          eq(subscriptions.repo, repoPath.toString()),
+        ),
+      )
       .limit(1);
 
-    return result ? SubscriptionSchema.parse(result) : null;
+    return result ? this.toDomain(result) : null;
   }
 
-  async findSubscriptionById(id: number): Promise<Subscription | null> {
+  async save(
+    subscription: Subscription,
+    tx?: DomainTransaction,
+  ): Promise<void> {
+    const rowValues = this.subscriptionMapper.toRow(subscription);
+    const { id: _id, ...updateValues } = rowValues;
+
+    await this.getDb(tx)
+      .insert(subscriptions)
+      .values(rowValues)
+      .onConflictDoUpdate({
+        target: subscriptions.id,
+        set: updateValues,
+      });
+  }
+
+  async findById(id: string): Promise<Subscription | null> {
     const [result] = await this.getDb()
       .select()
       .from(subscriptions)
       .where(eq(subscriptions.id, id))
       .limit(1);
 
-    return result ? SubscriptionSchema.parse(result) : null;
+    return result ? this.toDomain(result) : null;
   }
 
   async findConfirmedSubscriptionsByEmail(
-    email: string,
+    email: Email,
   ): Promise<Subscription[]> {
     const results = await this.getDb()
       .select()
       .from(subscriptions)
       .where(
-        and(eq(subscriptions.email, email), eq(subscriptions.confirmed, true)),
+        and(
+          eq(subscriptions.email, email.value),
+          eq(subscriptions.status, SubscriptionStatus.Confirmed),
+        ),
       );
 
-    return results.map((r) => SubscriptionSchema.parse(r));
+    return results.map((row) => this.toDomain(row));
   }
 
   async findAllConfirmedSubscriptions(): Promise<Subscription[]> {
     const results = await this.getDb()
       .select()
       .from(subscriptions)
-      .where(eq(subscriptions.confirmed, true));
+      .where(eq(subscriptions.status, 'confirmed'));
 
-    return results.map((r) => SubscriptionSchema.parse(r));
-  }
-
-  async findSubscriptionsByEmail(email: string): Promise<Subscription[]> {
-    const results = await this.getDb()
-      .select()
-      .from(subscriptions)
-      .where(eq(subscriptions.email, email));
-
-    return results.map((r) => SubscriptionSchema.parse(r));
-  }
-
-  async confirmSubscription(id: number, tx?: DomainTransaction): Promise<void> {
-    await this.getDb(tx)
-      .update(subscriptions)
-      .set({ confirmed: true })
-      .where(eq(subscriptions.id, id));
-  }
-
-  async updateLastSeenTag(
-    id: number,
-    tag: string,
-    tx?: DomainTransaction,
-  ): Promise<void> {
-    await this.getDb(tx)
-      .update(subscriptions)
-      .set({ lastSeenTag: tag })
-      .where(eq(subscriptions.id, id));
-  }
-
-  async deleteSubscription(id: number, tx?: DomainTransaction): Promise<void> {
-    await this.getDb(tx).delete(subscriptions).where(eq(subscriptions.id, id));
-  }
-
-  async createToken(
-    data: {
-      subscriptionId: number;
-      token: string;
-      scope: SubscriptionTokenScope;
-      expiresAt: Date;
-    },
-    tx?: DomainTransaction,
-  ): Promise<SubscriptionToken> {
-    const [result] = await this.getDb(tx)
-      .insert(subscriptionTokens)
-      .values({
-        subscriptionId: data.subscriptionId,
-        token: data.token,
-        scope: data.scope,
-        expiresAt: data.expiresAt,
-      })
-      .returning();
-
-    return SubscriptionTokenSchema.parse(result);
-  }
-
-  async findToken(
-    token: string,
-    scope: SubscriptionTokenScope,
-  ): Promise<SubscriptionToken | null> {
-    const [result] = await this.getDb()
-      .select()
-      .from(subscriptionTokens)
-      .where(
-        and(
-          eq(subscriptionTokens.token, token),
-          eq(subscriptionTokens.scope, scope),
-        ),
-      )
-      .limit(1);
-
-    if (!result) return null;
-
-    return SubscriptionTokenSchema.parse(result);
-  }
-
-  async findTokenByValue(token: string): Promise<SubscriptionToken | null> {
-    const [result] = await this.getDb()
-      .select()
-      .from(subscriptionTokens)
-      .where(eq(subscriptionTokens.token, token))
-      .limit(1);
-
-    if (!result) return null;
-
-    return SubscriptionTokenSchema.parse(result);
-  }
-
-  async findTokenBySubscriptionIdAndScope(
-    subscriptionId: number,
-    scope: SubscriptionTokenScope,
-  ): Promise<SubscriptionToken | null> {
-    const [result] = await this.getDb()
-      .select()
-      .from(subscriptionTokens)
-      .where(
-        and(
-          eq(subscriptionTokens.subscriptionId, subscriptionId),
-          eq(subscriptionTokens.scope, scope),
-        ),
-      )
-      .limit(1);
-
-    if (!result) return null;
-
-    return SubscriptionTokenSchema.parse(result);
-  }
-
-  async deleteToken(token: string, tx?: DomainTransaction): Promise<void> {
-    await this.getDb(tx)
-      .delete(subscriptionTokens)
-      .where(eq(subscriptionTokens.token, token));
+    return results.map((row) => this.toDomain(row));
   }
 }

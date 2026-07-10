@@ -27,5 +27,8 @@ build/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Test results
 test-results
 playwright-report
+coverage
