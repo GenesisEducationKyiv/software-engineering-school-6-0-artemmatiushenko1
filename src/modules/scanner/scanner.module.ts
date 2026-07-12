@@ -1,7 +1,7 @@
 import type { GithubClient } from '../github/api/github-client.interface.js';
 import type { NotificationService } from '../notification/api/notification.service.js';
 import type { SubscriptionQueries } from '../subscription/api/subscription-queries.interface.js';
-import type { Clock } from '../../platform/clock.js';
+import type { Clock } from '../../platform/clock/clock.js';
 import type { Logger } from '../../shared-kernel/logger.js';
 import { ScanUseCase } from './application/scan.use-case.js';
 import type { ScannerMetrics } from './application/ports/scanner-metrics.interface.js';

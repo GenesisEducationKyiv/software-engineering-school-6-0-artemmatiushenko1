@@ -9,10 +9,10 @@ import type { GithubClient } from './modules/github/api/github-client.interface.
 import type { EmailClient } from './modules/notification/application/ports/email-client.js';
 import type { Logger } from './shared-kernel/logger.js';
 import type { Redis } from 'ioredis';
-import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
+import { SystemClock } from './platform/clock/system-clock.js';
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
 import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
-import type { Clock } from './platform/clock.js';
+import type { Clock } from './platform/clock/clock.js';
 import { PrometheusMetrics } from './platform/metrics/prometheus-metrics.js';
 
 export interface AppDependencies {

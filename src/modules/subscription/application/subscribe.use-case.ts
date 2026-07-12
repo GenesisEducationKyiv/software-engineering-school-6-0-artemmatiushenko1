@@ -16,7 +16,7 @@ import type {
   Logger,
   TransactionManager,
 } from '../../../shared-kernel/index.js';
-import type { Clock } from '../../../platform/clock.js';
+import type { Clock } from '../../../platform/clock/clock.js';
 
 export class SubscribeUseCase {
   private static readonly CONFIRMATION_TTL_MS = 60_000;

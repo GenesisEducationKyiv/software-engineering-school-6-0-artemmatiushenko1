@@ -7,7 +7,7 @@ import type {
   DomainTransaction,
   Logger,
 } from '../../../shared-kernel/index.js';
-import type { Clock } from '../../../platform/clock.js';
+import type { Clock } from '../../../platform/clock/clock.js';
 import { mock } from 'vitest-mock-extended';
 import { SubscriptionTokenScope, SubscriptionStatus } from '../domain/index.js';
 import {

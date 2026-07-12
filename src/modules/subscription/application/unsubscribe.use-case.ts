@@ -5,7 +5,7 @@ import type {
   Logger,
   TransactionManager,
 } from '../../../shared-kernel/index.js';
-import type { Clock } from '../../../platform/clock.js';
+import type { Clock } from '../../../platform/clock/clock.js';
 
 export class UnsubscribeUseCase {
   constructor(
