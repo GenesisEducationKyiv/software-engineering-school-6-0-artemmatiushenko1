@@ -2,7 +2,7 @@ import type {
   Database,
   Transaction as DrizzleTransaction,
 } from '../../../platform/db/types.js';
-import { subscriptions } from '../../../platform/db/schema.js';
+import { subscriptions } from './db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import {
   Subscription,
@@ -93,7 +93,9 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
     return result ? this.toDomain(result) : null;
   }
 
-  async findConfirmedByEmail(email: Email): Promise<Subscription[]> {
+  async findConfirmedSubscriptionsByEmail(
+    email: Email,
+  ): Promise<Subscription[]> {
     const results = await this.getDb()
       .select()
       .from(subscriptions)
@@ -103,15 +105,6 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepository {
           eq(subscriptions.status, SubscriptionStatus.Confirmed),
         ),
       );
-
-    return results.map((row) => this.toDomain(row));
-  }
-
-  async findAllConfirmed(): Promise<Subscription[]> {
-    const results = await this.getDb()
-      .select()
-      .from(subscriptions)
-      .where(eq(subscriptions.status, SubscriptionStatus.Confirmed));
 
     return results.map((row) => this.toDomain(row));
   }

@@ -9,6 +9,11 @@ import type { GithubClient } from './modules/github/api/github-client.interface.
 import type { EmailClient } from './modules/notification/application/ports/email-client.js';
 import type { Logger } from './shared-kernel/logger.js';
 import type { Redis } from 'ioredis';
+import type { TokenGenerator } from './modules/subscription/application/ports/token-generator.js';
+import type { IdGenerator } from './shared-kernel/id-generator.js';
+import { InProcessEventBus } from './platform/event-bus/in-process-event-bus.js';
+import type { EventBus } from './platform/event-bus/event-bus.interface.js';
+import { registerEventSubscribers } from './platform/event-bus/event-subscriber.js';
 import { SystemClock } from './platform/clock/system-clock.js';
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
 import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
@@ -30,9 +35,12 @@ export interface AppContainerDeps {
   logger: Logger;
   redis: Redis;
   metrics?: Metrics;
+  clock?: Clock;
   githubClient?: GithubClient;
   emailClient?: EmailClient;
-  clock?: Clock;
+  idGenerator?: IdGenerator;
+  tokenGenerator?: TokenGenerator;
+  eventBus?: EventBus;
 }
 
 export class AppContainer {
@@ -40,16 +48,17 @@ export class AppContainer {
   private readonly notification: NotificationModule;
   private readonly subscription: SubscriptionModule;
   private readonly scanner: ScannerModule;
+  private readonly eventBus: EventBus;
   private readonly metrics: Metrics;
 
   constructor(
     config: AppConfig,
     private readonly deps: AppContainerDeps,
   ) {
+    this.eventBus = deps.eventBus ?? new InProcessEventBus(deps.logger);
     const clock = deps.clock ?? new SystemClock();
-    const idGenerator = new CryptoIdGenerator();
-    const tokenGenerator = new CryptoTokenGenerator();
-
+    const idGenerator = deps.idGenerator ?? new CryptoIdGenerator();
+    const tokenGenerator = deps.tokenGenerator ?? new CryptoTokenGenerator();
     this.metrics = deps.metrics ?? new PrometheusMetrics();
 
     this.github = GithubModule.create({
@@ -64,6 +73,7 @@ export class AppContainer {
     });
 
     this.notification = NotificationModule.create({
+      db: deps.db,
       appUrl: config.appUrl,
       metrics: this.metrics,
       emailClient: deps.emailClient
@@ -77,22 +87,30 @@ export class AppContainer {
       tokenGenerator,
       db: deps.db,
       githubClient: this.github.githubClient,
-      notificationService: this.notification.notificationService,
       logger: deps.logger,
+      eventBus: this.eventBus,
     });
 
     this.scanner = ScannerModule.create({
-      clock,
-      subscriptionQueries: this.subscription.subscriptionQueries,
+      db: deps.db,
       githubClient: this.github.githubClient,
-      notificationService: this.notification.notificationService,
       logger: deps.logger,
+      clock,
       metrics: this.metrics,
+      eventBus: this.eventBus,
       cronExpression: config.scanner.cronExpression,
     });
   }
 
+  private wireEventSubscribers(): void {
+    for (const module of [this.notification, this.scanner]) {
+      registerEventSubscribers(this.eventBus, module.eventSubscribers);
+    }
+  }
+
   build(): AppDependencies {
+    this.wireEventSubscribers();
+
     return {
       redis: this.deps.redis,
       metrics: this.metrics,

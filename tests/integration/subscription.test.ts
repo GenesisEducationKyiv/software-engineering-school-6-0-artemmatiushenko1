@@ -13,10 +13,7 @@ import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import * as schema from '../../src/platform/db/schema.js';
-import {
-  MIGRATIONS_FOLDER,
-  runDatabaseMigrations,
-} from '../../src/platform/db/migrate.js';
+import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import assert from 'assert';
 import {
@@ -82,7 +79,6 @@ describe('Subscription Routes Integration with PGlite', () => {
   const seedConfirmedSubscription = async (values: {
     email: string;
     repo: string;
-    lastSeenTag?: string | null;
   }) => {
     const id = subscriptionId();
     const confirmToken = randomUUID();
@@ -95,7 +91,6 @@ describe('Subscription Routes Integration with PGlite', () => {
         email: values.email,
         repo: values.repo,
         status: 'confirmed',
-        lastSeenTag: values.lastSeenTag ?? null,
         confirmToken,
         confirmExpiresAt: new Date('2026-01-01T13:00:00Z'),
         confirmUsedAt: new Date('2026-01-01T12:00:00Z'),
@@ -144,7 +139,7 @@ describe('Subscription Routes Integration with PGlite', () => {
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
-    await runDatabaseMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER });
+    await runAllDatabaseMigrations(db);
   });
 
   beforeEach(async () => {
@@ -152,6 +147,11 @@ describe('Subscription Routes Integration with PGlite', () => {
     vi.resetAllMocks();
 
     githubMock.repositoryExists.mockResolvedValue(true);
+    githubMock.getLatestRelease.mockResolvedValue({
+      tag: 'v1.0.0',
+      name: 'v1.0.0',
+      publishedAt: null,
+    });
     clockMock.now.mockReturnValue(FIXED_NOW);
 
     const fastify = Fastify(createFastifyServerOptions(TEST_APP_CONFIG));
@@ -459,6 +459,14 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
       assert(updatedSubscription);
       expect(updatedSubscription.status).toBe('confirmed');
+      expect(githubMock.getLatestRelease).toHaveBeenCalledWith('owner', 'repo');
+
+      const watcher = await db.query.repoWatchers.findFirst({
+        where: (watchers, { eq }) =>
+          eq(watchers.subscriptionId, subscription.id),
+      });
+      assert(watcher);
+      expect(watcher.lastNotifiedTag).toBe('v1.0.0');
 
       const consumedSubscribeToken = await findSubscriptionToken(
         subscription.id,

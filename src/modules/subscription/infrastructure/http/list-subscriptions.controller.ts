@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import type { GetSubscriptionsByEmailUseCase } from '../../application/get-subscriptions-by-email.use-case.js';
+import type { GetSubscriptionsByEmailUseCase } from '../../application/use-cases/get-subscriptions-by-email.use-case.js';
 import { SubscriptionsResponseDtoSchema } from './subscriptions-response.dto.js';
 import { SubscriptionStatus } from '../../domain/index.js';
 
@@ -19,7 +19,6 @@ export function registerListSubscriptionsRoute(
             email: subscription.email.value,
             repo: subscription.repoPath.toString(),
             confirmed: subscription.status === SubscriptionStatus.Confirmed,
-            lastSeenTag: subscription.lastSeenTag?.value ?? null,
           })),
         ),
       );

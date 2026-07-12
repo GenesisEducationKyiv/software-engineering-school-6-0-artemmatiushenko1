@@ -24,8 +24,6 @@ COPY --from=builder /app/client/dist ./client/dist
 
 COPY src ./src
 COPY swagger.yaml ./
-COPY drizzle.config.ts ./
-COPY drizzle ./drizzle
 
 EXPOSE 3000
 

@@ -1,10 +1,12 @@
 import {
   InvalidEmailError,
   InvalidRepoFormatError,
+} from '../../shared-kernel/errors.js';
+import { InvalidReleaseTagError } from '../../modules/scanner/domain/errors.js';
+import {
   InvalidTokenError,
   TokenAlreadyUsedError,
   TokenExpiredError,
-  InvalidReleaseTagError,
   IllegalStateTransitionError,
   WrongTokenScopeError,
   SubscriptionAlreadyDeactivatedError,

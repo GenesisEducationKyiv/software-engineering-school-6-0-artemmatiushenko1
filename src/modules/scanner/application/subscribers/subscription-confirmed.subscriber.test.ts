@@ -1,0 +1,124 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { mock } from 'vitest-mock-extended';
+import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
+import type { GithubClient } from '../../../github/api/github-client.interface.js';
+import {
+  SubscriptionEventType,
+  type SubscriptionConfirmedEvent,
+} from '../../../subscription/api/events.js';
+import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
+import {
+  MonitoredRepo,
+  ReleaseTag,
+  RepoPath,
+  RepoWatcher,
+} from '../../domain/index.js';
+import { SubscriptionConfirmedSubscriber } from './subscription-confirmed.subscriber.js';
+
+describe('Scanner SubscriptionConfirmedSubscriber', () => {
+  const event: SubscriptionConfirmedEvent = {
+    type: SubscriptionEventType.Confirmed,
+    aggregateId: 'sub-1',
+    occurredAt: '2024-01-01T00:00:00.000Z',
+    payload: {
+      email: 'alice@example.com',
+      repo: 'owner/repo',
+      unsubscribeToken: 'unsub-token',
+    },
+  };
+
+  const monitoredRepoRepository = mock<MonitoredRepoRepository>();
+  const transactionManager = mock<TransactionManager>();
+  const githubClient = mock<GithubClient>();
+
+  let subscriber: SubscriptionConfirmedSubscriber;
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+
+    monitoredRepoRepository.findByRepo.mockResolvedValue(null);
+    transactionManager.run.mockImplementation(async (work) =>
+      work({} as never),
+    );
+    githubClient.getLatestRelease.mockResolvedValue({
+      tag: 'v1.0.0',
+      name: 'v1.0.0',
+      publishedAt: null,
+    });
+
+    subscriber = new SubscriptionConfirmedSubscriber(
+      monitoredRepoRepository,
+      transactionManager,
+      githubClient,
+    );
+  });
+
+  it('creates a monitored repo and saves a watcher with baseline tag', async () => {
+    await subscriber.handle(event);
+
+    expect(githubClient.getLatestRelease).toHaveBeenCalledWith('owner', 'repo');
+    expect(monitoredRepoRepository.findByRepo).toHaveBeenCalledWith(
+      RepoPath.fromString('owner/repo'),
+      expect.anything(),
+    );
+    expect(monitoredRepoRepository.save).toHaveBeenCalledWith(
+      MonitoredRepo.rehydrate({
+        repo: RepoPath.fromString('owner/repo'),
+        watchers: [
+          RepoWatcher.create({
+            subscriptionId: 'sub-1',
+            lastNotifiedTag: ReleaseTag.fromString('v1.0.0'),
+          }),
+        ],
+        lastSeenTag: ReleaseTag.fromString('v1.0.0'),
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('adds a watcher to an existing monitored repo', async () => {
+    const existing = MonitoredRepo.create(RepoPath.fromString('owner/repo'));
+    existing.addWatcher(
+      RepoWatcher.create({
+        subscriptionId: 'sub-0',
+        lastNotifiedTag: ReleaseTag.fromString('v0.9.0'),
+      }),
+    );
+    monitoredRepoRepository.findByRepo.mockResolvedValue(existing);
+
+    await subscriber.handle(event);
+
+    expect(monitoredRepoRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        watchers: expect.arrayContaining([
+          expect.objectContaining({
+            subscriptionId: 'sub-0',
+            lastNotifiedTag: ReleaseTag.fromString('v0.9.0'),
+          }),
+          expect.objectContaining({
+            subscriptionId: 'sub-1',
+            lastNotifiedTag: ReleaseTag.fromString('v1.0.0'),
+          }),
+        ]),
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('stores null lastNotifiedTag when the repository has no releases', async () => {
+    githubClient.getLatestRelease.mockResolvedValue(null);
+
+    await subscriber.handle(event);
+
+    expect(monitoredRepoRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        watchers: [
+          expect.objectContaining({
+            lastNotifiedTag: null,
+          }),
+        ],
+      }),
+      expect.anything(),
+    );
+  });
+});

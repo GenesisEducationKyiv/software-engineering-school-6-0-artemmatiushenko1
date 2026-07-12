@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import type { SubscribeUseCase } from '../../application/subscribe.use-case.js';
+import type { SubscribeUseCase } from '../../application/use-cases/subscribe.use-case.js';
 import { CommonSuccessResponseDtoSchema } from '../../../../platform/http/response.dto.js';
 
 export function registerSubscribeRoute(

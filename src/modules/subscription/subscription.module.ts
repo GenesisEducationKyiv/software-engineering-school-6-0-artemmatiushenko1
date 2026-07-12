@@ -1,72 +1,64 @@
 import type { Database } from '../../platform/db/types.js';
 import type { GithubClient } from '../github/api/github-client.interface.js';
-import type { NotificationService } from '../notification/api/notification.service.js';
 import type { Clock } from '../../shared-kernel/clock.js';
 import type { IdGenerator } from '../../shared-kernel/id-generator.js';
 import type { Logger } from '../../shared-kernel/logger.js';
 import { DrizzleTransactionManager } from '../../platform/db/drizzle-transaction-manager.js';
-import type { SubscriptionQueries } from './api/subscription-queries.interface.js';
-import { ConfirmUseCase } from './application/confirm.use-case.js';
-import { GetSubscriptionsByEmailUseCase } from './application/get-subscriptions-by-email.use-case.js';
+import { ConfirmUseCase } from './application/use-cases/confirm.use-case.js';
+import { GetSubscriptionsByEmailUseCase } from './application/use-cases/get-subscriptions-by-email.use-case.js';
 import type { TokenGenerator } from './application/ports/token-generator.js';
-import { SubscribeUseCase } from './application/subscribe.use-case.js';
-import { SubscriptionQueriesImpl } from './application/subscription-queries.js';
-import { UnsubscribeUseCase } from './application/unsubscribe.use-case.js';
+import { SubscribeUseCase } from './application/use-cases/subscribe.use-case.js';
+import { UnsubscribeUseCase } from './application/use-cases/unsubscribe.use-case.js';
 import { DrizzleSubscriptionRepository } from './infrastructure/subscription.repository.js';
+import type { EventBus } from '../../platform/event-bus/event-bus.interface.js';
 
 export interface SubscriptionModuleDeps {
   db: Database;
   githubClient: GithubClient;
-  notificationService: NotificationService;
   logger: Logger;
   clock: Clock;
   idGenerator: IdGenerator;
   tokenGenerator: TokenGenerator;
+  eventBus: EventBus;
 }
 
 export class SubscriptionModule {
-  private readonly subscriptionRepo: DrizzleSubscriptionRepository;
-  private readonly transactionManager: DrizzleTransactionManager;
-
-  readonly subscriptionQueries: SubscriptionQueries;
   readonly subscribeUseCase: SubscribeUseCase;
   readonly confirmUseCase: ConfirmUseCase;
   readonly unsubscribeUseCase: UnsubscribeUseCase;
   readonly getSubscriptionsByEmailUseCase: GetSubscriptionsByEmailUseCase;
 
-  private constructor(private readonly deps: SubscriptionModuleDeps) {
-    this.subscriptionRepo = new DrizzleSubscriptionRepository(this.deps.db);
-    this.transactionManager = new DrizzleTransactionManager(this.deps.db);
-    this.subscriptionQueries = new SubscriptionQueriesImpl(
-      this.subscriptionRepo,
-      this.transactionManager,
-    );
+  private constructor(deps: SubscriptionModuleDeps) {
+    const subscriptionRepo = new DrizzleSubscriptionRepository(deps.db);
+    const transactionManager = new DrizzleTransactionManager(deps.db);
+
     this.subscribeUseCase = new SubscribeUseCase(
-      this.subscriptionRepo,
-      this.deps.githubClient,
-      this.deps.notificationService,
-      this.transactionManager,
-      this.deps.logger,
-      this.deps.idGenerator,
-      this.deps.tokenGenerator,
-      this.deps.clock,
+      subscriptionRepo,
+      deps.githubClient,
+      transactionManager,
+      deps.logger,
+      deps.idGenerator,
+      deps.tokenGenerator,
+      deps.clock,
+      deps.eventBus,
     );
     this.confirmUseCase = new ConfirmUseCase(
-      this.subscriptionRepo,
-      this.deps.notificationService,
-      this.transactionManager,
-      this.deps.logger,
-      this.deps.tokenGenerator,
-      this.deps.clock,
+      subscriptionRepo,
+      transactionManager,
+      deps.logger,
+      deps.tokenGenerator,
+      deps.clock,
+      deps.eventBus,
     );
     this.unsubscribeUseCase = new UnsubscribeUseCase(
-      this.subscriptionRepo,
-      this.transactionManager,
-      this.deps.logger,
-      this.deps.clock,
+      subscriptionRepo,
+      transactionManager,
+      deps.logger,
+      deps.clock,
+      deps.eventBus,
     );
     this.getSubscriptionsByEmailUseCase = new GetSubscriptionsByEmailUseCase(
-      this.subscriptionRepo,
+      subscriptionRepo,
     );
   }
 
