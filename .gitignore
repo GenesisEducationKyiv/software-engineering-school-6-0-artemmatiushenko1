@@ -1,0 +1,36 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# TypeScript
+*.tsbuildinfo
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Environment variables
+.env
+.env.test
+.env.production
+
+# Build directories
+dist/
+build/
+**/grpc/generated/
+
+# Husky (generated on npm install)
+.husky/_
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Test results
+test-results
+playwright-report
+coverage
+.cursor

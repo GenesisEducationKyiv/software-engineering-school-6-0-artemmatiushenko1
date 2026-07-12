@@ -1,0 +1,228 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { SubscribeUseCase } from './subscribe.use-case.js';
+import type { SubscriptionRepository } from '../ports/subscription.repository.ts';
+import type { GithubClient } from '../../../github/api/github-client.interface.js';
+import { RepoNotFoundError, AlreadySubscribedError } from '../errors.js';
+import type {
+  IdGenerator,
+  TransactionManager,
+  DomainTransaction,
+  Logger,
+} from '../../../../shared-kernel/index.js';
+import type { TokenGenerator } from '../ports/token-generator.js';
+import type { Outbox } from '../../../../platform/outbox/outbox.js';
+import { SubscriptionEventType } from '../../api/events.js';
+import type { Clock } from '../../../../shared-kernel/clock.js';
+import { mock } from 'vitest-mock-extended';
+import {
+  SubscriptionTokenScope,
+  SubscriptionStatus,
+  SubscriptionToken,
+} from '../../domain/index.js';
+import {
+  CONFIRM_TOKEN_EXPIRES_AT,
+  createConfirmedSubscription,
+  createPendingSubscription,
+  createUnsubscribedSubscription,
+  FIXED_NOW,
+  FIXED_NOW_ISO,
+} from './subscription-test-fixtures.js';
+
+describe('SubscribeUseCase', () => {
+  let subscribeUseCase: SubscribeUseCase;
+  const repoMock = mock<SubscriptionRepository>();
+  const githubClientMock = mock<GithubClient>();
+  const loggerMock = mock<Logger>();
+  const transactionManagerMock = mock<TransactionManager>();
+  const idGeneratorMock = mock<IdGenerator>();
+  const tokenGeneratorMock = mock<TokenGenerator>();
+  const clockMock = mock<Clock>();
+  const outboxMock = mock<Outbox>();
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+
+    clockMock.now.mockReturnValue(FIXED_NOW);
+
+    transactionManagerMock.run.mockImplementation(
+      async (work) => await work({} as DomainTransaction),
+    );
+
+    outboxMock.save.mockResolvedValue(undefined);
+
+    subscribeUseCase = new SubscribeUseCase(
+      repoMock,
+      githubClientMock,
+      transactionManagerMock,
+      loggerMock,
+      idGeneratorMock,
+      tokenGeneratorMock,
+      clockMock,
+      outboxMock,
+    );
+  });
+
+  it('should successfully subscribe a user', async () => {
+    const email = 'test@example.com';
+    const repo = 'owner/repo';
+    const confirmToken = '550e8400-e29b-41d4-a716-446655440000';
+    const subscriptionId = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+
+    tokenGeneratorMock.generate.mockReturnValue(confirmToken);
+    idGeneratorMock.next.mockReturnValue(subscriptionId);
+
+    repoMock.findByEmailAndRepo.mockResolvedValue(null);
+    githubClientMock.repositoryExists.mockResolvedValue(true);
+
+    await subscribeUseCase.execute(email, repo);
+
+    expect(githubClientMock.repositoryExists).toHaveBeenCalledWith(
+      'owner',
+      'repo',
+    );
+    expect(repoMock.save).toHaveBeenCalledTimes(1);
+
+    const [savedSubscription] = repoMock.save.mock.calls[0]!;
+
+    expect(savedSubscription.id).toBe(subscriptionId);
+    expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
+    expect(savedSubscription.email.value).toBe(email);
+    expect(savedSubscription.repoPath.toString()).toBe(repo);
+    expect(
+      savedSubscription.confirmationToken.equals(
+        SubscriptionToken.rehydrate({
+          value: confirmToken,
+          scope: SubscriptionTokenScope.Confirm,
+          expiresAt: CONFIRM_TOKEN_EXPIRES_AT,
+        }),
+      ),
+    ).toBe(true);
+    expect(savedSubscription.unsubscribeToken).toBeNull();
+    expect(outboxMock.save).toHaveBeenCalledWith(
+      [
+        {
+          type: SubscriptionEventType.Requested,
+          aggregateId: subscriptionId,
+          occurredAt: FIXED_NOW_ISO,
+          payload: {
+            email,
+            repo,
+            confirmationToken: confirmToken,
+          },
+        },
+      ],
+      expect.anything(),
+    );
+  });
+
+  it('should throw RepoNotFoundError if repo does not exist', async () => {
+    githubClientMock.repositoryExists.mockResolvedValue(false);
+
+    await expect(
+      subscribeUseCase.execute('test@example.com', 'owner/repo'),
+    ).rejects.toThrow(RepoNotFoundError);
+  });
+
+  it('should throw AlreadySubscribedError if already confirmed', async () => {
+    const subscription = createConfirmedSubscription();
+
+    githubClientMock.repositoryExists.mockResolvedValue(true);
+    repoMock.findByEmailAndRepo.mockResolvedValue(subscription);
+
+    await expect(
+      subscribeUseCase.execute('test@example.com', 'owner/repo'),
+    ).rejects.toThrow(AlreadySubscribedError);
+  });
+
+  it('should refresh tokens and resend confirmation for pending subscription', async () => {
+    const email = 'test@example.com';
+    const repo = 'owner/repo';
+    const newConfirmToken = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+    const existingDomainSubscription = createPendingSubscription({
+      email,
+      repo,
+    });
+
+    tokenGeneratorMock.generate.mockReturnValue(newConfirmToken);
+    githubClientMock.repositoryExists.mockResolvedValue(true);
+    repoMock.findByEmailAndRepo.mockResolvedValue(existingDomainSubscription);
+
+    await subscribeUseCase.execute(email, repo);
+
+    expect(repoMock.save).toHaveBeenCalledTimes(1);
+
+    const [savedSubscription] = repoMock.save.mock.calls[0]!;
+
+    expect(savedSubscription.id).toBe(existingDomainSubscription.id);
+    expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
+    expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
+    expect(savedSubscription.email.value).toBe(
+      existingDomainSubscription.email.value,
+    );
+    expect(savedSubscription.repoPath.toString()).toBe(
+      existingDomainSubscription.repoPath.toString(),
+    );
+    expect(savedSubscription.unsubscribeToken).toBeNull();
+    expect(outboxMock.save).toHaveBeenCalledWith(
+      [
+        {
+          type: SubscriptionEventType.ConfirmationRenewed,
+          aggregateId: existingDomainSubscription.id,
+          occurredAt: FIXED_NOW_ISO,
+          payload: {
+            email,
+            repo,
+            confirmationToken: newConfirmToken,
+          },
+        },
+      ],
+      expect.anything(),
+    );
+  });
+
+  it('should reactivate an unsubscribed subscription and resend confirmation', async () => {
+    const email = 'test@example.com';
+    const repo = 'owner/repo';
+    const newConfirmToken = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+    const existingDomainSubscription = createUnsubscribedSubscription({
+      email,
+      repo,
+    });
+
+    tokenGeneratorMock.generate.mockReturnValue(newConfirmToken);
+    githubClientMock.repositoryExists.mockResolvedValue(true);
+    repoMock.findByEmailAndRepo.mockResolvedValue(existingDomainSubscription);
+
+    await subscribeUseCase.execute(email, repo);
+
+    expect(repoMock.save).toHaveBeenCalledTimes(1);
+
+    const [savedSubscription] = repoMock.save.mock.calls[0]!;
+
+    expect(savedSubscription.id).toBe(existingDomainSubscription.id);
+    expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
+    expect(savedSubscription.confirmationToken.value).toBe(newConfirmToken);
+    expect(savedSubscription.unsubscribeToken).toBeNull();
+    expect(savedSubscription.email.value).toEqual(
+      existingDomainSubscription.email.value,
+    );
+    expect(savedSubscription.repoPath).toEqual(
+      existingDomainSubscription.repoPath,
+    );
+    expect(outboxMock.save).toHaveBeenCalledWith(
+      [
+        {
+          type: SubscriptionEventType.Reactivated,
+          aggregateId: existingDomainSubscription.id,
+          occurredAt: FIXED_NOW_ISO,
+          payload: {
+            email,
+            repo,
+            confirmationToken: newConfirmToken,
+          },
+        },
+      ],
+      expect.anything(),
+    );
+  });
+});
