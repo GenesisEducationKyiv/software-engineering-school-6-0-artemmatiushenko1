@@ -1,4 +1,5 @@
 import * as grpc from '@grpc/grpc-js';
+import type { Logger } from '../../../../shared-kernel/logger.js';
 import type { SubscriptionModule } from '../../subscription.module.js';
 import { SubscriptionStatus } from '../../domain/index.js';
 import { runUnary } from '../../../../platform/grpc/run-unary.js';
@@ -14,6 +15,7 @@ import type {
 
 export const createSubscriptionServiceHandlers = (
   module: SubscriptionModule,
+  logger: Logger,
 ): SubscriptionServiceServer => ({
   subscribe: (
     call: grpc.ServerUnaryCall<SubscribeRequest, SuccessResponse>,
@@ -21,13 +23,17 @@ export const createSubscriptionServiceHandlers = (
   ) => {
     const { email, repo } = call.request;
 
-    void runUnary(callback, async () => {
-      await module.subscribeUseCase.execute(email, repo);
+    void runUnary(
+      callback,
+      async () => {
+        await module.subscribeUseCase.execute(email, repo);
 
-      return {
-        message: 'Subscription successful. Confirmation email sent.',
-      };
-    });
+        return {
+          message: 'Subscription successful. Confirmation email sent.',
+        };
+      },
+      logger,
+    );
   },
 
   confirm: (
@@ -36,13 +42,17 @@ export const createSubscriptionServiceHandlers = (
   ) => {
     const { token } = call.request;
 
-    void runUnary(callback, async () => {
-      await module.confirmUseCase.execute(token);
+    void runUnary(
+      callback,
+      async () => {
+        await module.confirmUseCase.execute(token);
 
-      return {
-        message: 'Subscription confirmed successfully',
-      };
-    });
+        return {
+          message: 'Subscription confirmed successfully',
+        };
+      },
+      logger,
+    );
   },
 
   unsubscribe: (
@@ -51,13 +61,17 @@ export const createSubscriptionServiceHandlers = (
   ) => {
     const { token } = call.request;
 
-    void runUnary(callback, async () => {
-      await module.unsubscribeUseCase.execute(token);
+    void runUnary(
+      callback,
+      async () => {
+        await module.unsubscribeUseCase.execute(token);
 
-      return {
-        message: 'Unsubscribed successfully',
-      };
-    });
+        return {
+          message: 'Unsubscribed successfully',
+        };
+      },
+      logger,
+    );
   },
 
   listSubscriptions: (
@@ -69,17 +83,21 @@ export const createSubscriptionServiceHandlers = (
   ) => {
     const { email } = call.request;
 
-    void runUnary(callback, async () => {
-      const subscriptions =
-        await module.getSubscriptionsByEmailUseCase.execute(email);
+    void runUnary(
+      callback,
+      async () => {
+        const subscriptions =
+          await module.getSubscriptionsByEmailUseCase.execute(email);
 
-      return {
-        subscriptions: subscriptions.map((subscription) => ({
-          email: subscription.email.value,
-          repo: subscription.repoPath.toString(),
-          confirmed: subscription.status === SubscriptionStatus.Confirmed,
-        })),
-      };
-    });
+        return {
+          subscriptions: subscriptions.map((subscription) => ({
+            email: subscription.email.value,
+            repo: subscription.repoPath.toString(),
+            confirmed: subscription.status === SubscriptionStatus.Confirmed,
+          })),
+        };
+      },
+      logger,
+    );
   },
 });

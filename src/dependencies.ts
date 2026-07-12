@@ -32,7 +32,7 @@ import { OutboxRelay } from './platform/outbox/outbox-relay.js';
 import { NodeCronScheduler } from './platform/scheduler/node-cron-scheduler.js';
 import type { Scheduler } from './platform/scheduler/scheduler.js';
 import { registerEventSubscribers } from './platform/event-bus/event-subscriber.js';
-import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
+import { SystemClock } from './platform/clock/system-clock.js';
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
 import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
 import type { Clock } from './shared-kernel/clock.js';

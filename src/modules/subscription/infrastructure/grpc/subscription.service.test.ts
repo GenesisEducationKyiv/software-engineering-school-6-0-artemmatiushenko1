@@ -17,6 +17,7 @@ import {
   UnsubscribeRequest,
 } from './generated/subscription.js';
 import { mock } from 'vitest-mock-extended';
+import type { Logger } from '../../../../shared-kernel/logger.js';
 import type { SubscribeUseCase } from '../../application/use-cases/subscribe.use-case.js';
 import type { ConfirmUseCase } from '../../application/use-cases/confirm.use-case.js';
 import type { UnsubscribeUseCase } from '../../application/use-cases/unsubscribe.use-case.js';
@@ -59,7 +60,8 @@ describe('subscription gRPC handlers', () => {
     getSubscriptionsByEmailUseCase,
   });
 
-  const handlers = createSubscriptionServiceHandlers(module);
+  const logger = mock<Logger>();
+  const handlers = createSubscriptionServiceHandlers(module, logger);
 
   beforeEach(() => {
     vi.resetAllMocks();

@@ -1,9 +1,10 @@
 import type { GithubClient } from '../../github/api/github-client.interface.js';
-import type { Clock, Logger } from '../../../shared-kernel/index.js';
+import type { Logger } from '../../../shared-kernel/index.js';
 import { ReleaseTag, type MonitoredRepo } from '../domain/index.js';
 import type { MonitoredRepoRepository } from './ports/monitored-repo.repository.js';
 import type { TransactionManager } from '../../../shared-kernel/transaction.js';
-import { GithubRateLimitError } from '../../github/api/errors.js';
+import type { Clock } from '../../../shared-kernel/clock.js';
+import { GithubRateLimitError } from '../../github/domain/errors.js';
 import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
 import { msToSeconds } from '../../../utils/time.utils.js';
 import type { Outbox } from '../../../platform/outbox/outbox.js';

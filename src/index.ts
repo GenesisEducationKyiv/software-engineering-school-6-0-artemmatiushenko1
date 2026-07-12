@@ -38,7 +38,7 @@ await runAllDatabaseMigrations(db, migrationModules);
 deps.logger.info('Migrations completed successfully.');
 
 const grpcServer = createGrpcServer();
-registerSubscriptionGrpc(grpcServer, deps.subscription);
+registerSubscriptionGrpc(grpcServer, deps.subscription, deps.logger);
 
 const grpcAddress = `${appConfig.grpcHost}:${appConfig.grpcPort}`;
 const boundGrpcPort = await bindGrpcServer(grpcServer, grpcAddress);

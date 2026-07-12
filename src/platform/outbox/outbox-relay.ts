@@ -76,18 +76,20 @@ export class OutboxRelay {
       this.outboxRepository.fetchPending(this.batchSize, tx),
     );
 
-    for (const message of pending) {
-      try {
-        await this.eventBus.publish([toDeliveredEvent(message)]);
-        await this.outboxRepository.markProcessed([message.id]);
-      } catch (error) {
-        if (!(error instanceof Error)) {
-          throw error;
-        }
+    await Promise.all(
+      pending.map(async (message) => {
+        try {
+          await this.eventBus.publish([toDeliveredEvent(message)]);
+          await this.outboxRepository.markProcessed([message.id]);
+        } catch (error) {
+          if (!(error instanceof Error)) {
+            throw error;
+          }
 
-        await this.handleRelayFailure(message, error);
-      }
-    }
+          await this.handleRelayFailure(message, error);
+        }
+      }),
+    );
 
     await this.refreshGaugeMetrics();
   }
