@@ -23,6 +23,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Generate gRPC types
+        run: npm run proto:generate
+
       - name: Install client dependencies
         run: npm ci --prefix client
 

@@ -20,10 +20,14 @@ COPY package*.json ./
 
 RUN npm ci
 
+RUN apk add --no-cache protobuf
+
 COPY --from=builder /app/client/dist ./client/dist
 
 COPY src ./src
 COPY swagger.yaml ./
+
+RUN npm run proto:generate
 
 EXPOSE 3000
 

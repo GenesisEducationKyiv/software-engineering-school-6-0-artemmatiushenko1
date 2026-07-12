@@ -58,6 +58,8 @@ services:
     container_name: github-release-notifier-app
     env_file:
       - .env
+    ports:
+      - '50051:50051'
     healthcheck:
       test:
         [
