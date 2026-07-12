@@ -10,13 +10,13 @@ import { RepoNotFoundError, AlreadySubscribedError } from '../errors.js';
 import { Email, RepoPath } from '../../../../shared-kernel/index.js';
 import type { TokenGenerator } from '../ports/token-generator.js';
 import type {
-  Clock,
   IdGenerator,
   Logger,
   TransactionManager,
 } from '../../../../shared-kernel/index.js';
 import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
 import { toPublicApiEvents } from '../subscription-event.mapper.js';
+import type { Clock } from '../../../../shared-kernel/clock.js';
 
 export class SubscribeUseCase {
   private static readonly CONFIRMATION_TTL_MS = 60_000;

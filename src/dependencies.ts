@@ -14,7 +14,7 @@ import type { IdGenerator } from './shared-kernel/id-generator.js';
 import { InProcessEventBus } from './platform/event-bus/in-process-event-bus.js';
 import type { EventBus } from './platform/event-bus/event-bus.interface.js';
 import { registerEventSubscribers } from './platform/event-bus/event-subscriber.js';
-import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
+import { SystemClock } from './platform/clock/system-clock.js';
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
 import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
 import type { Clock } from './shared-kernel/clock.js';

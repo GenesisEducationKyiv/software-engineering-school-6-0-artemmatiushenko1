@@ -5,7 +5,6 @@ import type { GithubClient } from '../../../github/api/github-client.interface.j
 import { RepoNotFoundError, AlreadySubscribedError } from '../errors.js';
 import type {
   IdGenerator,
-  Clock,
   TransactionManager,
   DomainTransaction,
   Logger,
@@ -13,6 +12,7 @@ import type {
 import type { TokenGenerator } from '../ports/token-generator.js';
 import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
 import { SubscriptionEventType } from '../../api/events.js';
+import type { Clock } from '../../../../shared-kernel/clock.js';
 import { mock } from 'vitest-mock-extended';
 import {
   SubscriptionTokenScope,
