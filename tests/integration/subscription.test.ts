@@ -12,29 +12,31 @@ import { App } from '../../src/app.js';
 import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import * as schema from '../../src/db/schema.js';
+import * as schema from '../../src/platform/db/schema.js';
 import {
   MIGRATIONS_FOLDER,
   runDatabaseMigrations,
-} from '../../src/db/migrate.js';
-import type { Database } from '../../src/db/types.js';
+} from '../../src/platform/db/migrate.js';
+import type { Database } from '../../src/platform/db/types.js';
 import assert from 'assert';
 import {
   CommonSuccessResponseDtoSchema,
   CommonErrorResponseDtoSchema,
-} from '../../src/dtos/response.dto.js';
-import { parseResponse } from '../../src/utils/test.utils.js';
-import { SubscriptionsResponseDtoSchema } from '../../src/dtos/subscription.dto.js';
+} from '../../src/platform/http/response.dto.js';
+import { parseResponse } from './utils/parse-response.js';
+import { SubscriptionsResponseDtoSchema } from '../../src/modules/subscription/infrastructure/http/subscriptions-response.dto.js';
 import { AppContainer } from '../../src/dependencies.js';
-import type { GithubClient } from '../../src/domain/github.js';
-import type { EmailClient } from '../../src/domain/email.js';
-import type { Clock } from '../../src/domain/shared/index.js';
+import type { GithubClient } from '../../src/modules/github/api/github-client.interface.js';
+import type { EmailClient } from '../../src/modules/notification/application/ports/email-client.js';
+import { FastifyLogger } from '../../src/platform/logger/fastify-logger.js';
+import { PrometheusMetrics } from '../../src/platform/metrics/prometheus-metrics.js';
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
 import { TEST_APP_CONFIG } from './constants.js';
-import { createFastifyServerOptions } from '../../src/infrastructure/fastify/create-fastify-server-options.js';
+import { createFastifyServerOptions } from '../../src/platform/fastify/create-fastify-server-options.js';
 import { randomUUID } from 'node:crypto';
-import { SubscriptionTokenScope } from '../../src/domain/subscription/subscription-token-scope.js';
+import type { Clock } from '../../src/shared-kernel/clock.js';
+import { SubscriptionTokenScope } from '../../src/modules/subscription/domain/subscription-token-scope.js';
 
 const subscriptionId = () => randomUUID();
 const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
@@ -154,11 +156,15 @@ describe('Subscription Routes Integration with PGlite', () => {
 
     const fastify = Fastify(createFastifyServerOptions(TEST_APP_CONFIG));
 
-    const container = new AppContainer(TEST_APP_CONFIG, fastify.log, db);
-    container.githubClient = githubMock;
-    container.emailClient = emailMock;
-    container.redis = redisMock;
-    container.clock = clockMock;
+    const container = new AppContainer(TEST_APP_CONFIG, {
+      db,
+      logger: new FastifyLogger(fastify.log),
+      metrics: new PrometheusMetrics(),
+      redis: redisMock,
+      githubClient: githubMock,
+      emailClient: emailMock,
+      clock: clockMock,
+    });
 
     const deps = container.build();
     app = await App.create(TEST_APP_CONFIG, deps, fastify);

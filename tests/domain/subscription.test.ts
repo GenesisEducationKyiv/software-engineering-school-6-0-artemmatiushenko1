@@ -1,17 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { Email } from '../../src/domain/subscription/email.js';
-import { RepoPath } from '../../src/domain/subscription/repo-path.js';
-import { SubscriptionToken } from '../../src/domain/subscription/subscription-token.js';
-import { SubscriptionTokenScope } from '../../src/domain/subscription/subscription-token-scope.js';
-import { ReleaseTag } from '../../src/domain/subscription/release-tag.js';
-import { Subscription } from '../../src/domain/subscription/subscription.js';
-import { SubscriptionStatus } from '../../src/domain/subscription/subscription-status.js';
+import { Email } from '../../src/modules/subscription/domain/email.js';
+import { RepoPath } from '../../src/modules/subscription/domain/repo-path.js';
+import { SubscriptionToken } from '../../src/modules/subscription/domain/subscription-token.js';
+import { SubscriptionTokenScope } from '../../src/modules/subscription/domain/subscription-token-scope.js';
+import { ReleaseTag } from '../../src/modules/subscription/domain/release-tag.js';
+import { Subscription } from '../../src/modules/subscription/domain/subscription.js';
+import { SubscriptionStatus } from '../../src/modules/subscription/domain/subscription-status.js';
 import {
   IllegalStateTransitionError,
   SubscriptionAlreadyConfirmedError,
   SubscriptionAlreadyDeactivatedError,
   WrongTokenScopeError,
-} from '../../src/domain/subscription/errors.js';
+} from '../../src/modules/subscription/domain/errors.js';
 
 const SUBSCRIPTION_ID = 'sub-1';
 const EMAIL = Email.fromString('test@example.com');

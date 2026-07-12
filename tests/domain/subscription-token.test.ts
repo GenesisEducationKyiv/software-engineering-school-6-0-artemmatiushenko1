@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { SubscriptionToken } from '../../src/domain/subscription/subscription-token.js';
-import { SubscriptionTokenScope } from '../../src/domain/subscription/subscription-token-scope.js';
+import { SubscriptionToken } from '../../src/modules/subscription/domain/subscription-token.js';
+import { SubscriptionTokenScope } from '../../src/modules/subscription/domain/subscription-token-scope.js';
 import {
   InvalidTokenError,
   TokenAlreadyUsedError,
   TokenExpiredError,
-} from '../../src/domain/subscription/errors.js';
+} from '../../src/modules/subscription/domain/errors.js';
 
 const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000';
 const ISSUED_AT = new Date('2026-01-01T12:00:00Z');

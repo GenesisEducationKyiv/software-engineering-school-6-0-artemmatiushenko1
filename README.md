@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/artemmatiushenko1/github-release-notifier/actions/workflows/ci.yaml/badge.svg)](https://github.com/artemmatiushenko1/github-release-notifier/actions/workflows/ci.yaml)
 
-![Client Screenshot](./docs/image.png)
+![Client Screenshot](./assets/cover-image.png)
 
 A monolith service that allows users to subscribe to email notifications about new releases of any public GitHub repository.
 
@@ -168,10 +168,9 @@ If you need to run tests locally with the Playwright UI:
 
 ## Project Structure
 
-- `src/domain`: Core business logic and interfaces.
-- `src/infrastructure`: Implementations of external services (DB, GitHub, Email, Metrics).
-- `src/services`: Application services orchestrating domain logic.
-- `src/routes`: API route definitions.
+- `src/modules`: Feature modules (domain, application, infrastructure, api).
+- `src/shared-kernel`: Cross-cutting ports (clock, logger, id generation).
+- `src/platform`: DB, HTTP, metrics, and other shared adapters.
 - `client/`: Frontend application code.
 - `drizzle/`: Database migrations.
 - `nginx/`: Public reverse proxy (blocks `/metrics` from the internet).

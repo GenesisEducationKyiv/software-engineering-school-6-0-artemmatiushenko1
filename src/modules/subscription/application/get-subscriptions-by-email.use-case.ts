@@ -1,0 +1,11 @@
+import type { Subscription } from '../domain/subscription.js';
+import type { SubscriptionRepository } from './ports/subscription.repository.js';
+import { Email } from '../domain/email.js';
+
+export class GetSubscriptionsByEmailUseCase {
+  constructor(private subscriptionRepo: SubscriptionRepository) {}
+
+  async execute(email: string): Promise<Subscription[]> {
+    return this.subscriptionRepo.findConfirmedByEmail(Email.fromString(email));
+  }
+}
