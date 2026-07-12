@@ -6,12 +6,12 @@ import type { NotificationService } from '../../notification/api/notification.se
 import { RepoNotFoundError, AlreadySubscribedError } from './errors.js';
 import type {
   IdGenerator,
-  Clock,
   TransactionManager,
   DomainTransaction,
   Logger,
 } from '../../../shared-kernel/index.js';
 import type { TokenGenerator } from './ports/token-generator.js';
+import type { Clock } from '../../../platform/clock.js';
 import { mock } from 'vitest-mock-extended';
 import {
   SubscriptionTokenScope,

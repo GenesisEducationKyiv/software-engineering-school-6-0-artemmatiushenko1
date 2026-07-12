@@ -4,12 +4,12 @@ import type { SubscriptionRepository } from './ports/subscription.repository.ts'
 import type { NotificationService } from '../../notification/api/notification.service.js';
 import { SubscriptionNotFoundError } from './errors.js';
 import type {
-  Clock,
   TransactionManager,
   DomainTransaction,
   Logger,
 } from '../../../shared-kernel/index.js';
 import type { TokenGenerator } from './ports/token-generator.js';
+import type { Clock } from '../../../platform/clock.js';
 import { mock } from 'vitest-mock-extended';
 import { SubscriptionTokenScope, SubscriptionStatus } from '../domain/index.js';
 import {

@@ -4,10 +4,10 @@ import { SubscriptionToken, SubscriptionTokenScope } from '../domain/index.js';
 import { SubscriptionNotFoundError } from './errors.js';
 import type { TokenGenerator } from './ports/token-generator.js';
 import type {
-  Clock,
   Logger,
   TransactionManager,
 } from '../../../shared-kernel/index.js';
+import type { Clock } from '../../../platform/clock.js';
 
 export class ConfirmUseCase {
   constructor(

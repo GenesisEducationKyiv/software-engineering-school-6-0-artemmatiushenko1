@@ -12,7 +12,7 @@ import type { Redis } from 'ioredis';
 import { SystemClock } from './modules/subscription/infrastructure/system-clock.js';
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
 import { CryptoTokenGenerator } from './modules/subscription/infrastructure/crypto-token-generator.js';
-import type { Clock } from './shared-kernel/clock.js';
+import type { Clock } from './platform/clock.js';
 import { PrometheusMetrics } from './platform/metrics/prometheus-metrics.js';
 
 export interface AppDependencies {

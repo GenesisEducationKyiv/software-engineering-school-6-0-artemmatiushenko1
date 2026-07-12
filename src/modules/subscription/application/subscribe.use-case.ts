@@ -12,11 +12,11 @@ import { Email } from '../domain/email.js';
 import { RepoPath } from '../domain/repo-path.js';
 import type { TokenGenerator } from './ports/token-generator.js';
 import type {
-  Clock,
   IdGenerator,
   Logger,
   TransactionManager,
 } from '../../../shared-kernel/index.js';
+import type { Clock } from '../../../platform/clock.js';
 
 export class SubscribeUseCase {
   private static readonly CONFIRMATION_TTL_MS = 60_000;
