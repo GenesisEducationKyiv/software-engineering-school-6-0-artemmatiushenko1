@@ -5,10 +5,8 @@ import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import YAML from 'yaml';
 import type { OpenAPIV2 } from 'openapi-types';
-import {
-  isDomainError,
-  resolveDomainErrorHttpResponse,
-} from './platform/http/domain-error-registry.js';
+import { isDomainError } from './shared-kernel/domain-error.js';
+import { resolveDomainErrorHttpResponse } from './platform/http/domain-error-http.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -20,7 +18,7 @@ import { registerUnsubscribeRoute } from './modules/subscription/infrastructure/
 import { registerHealthRoute } from './platform/http/health.controller.js';
 import { registerMetricsRoute } from './platform/metrics/metrics.controller.js';
 import { CommonErrorResponseDtoSchema } from './platform/http/response.dto.js';
-import { type AppDependencies } from './dependencies.js';
+import { type AppContainer, type AppDependencies } from './dependencies.js';
 import { msToSeconds } from './utils/time.utils.js';
 import { REQUEST_ID_HEADER } from './platform/fastify/constants.js';
 import { runWithRequestLogger } from './platform/logger/request-log-context.js';
@@ -31,17 +29,19 @@ const __dirname = path.dirname(__filename);
 
 export class App {
   public readonly fastify: FastifyInstance;
+  private readonly container: AppContainer;
   private readonly deps: AppDependencies;
   private readonly config: AppConfig;
   private readonly grpcServer?: grpc.Server;
 
   private constructor(
     config: AppConfig,
-    deps: AppDependencies,
+    container: AppContainer,
     fastify: FastifyInstance,
     grpcServer?: grpc.Server,
   ) {
-    this.deps = deps;
+    this.container = container;
+    this.deps = container.build();
     this.fastify = fastify;
     this.config = config;
     this.grpcServer = grpcServer;
@@ -49,11 +49,11 @@ export class App {
 
   public static async create(
     config: AppConfig,
-    deps: AppDependencies,
+    container: AppContainer,
     fastify: FastifyInstance,
     grpcServer?: grpc.Server,
   ): Promise<App> {
-    const app = new App(config, deps, fastify, grpcServer);
+    const app = new App(config, container, fastify, grpcServer);
     await app.initialize();
     return app;
   }
@@ -87,7 +87,7 @@ export class App {
       const route = request.routeOptions?.url ?? 'unknown';
       const durationSeconds = msToSeconds(reply.elapsedTime);
 
-      this.deps.metrics.recordHttpRequest(
+      this.deps.httpMetrics.recordHttpRequest(
         request.method,
         route,
         reply.statusCode,
@@ -166,7 +166,7 @@ export class App {
 
   private async setupRoutes() {
     registerHealthRoute(this.fastify);
-    registerMetricsRoute(this.fastify, this.deps.metrics);
+    registerMetricsRoute(this.fastify, this.deps.metricsExporter);
 
     await this.fastify.register(
       (fastify) => {
@@ -182,14 +182,6 @@ export class App {
       },
       { prefix: this.config.apiPrefix },
     );
-  }
-
-  startScannerCron() {
-    this.deps.scanner.startCron();
-  }
-
-  startOutboxRelayCron() {
-    this.deps.outboxRelay.start();
   }
 
   public async start() {
@@ -214,19 +206,13 @@ export class App {
       this.deps.logger.info('Starting graceful shutdown', { signal });
 
       try {
-        await this.deps.scanner.stopCron();
-        this.deps.logger.info('Scanner tasks stopped.');
-
-        await this.deps.outboxRelay.stop();
-        this.deps.logger.info('Outbox relay stopped.');
+        await this.container.dispose();
+        this.deps.logger.info('Container disposed.');
 
         if (this.grpcServer) {
           await shutdownGrpcServer(this.grpcServer);
           this.deps.logger.info('gRPC server closed.');
         }
-
-        await this.deps.redis.quit();
-        this.deps.logger.info('Redis connection closed.');
 
         await this.fastify.close();
         this.deps.logger.info('Fastify server closed.');

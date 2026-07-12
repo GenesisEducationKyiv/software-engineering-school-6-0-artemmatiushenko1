@@ -9,10 +9,10 @@ import {
 } from 'vitest';
 import Fastify from 'fastify';
 import { App } from '../../src/app.js';
-import { register } from 'prom-client';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import * as schema from '../../src/platform/db/schema.js';
+import * as schema from '../../src/db/schema.js';
+import { migrationModules } from '../../src/db/migrations.js';
 import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import assert from 'assert';
@@ -26,7 +26,6 @@ import { AppContainer, type AppDependencies } from '../../src/dependencies.js';
 import type { GithubClient } from '../../src/modules/github/api/github-client.interface.js';
 import type { EmailClient } from '../../src/modules/notification/application/ports/email-client.js';
 import { FastifyLogger } from '../../src/platform/logger/fastify-logger.js';
-import { PrometheusMetrics } from '../../src/platform/metrics/prometheus-metrics.js';
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
 import { FakeScheduler } from '../../src/platform/scheduler/fake-scheduler.js';
@@ -41,7 +40,7 @@ const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
 
 describe('Subscription Routes Integration with PGlite', () => {
   let app: App;
-  let db: Database;
+  let db: Database<typeof schema>;
   let deps: AppDependencies;
 
   const findSubscriptionToken = async (
@@ -142,11 +141,10 @@ describe('Subscription Routes Integration with PGlite', () => {
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
-    await runAllDatabaseMigrations(db);
+    await runAllDatabaseMigrations(db, migrationModules);
   });
 
   beforeEach(async () => {
-    register.clear();
     vi.resetAllMocks();
 
     githubMock.repositoryExists.mockResolvedValue(true);
@@ -164,7 +162,6 @@ describe('Subscription Routes Integration with PGlite', () => {
     const container = new AppContainer(TEST_APP_CONFIG, {
       db,
       logger: new FastifyLogger(fastify.log),
-      metrics: new PrometheusMetrics(),
       redis: redisMock,
       githubClient: githubMock,
       emailClient: emailMock,
@@ -173,8 +170,7 @@ describe('Subscription Routes Integration with PGlite', () => {
     });
 
     deps = container.build();
-    deps.outboxRelay.start();
-    app = await App.create(TEST_APP_CONFIG, deps, fastify);
+    app = await App.create(TEST_APP_CONFIG, container, fastify);
   });
 
   const relayEvents = () => scheduler.invokeLatest();

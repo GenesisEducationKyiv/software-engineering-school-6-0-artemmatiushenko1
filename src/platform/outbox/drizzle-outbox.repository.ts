@@ -3,7 +3,7 @@ import type {
   Database,
   Transaction as DrizzleTransaction,
 } from '../db/types.js';
-import { outboxMessages } from '../db/schema.js';
+import { outboxMessages } from '../db/platform-schema.js';
 import type { IntegrationEvent } from '../event-bus/domain-event-envelope.js';
 import type { DomainTransaction } from '../../shared-kernel/transaction.js';
 import type { IdGenerator } from '../../shared-kernel/id-generator.js';

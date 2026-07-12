@@ -3,8 +3,9 @@ import { Redis } from 'ioredis';
 import { App } from './app.js';
 import { AppContainer } from './dependencies.js';
 import { createConfig } from './config.js';
-import { db } from './platform/db/client.js';
+import { db } from './db/client.js';
 import { createFastifyServerOptions } from './platform/fastify/create-fastify-server-options.js';
+import { migrationModules } from './db/migrations.js';
 import { runAllDatabaseMigrations } from './platform/db/migrate.js';
 import { FastifyLogger } from './platform/logger/fastify-logger.js';
 import {
@@ -33,7 +34,7 @@ const container = new AppContainer(appConfig, {
 const deps = container.build();
 
 deps.logger.info('Running database migrations...');
-await runAllDatabaseMigrations(db);
+await runAllDatabaseMigrations(db, migrationModules);
 deps.logger.info('Migrations completed successfully.');
 
 const grpcServer = createGrpcServer();
@@ -46,9 +47,6 @@ deps.logger.info('gRPC server listening', {
   port: boundGrpcPort,
 });
 
-const app = await App.create(appConfig, deps, fastify, grpcServer);
+const app = await App.create(appConfig, container, fastify, grpcServer);
 
 await app.start();
-
-app.startScannerCron();
-app.startOutboxRelayCron();

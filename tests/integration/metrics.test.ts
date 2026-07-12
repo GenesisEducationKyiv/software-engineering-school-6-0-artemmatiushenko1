@@ -3,15 +3,14 @@ import Fastify from 'fastify';
 import { App } from '../../src/app.js';
 import { AppContainer } from '../../src/dependencies.js';
 import { FastifyLogger } from '../../src/platform/logger/fastify-logger.js';
-import { PrometheusMetrics } from '../../src/platform/metrics/prometheus-metrics.js';
 import { mock } from 'vitest-mock-extended';
 import { Redis } from 'ioredis';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import * as schema from '../../src/platform/db/schema.js';
+import * as schema from '../../src/db/schema.js';
+import { migrationModules } from '../../src/db/migrations.js';
 import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
-import { register } from 'prom-client';
 import { FakeScheduler } from '../../src/platform/scheduler/fake-scheduler.js';
 import { TEST_APP_CONFIG } from './constants.js';
 import { createFastifyServerOptions } from '../../src/platform/fastify/create-fastify-server-options.js';
@@ -20,16 +19,14 @@ import type { EmailClient } from '../../src/modules/notification/application/por
 
 describe('Metrics Routes', () => {
   let app: App;
-  let db: Database;
+  let db: Database<typeof schema>;
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
-    await runAllDatabaseMigrations(db);
+    await runAllDatabaseMigrations(db, migrationModules);
   });
 
   beforeEach(async () => {
-    register.clear();
-
     const fastify = Fastify(createFastifyServerOptions(TEST_APP_CONFIG));
     const redisMock = mock<Redis>();
     const githubMock = mock<GithubClient>();
@@ -38,15 +35,13 @@ describe('Metrics Routes', () => {
     const container = new AppContainer(TEST_APP_CONFIG, {
       db,
       logger: new FastifyLogger(fastify.log),
-      metrics: new PrometheusMetrics(),
       redis: redisMock,
       githubClient: githubMock,
       emailClient: emailMock,
       scheduler: new FakeScheduler(),
     });
 
-    const deps = container.build();
-    app = await App.create(TEST_APP_CONFIG, deps, fastify);
+    app = await App.create(TEST_APP_CONFIG, container, fastify);
   });
 
   it('should return metrics on /metrics', async () => {
