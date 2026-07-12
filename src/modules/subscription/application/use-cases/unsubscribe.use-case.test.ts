@@ -3,13 +3,13 @@ import { UnsubscribeUseCase } from './unsubscribe.use-case.js';
 import type { SubscriptionRepository } from '../ports/subscription.repository.ts';
 import { SubscriptionNotFoundError } from '../errors.js';
 import type {
-  Clock,
   TransactionManager,
   DomainTransaction,
   Logger,
 } from '../../../../shared-kernel/index.js';
 import type { Outbox } from '../../../../platform/outbox/outbox.js';
 import { SubscriptionEventType } from '../../api/events.js';
+import type { Clock } from '../../../../shared-kernel/clock.js';
 import { mock } from 'vitest-mock-extended';
 import {
   SubscriptionTokenScope,
