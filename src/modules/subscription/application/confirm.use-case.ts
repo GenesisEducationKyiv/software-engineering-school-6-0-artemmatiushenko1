@@ -7,7 +7,7 @@ import type {
   Logger,
   TransactionManager,
 } from '../../../shared-kernel/index.js';
-import type { Clock } from '../../../platform/clock/clock.js';
+import type { Clock } from '../../../shared-kernel/clock.js';
 
 export class ConfirmUseCase {
   constructor(

@@ -1,7 +1,7 @@
 import type { Database } from '../../platform/db/types.js';
 import type { GithubClient } from '../github/api/github-client.interface.js';
 import type { NotificationService } from '../notification/api/notification.service.js';
-import type { Clock } from '../../platform/clock/clock.js';
+import type { Clock } from '../../shared-kernel/clock.js';
 import type { IdGenerator } from '../../shared-kernel/id-generator.js';
 import type { Logger } from '../../shared-kernel/logger.js';
 import { DrizzleTransactionManager } from '../../platform/db/drizzle-transaction-manager.js';

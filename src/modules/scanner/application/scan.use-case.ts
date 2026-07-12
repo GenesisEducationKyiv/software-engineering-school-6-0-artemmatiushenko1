@@ -3,7 +3,7 @@ import type { Subscription } from '../../subscription/domain/index.js';
 import type { SubscriptionQueries } from '../../subscription/api/subscription-queries.interface.js';
 import type { NotificationService } from '../../notification/api/notification.service.js';
 import type { Logger } from '../../../shared-kernel/index.js';
-import type { Clock } from '../../../platform/clock/clock.js';
+import type { Clock } from '../../../shared-kernel/clock.js';
 import { GithubRateLimitError } from '../../github/domain/errors.js';
 import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';
 import { msToSeconds } from '../../../utils/time.utils.js';

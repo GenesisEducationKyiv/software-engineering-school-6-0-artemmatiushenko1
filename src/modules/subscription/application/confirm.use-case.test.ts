@@ -9,7 +9,7 @@ import type {
   Logger,
 } from '../../../shared-kernel/index.js';
 import type { TokenGenerator } from './ports/token-generator.js';
-import type { Clock } from '../../../platform/clock/clock.js';
+import type { Clock } from '../../../shared-kernel/clock.js';
 import { mock } from 'vitest-mock-extended';
 import { SubscriptionTokenScope, SubscriptionStatus } from '../domain/index.js';
 import {

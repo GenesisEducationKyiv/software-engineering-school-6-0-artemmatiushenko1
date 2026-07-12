@@ -4,7 +4,7 @@ import type { SubscriptionQueries } from '../../subscription/api/subscription-qu
 import type { GithubClient } from '../../github/api/github-client.interface.js';
 import type { NotificationService } from '../../notification/api/notification.service.js';
 import type { Logger } from '../../../shared-kernel/logger.js';
-import type { Clock } from '../../../platform/clock/clock.js';
+import type { Clock } from '../../../shared-kernel/clock.js';
 import { GithubRateLimitError } from '../../github/domain/errors.js';
 import { mock } from 'vitest-mock-extended';
 import type { ScannerMetrics } from './ports/scanner-metrics.interface.js';

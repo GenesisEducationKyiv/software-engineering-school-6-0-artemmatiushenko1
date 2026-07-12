@@ -35,7 +35,7 @@ import { mock } from 'vitest-mock-extended';
 import { TEST_APP_CONFIG } from './constants.js';
 import { createFastifyServerOptions } from '../../src/platform/fastify/create-fastify-server-options.js';
 import { randomUUID } from 'node:crypto';
-import type { Clock } from '../../src/platform/clock/clock.js';
+import type { Clock } from '../../src/shared-kernel/clock.js';
 import { SubscriptionTokenScope } from '../../src/modules/subscription/domain/subscription-token-scope.js';
 
 const subscriptionId = () => randomUUID();
