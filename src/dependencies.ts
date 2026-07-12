@@ -13,6 +13,12 @@ import type { TokenGenerator } from './modules/subscription/application/ports/to
 import type { IdGenerator } from './shared-kernel/id-generator.js';
 import { InProcessEventBus } from './platform/event-bus/in-process-event-bus.js';
 import type { EventBus } from './platform/event-bus/event-bus.interface.js';
+import { DrizzleTransactionManager } from './platform/db/drizzle-transaction-manager.js';
+import { DrizzleOutboxRepository } from './platform/outbox/drizzle-outbox.repository.js';
+import type { Outbox } from './platform/outbox/outbox.js';
+import { OutboxRelay } from './platform/outbox/outbox-relay.js';
+import { NodeCronScheduler } from './platform/scheduler/node-cron-scheduler.js';
+import type { Scheduler } from './platform/scheduler/scheduler.js';
 import { registerEventSubscribers } from './platform/event-bus/event-subscriber.js';
 import { SystemClock } from './platform/clock/system-clock.js';
 import { CryptoIdGenerator } from './modules/subscription/infrastructure/crypto-id-generator.js';
@@ -28,6 +34,7 @@ export interface AppDependencies {
   notification: NotificationModule;
   github: GithubModule;
   scanner: ScannerModule;
+  outboxRelay: OutboxRelay;
 }
 
 export interface AppContainerDeps {
@@ -41,6 +48,7 @@ export interface AppContainerDeps {
   idGenerator?: IdGenerator;
   tokenGenerator?: TokenGenerator;
   eventBus?: EventBus;
+  scheduler?: Scheduler;
 }
 
 export class AppContainer {
@@ -49,6 +57,7 @@ export class AppContainer {
   private readonly subscription: SubscriptionModule;
   private readonly scanner: ScannerModule;
   private readonly eventBus: EventBus;
+  private readonly outboxRelay: OutboxRelay;
   private readonly metrics: Metrics;
 
   constructor(
@@ -60,6 +69,21 @@ export class AppContainer {
     const idGenerator = deps.idGenerator ?? new CryptoIdGenerator();
     const tokenGenerator = deps.tokenGenerator ?? new CryptoTokenGenerator();
     this.metrics = deps.metrics ?? new PrometheusMetrics();
+    const scheduler = deps.scheduler ?? new NodeCronScheduler();
+
+    const transactionManager = new DrizzleTransactionManager(deps.db);
+    const outboxRepository = new DrizzleOutboxRepository(deps.db, idGenerator);
+    const outbox: Outbox = outboxRepository;
+    this.outboxRelay = new OutboxRelay(
+      outboxRepository,
+      this.eventBus,
+      transactionManager,
+      deps.logger,
+      this.metrics,
+      scheduler,
+      config.outboxRelayCron,
+      config.outboxMaxRetries,
+    );
 
     this.github = GithubModule.create({
       githubClient: deps.githubClient
@@ -88,7 +112,7 @@ export class AppContainer {
       db: deps.db,
       githubClient: this.github.githubClient,
       logger: deps.logger,
-      eventBus: this.eventBus,
+      outbox,
     });
 
     this.scanner = ScannerModule.create({
@@ -97,8 +121,9 @@ export class AppContainer {
       logger: deps.logger,
       clock,
       metrics: this.metrics,
-      eventBus: this.eventBus,
+      outbox,
       cronExpression: config.scanner.cronExpression,
+      scheduler,
     });
   }
 
@@ -119,6 +144,7 @@ export class AppContainer {
       notification: this.notification,
       github: this.github,
       scanner: this.scanner,
+      outboxRelay: this.outboxRelay,
     };
   }
 }

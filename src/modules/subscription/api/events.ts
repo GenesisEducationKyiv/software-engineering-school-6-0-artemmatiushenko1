@@ -1,4 +1,4 @@
-import type { DomainEventEnvelope } from '../../../platform/event-bus/domain-event-envelope.js';
+import type { IntegrationEvent } from '../../../platform/event-bus/domain-event-envelope.js';
 
 export const SubscriptionEventType = {
   Requested: 'SubscriptionRequested',
@@ -9,53 +9,65 @@ export const SubscriptionEventType = {
   Renewed: 'SubscriptionRenewed',
 } as const;
 
-export type SubscriptionRequestedEvent = DomainEventEnvelope<
-  {
-    email: string;
-    repo: string;
-    confirmationToken: string;
-  },
+type SubscriptionRequestedPayload = {
+  email: string;
+  repo: string;
+  confirmationToken: string;
+};
+
+export type SubscriptionRequestedEvent = IntegrationEvent<
+  SubscriptionRequestedPayload,
   typeof SubscriptionEventType.Requested
 >;
 
-export type SubscriptionConfirmationRenewedEvent = DomainEventEnvelope<
-  {
-    email: string;
-    repo: string;
-    confirmationToken: string;
-  },
+type SubscriptionConfirmationRenewedPayload = {
+  email: string;
+  repo: string;
+  confirmationToken: string;
+};
+
+export type SubscriptionConfirmationRenewedEvent = IntegrationEvent<
+  SubscriptionConfirmationRenewedPayload,
   typeof SubscriptionEventType.ConfirmationRenewed
 >;
 
-export type SubscriptionReactivatedEvent = DomainEventEnvelope<
-  {
-    email: string;
-    repo: string;
-    confirmationToken: string;
-  },
+type SubscriptionReactivatedPayload = {
+  email: string;
+  repo: string;
+  confirmationToken: string;
+};
+
+export type SubscriptionReactivatedEvent = IntegrationEvent<
+  SubscriptionReactivatedPayload,
   typeof SubscriptionEventType.Reactivated
 >;
 
-export type SubscriptionConfirmedEvent = DomainEventEnvelope<
-  {
-    email: string;
-    repo: string;
-    unsubscribeToken: string;
-  },
+type SubscriptionConfirmedPayload = {
+  email: string;
+  repo: string;
+  unsubscribeToken: string;
+};
+
+export type SubscriptionConfirmedEvent = IntegrationEvent<
+  SubscriptionConfirmedPayload,
   typeof SubscriptionEventType.Confirmed
 >;
 
-export type SubscriptionDeactivatedEvent = DomainEventEnvelope<
-  {
-    repo: string;
-  },
+type SubscriptionDeactivatedPayload = {
+  repo: string;
+};
+
+export type SubscriptionDeactivatedEvent = IntegrationEvent<
+  SubscriptionDeactivatedPayload,
   typeof SubscriptionEventType.Deactivated
 >;
 
-export type SubscriptionRenewedEvent = DomainEventEnvelope<
-  {
-    repo: string;
-  },
+type SubscriptionRenewedPayload = {
+  repo: string;
+};
+
+export type SubscriptionRenewedEvent = IntegrationEvent<
+  SubscriptionRenewedPayload,
   typeof SubscriptionEventType.Renewed
 >;
 

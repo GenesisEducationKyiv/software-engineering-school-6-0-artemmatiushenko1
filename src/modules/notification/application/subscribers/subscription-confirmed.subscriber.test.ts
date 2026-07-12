@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mock } from 'vitest-mock-extended';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import type { EmailClient } from '../ports/email-client.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
 import {
@@ -11,10 +13,11 @@ import { Email, Recipient } from '../../domain/index.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 
 describe('SubscriptionConfirmedSubscriber', () => {
-  const event: SubscriptionConfirmedEvent = {
+  const event: Delivered<SubscriptionConfirmedEvent> = {
     type: SubscriptionEventType.Confirmed,
     aggregateId: 'sub-1',
     occurredAt: '2024-01-01T00:00:00.000Z',
+    id: 'msg-1',
     payload: {
       email: 'test@example.com',
       repo: 'owner/repo',
@@ -22,6 +25,7 @@ describe('SubscriptionConfirmedSubscriber', () => {
     },
   };
 
+  const idempotencyGuard = mock<IdempotencyGuard>();
   const recipientRepository = mock<RecipientRepository>();
   const emailClient = mock<EmailClient>();
   const metrics = mock<NotificationMetrics>();
@@ -31,7 +35,10 @@ describe('SubscriptionConfirmedSubscriber', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
+
     subscriber = new SubscriptionConfirmedSubscriber(
+      idempotencyGuard,
       recipientRepository,
       emailClient,
       'http://localhost:3000',
@@ -58,5 +65,18 @@ describe('SubscriptionConfirmedSubscriber', () => {
         subject: expect.stringContaining('owner/repo'),
       }),
     );
+    expect(idempotencyGuard.markProcessed).toHaveBeenCalledWith(
+      'msg-1:notification:subscription-confirmed',
+    );
+  });
+
+  it('does not save recipient or send email on duplicate delivery', async () => {
+    idempotencyGuard.isProcessed.mockResolvedValue(true);
+
+    await subscriber.handle(event);
+
+    expect(recipientRepository.save).not.toHaveBeenCalled();
+    expect(emailClient.sendEmail).not.toHaveBeenCalled();
+    expect(idempotencyGuard.markProcessed).not.toHaveBeenCalled();
   });
 });

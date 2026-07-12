@@ -3,7 +3,11 @@ import type { EmailConfig } from './config.js';
 import type { EmailClient } from './application/ports/email-client.js';
 import type { NotificationMetrics } from './application/ports/notification-metrics.js';
 import { DrizzleRecipientRepository } from './infrastructure/recipient.repository.js';
-import type { DomainEventEnvelope } from '../../platform/event-bus/domain-event-envelope.js';
+import { DrizzleIdempotencyGuard } from '../../platform/idempotency-guard/drizzle-idempotency-guard.js';
+import type {
+  Delivered,
+  IntegrationEvent,
+} from '../../platform/event-bus/domain-event-envelope.js';
 import type { EventSubscriber } from '../../platform/event-bus/event-subscriber.js';
 import { SubscriptionRequestedSubscriber } from './application/subscribers/subscription-requested.subscriber.js';
 import { SubscriptionConfirmationRenewedSubscriber } from './application/subscribers/subscription-confirmation-renewed.subscriber.js';
@@ -28,29 +32,34 @@ export type NotificationModuleDeps = {
       };
 };
 export class NotificationModule {
-  readonly eventSubscribers: EventSubscriber<DomainEventEnvelope>[];
+  readonly eventSubscribers: EventSubscriber<Delivered<IntegrationEvent>>[];
 
   private readonly recipientRepository: DrizzleRecipientRepository;
 
   private constructor(deps: NotificationModuleDeps, emailClient: EmailClient) {
+    const idempotencyGuard = new DrizzleIdempotencyGuard(deps.db);
     this.recipientRepository = new DrizzleRecipientRepository(deps.db);
     this.eventSubscribers = [
       new SubscriptionRequestedSubscriber(
+        idempotencyGuard,
         emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionConfirmationRenewedSubscriber(
+        idempotencyGuard,
         emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionReactivatedSubscriber(
+        idempotencyGuard,
         emailClient,
         deps.appUrl,
         deps.metrics,
       ),
       new SubscriptionConfirmedSubscriber(
+        idempotencyGuard,
         this.recipientRepository,
         emailClient,
         deps.appUrl,
@@ -58,6 +67,7 @@ export class NotificationModule {
       ),
       new SubscriptionDeactivatedSubscriber(this.recipientRepository),
       new NewReleaseDetectedSubscriber(
+        idempotencyGuard,
         this.recipientRepository,
         emailClient,
         deps.appUrl,

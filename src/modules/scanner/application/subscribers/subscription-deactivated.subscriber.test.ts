@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mock } from 'vitest-mock-extended';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
 import {
   SubscriptionEventType,
@@ -15,10 +16,11 @@ import {
 import { SubscriptionDeactivatedSubscriber } from './subscription-deactivated.subscriber.js';
 
 describe('Scanner SubscriptionDeactivatedSubscriber', () => {
-  const event: SubscriptionDeactivatedEvent = {
+  const event: Delivered<SubscriptionDeactivatedEvent> = {
     type: SubscriptionEventType.Deactivated,
     aggregateId: 'sub-1',
     occurredAt: '2024-01-01T00:00:00.000Z',
+    id: 'msg-1',
     payload: {
       repo: 'owner/repo',
     },

@@ -182,6 +182,10 @@ export class App {
     this.deps.scanner.startCron();
   }
 
+  startOutboxRelayCron() {
+    this.deps.outboxRelay.start();
+  }
+
   public async start() {
     try {
       const { port, host } = this.config;
@@ -206,6 +210,9 @@ export class App {
       try {
         await this.deps.scanner.stopCron();
         this.deps.logger.info('Scanner tasks stopped.');
+
+        await this.deps.outboxRelay.stop();
+        this.deps.logger.info('Outbox relay stopped.');
 
         await this.deps.redis.quit();
         this.deps.logger.info('Redis connection closed.');

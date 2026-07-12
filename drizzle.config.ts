@@ -7,7 +7,7 @@ const appConfig = createConfig();
 export default defineConfig({
   schema: './src/platform/db/schema.ts',
   dialect: 'postgresql',
-  schemaFilter: ['subscription', 'scanner', 'notification'],
+  schemaFilter: ['platform', 'subscription', 'scanner', 'notification'],
   dbCredentials: {
     url: appConfig.databaseUrl,
   },

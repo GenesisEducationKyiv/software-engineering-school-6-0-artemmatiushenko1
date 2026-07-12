@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mock } from 'vitest-mock-extended';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
 import {
   SubscriptionEventType,
   type SubscriptionDeactivatedEvent,
@@ -8,10 +9,11 @@ import type { RecipientRepository } from '../ports/recipient.repository.js';
 import { SubscriptionDeactivatedSubscriber } from './subscription-deactivated.subscriber.js';
 
 describe('SubscriptionDeactivatedSubscriber', () => {
-  const event: SubscriptionDeactivatedEvent = {
+  const event: Delivered<SubscriptionDeactivatedEvent> = {
     type: SubscriptionEventType.Deactivated,
     aggregateId: 'sub-1',
     occurredAt: '2024-01-01T00:00:00.000Z',
+    id: 'msg-1',
     payload: {
       repo: 'owner/repo',
     },

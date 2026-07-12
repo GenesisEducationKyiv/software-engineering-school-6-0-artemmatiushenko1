@@ -36,3 +36,4 @@ const app = await App.create(appConfig, deps, fastify);
 await app.start();
 
 app.startScannerCron();
+app.startOutboxRelayCron();

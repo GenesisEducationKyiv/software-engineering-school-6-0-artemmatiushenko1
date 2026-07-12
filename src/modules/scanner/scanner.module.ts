@@ -6,8 +6,13 @@ import { ScanUseCase } from './application/scan.use-case.js';
 import type { ScannerMetrics } from './application/ports/scanner-metrics.interface.js';
 import { DrizzleMonitoredRepoRepository } from './infrastructure/monitored-repo.repository.js';
 import { DrizzleTransactionManager } from '../../platform/db/drizzle-transaction-manager.js';
-import type { EventBus } from '../../platform/event-bus/event-bus.interface.js';
-import type { DomainEventEnvelope } from '../../platform/event-bus/domain-event-envelope.js';
+import type { Outbox } from '../../platform/outbox/outbox.js';
+import type { Scheduler } from '../../platform/scheduler/scheduler.js';
+import { DrizzleIdempotencyGuard } from '../../platform/idempotency-guard/drizzle-idempotency-guard.js';
+import type {
+  Delivered,
+  IntegrationEvent,
+} from '../../platform/event-bus/domain-event-envelope.js';
 import type { EventSubscriber } from '../../platform/event-bus/event-subscriber.js';
 import { SubscriptionConfirmedSubscriber } from './application/subscribers/subscription-confirmed.subscriber.js';
 import { SubscriptionDeactivatedSubscriber } from './application/subscribers/subscription-deactivated.subscriber.js';
@@ -19,13 +24,14 @@ export interface ScannerModuleDeps {
   logger: Logger;
   clock: Clock;
   metrics: ScannerMetrics;
-  eventBus: EventBus;
+  outbox: Outbox;
   cronExpression: string;
+  scheduler: Scheduler;
 }
 
 export class ScannerModule {
   readonly scanUseCase: ScanUseCase;
-  readonly eventSubscribers: EventSubscriber<DomainEventEnvelope>[];
+  readonly eventSubscribers: EventSubscriber<Delivered<IntegrationEvent>>[];
 
   private readonly monitoredRepoRepository: DrizzleMonitoredRepoRepository;
   private readonly transactionManager: DrizzleTransactionManager;
@@ -42,11 +48,14 @@ export class ScannerModule {
       deps.logger,
       deps.clock,
       deps.metrics,
-      deps.eventBus,
+      deps.outbox,
     );
+
+    const idempotencyGuard = new DrizzleIdempotencyGuard(deps.db);
 
     this.eventSubscribers = [
       new SubscriptionConfirmedSubscriber(
+        idempotencyGuard,
         this.monitoredRepoRepository,
         this.transactionManager,
         deps.githubClient,
@@ -71,6 +80,7 @@ export class ScannerModule {
       this.deps.cronExpression,
       this.scanUseCase,
       this.deps.logger,
+      this.deps.scheduler,
     );
     this.scanCron.start();
   }

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mock } from 'vitest-mock-extended';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
 import type { GithubClient } from '../../../github/api/github-client.interface.js';
 import {
@@ -16,10 +18,11 @@ import {
 import { SubscriptionConfirmedSubscriber } from './subscription-confirmed.subscriber.js';
 
 describe('Scanner SubscriptionConfirmedSubscriber', () => {
-  const event: SubscriptionConfirmedEvent = {
+  const event: Delivered<SubscriptionConfirmedEvent> = {
     type: SubscriptionEventType.Confirmed,
     aggregateId: 'sub-1',
     occurredAt: '2024-01-01T00:00:00.000Z',
+    id: 'msg-1',
     payload: {
       email: 'alice@example.com',
       repo: 'owner/repo',
@@ -27,6 +30,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
     },
   };
 
+  const idempotencyGuard = mock<IdempotencyGuard>();
   const monitoredRepoRepository = mock<MonitoredRepoRepository>();
   const transactionManager = mock<TransactionManager>();
   const githubClient = mock<GithubClient>();
@@ -36,6 +40,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
     monitoredRepoRepository.findByRepo.mockResolvedValue(null);
     transactionManager.run.mockImplementation(async (work) =>
       work({} as never),
@@ -47,6 +52,7 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
     });
 
     subscriber = new SubscriptionConfirmedSubscriber(
+      idempotencyGuard,
       monitoredRepoRepository,
       transactionManager,
       githubClient,
@@ -56,6 +62,12 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
   it('creates a monitored repo and saves a watcher with baseline tag', async () => {
     await subscriber.handle(event);
 
+    expect(idempotencyGuard.isProcessed).toHaveBeenCalledWith(
+      'msg-1:scanner:subscription-confirmed',
+    );
+    expect(idempotencyGuard.markProcessed).toHaveBeenCalledWith(
+      'msg-1:scanner:subscription-confirmed',
+    );
     expect(githubClient.getLatestRelease).toHaveBeenCalledWith('owner', 'repo');
     expect(monitoredRepoRepository.findByRepo).toHaveBeenCalledWith(
       RepoPath.fromString('owner/repo'),
@@ -120,5 +132,15 @@ describe('Scanner SubscriptionConfirmedSubscriber', () => {
       }),
       expect.anything(),
     );
+  });
+
+  it('does not re-fetch GitHub or overwrite watcher on duplicate outbox delivery', async () => {
+    idempotencyGuard.isProcessed.mockResolvedValue(true);
+
+    await subscriber.handle(event);
+
+    expect(githubClient.getLatestRelease).not.toHaveBeenCalled();
+    expect(monitoredRepoRepository.findByRepo).not.toHaveBeenCalled();
+    expect(monitoredRepoRepository.save).not.toHaveBeenCalled();
   });
 });

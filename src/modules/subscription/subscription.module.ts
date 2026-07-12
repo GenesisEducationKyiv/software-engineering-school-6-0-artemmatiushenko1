@@ -10,7 +10,7 @@ import type { TokenGenerator } from './application/ports/token-generator.js';
 import { SubscribeUseCase } from './application/use-cases/subscribe.use-case.js';
 import { UnsubscribeUseCase } from './application/use-cases/unsubscribe.use-case.js';
 import { DrizzleSubscriptionRepository } from './infrastructure/subscription.repository.js';
-import type { EventBus } from '../../platform/event-bus/event-bus.interface.js';
+import type { Outbox } from '../../platform/outbox/outbox.js';
 
 export interface SubscriptionModuleDeps {
   db: Database;
@@ -19,7 +19,7 @@ export interface SubscriptionModuleDeps {
   clock: Clock;
   idGenerator: IdGenerator;
   tokenGenerator: TokenGenerator;
-  eventBus: EventBus;
+  outbox: Outbox;
 }
 
 export class SubscriptionModule {
@@ -40,7 +40,7 @@ export class SubscriptionModule {
       deps.idGenerator,
       deps.tokenGenerator,
       deps.clock,
-      deps.eventBus,
+      deps.outbox,
     );
     this.confirmUseCase = new ConfirmUseCase(
       subscriptionRepo,
@@ -48,14 +48,14 @@ export class SubscriptionModule {
       deps.logger,
       deps.tokenGenerator,
       deps.clock,
-      deps.eventBus,
+      deps.outbox,
     );
     this.unsubscribeUseCase = new UnsubscribeUseCase(
       subscriptionRepo,
       transactionManager,
       deps.logger,
       deps.clock,
-      deps.eventBus,
+      deps.outbox,
     );
     this.getSubscriptionsByEmailUseCase = new GetSubscriptionsByEmailUseCase(
       subscriptionRepo,

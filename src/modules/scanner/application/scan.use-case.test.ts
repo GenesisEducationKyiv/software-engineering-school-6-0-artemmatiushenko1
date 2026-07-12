@@ -4,7 +4,7 @@ import type { MonitoredRepoRepository } from './ports/monitored-repo.repository.
 import type { TransactionManager } from '../../../shared-kernel/transaction.js';
 import type { GithubClient } from '../../github/api/github-client.interface.js';
 import type { Logger } from '../../../shared-kernel/logger.js';
-import type { EventBus } from '../../../platform/event-bus/event-bus.interface.js';
+import type { Outbox } from '../../../platform/outbox/outbox.js';
 import type { Clock } from '../../../shared-kernel/clock.js';
 import { GithubRateLimitError } from '../../github/domain/errors.js';
 import { ScannerEventType } from '../api/events.js';
@@ -69,13 +69,13 @@ describe('ScanUseCase', () => {
   const loggerMock = mock<Logger>();
   const clockMock = mock<Clock>();
   const metricsMock = mock<ScannerMetrics>();
-  const eventBusMock = mock<EventBus>();
+  const outboxMock = mock<Outbox>();
 
   beforeEach(() => {
     vi.resetAllMocks();
 
     clockMock.now.mockReturnValue(FIXED_NOW);
-    eventBusMock.publish.mockResolvedValue(undefined);
+    outboxMock.save.mockResolvedValue(undefined);
     transactionManagerMock.run.mockImplementation(async (work) =>
       work({} as never),
     );
@@ -87,7 +87,7 @@ describe('ScanUseCase', () => {
       loggerMock,
       clockMock,
       metricsMock,
-      eventBusMock,
+      outboxMock,
     );
   });
 
@@ -114,18 +114,21 @@ describe('ScanUseCase', () => {
 
       await scanUseCase.execute();
 
-      expect(eventBusMock.publish).toHaveBeenCalledWith([
-        {
-          type: ScannerEventType.NewReleaseDetected,
-          aggregateId: '1',
-          occurredAt: FIXED_NOW_ISO,
-          payload: {
-            repo: 'owner/repo',
-            tag: latestRelease.tag,
-            releaseName: latestRelease.name,
+      expect(outboxMock.save).toHaveBeenCalledWith(
+        [
+          {
+            type: ScannerEventType.NewReleaseDetected,
+            aggregateId: '1',
+            occurredAt: FIXED_NOW_ISO,
+            payload: {
+              repo: 'owner/repo',
+              tag: latestRelease.tag,
+              releaseName: latestRelease.name,
+            },
           },
-        },
-      ]);
+        ],
+        expect.anything(),
+      );
       expect(monitoredRepoRepositoryMock.save).toHaveBeenCalledWith(
         expect.objectContaining({
           lastSeenTag: ReleaseTag.fromString('v1.1.0'),
@@ -166,18 +169,21 @@ describe('ScanUseCase', () => {
 
       await scanUseCase.execute();
 
-      expect(eventBusMock.publish).toHaveBeenCalledWith([
-        {
-          type: ScannerEventType.NewReleaseDetected,
-          aggregateId: '2',
-          occurredAt: FIXED_NOW_ISO,
-          payload: {
-            repo: 'owner/ok',
-            tag: latestRelease.tag,
-            releaseName: latestRelease.name,
+      expect(outboxMock.save).toHaveBeenCalledWith(
+        [
+          {
+            type: ScannerEventType.NewReleaseDetected,
+            aggregateId: '2',
+            occurredAt: FIXED_NOW_ISO,
+            payload: {
+              repo: 'owner/ok',
+              tag: latestRelease.tag,
+              releaseName: latestRelease.name,
+            },
           },
-        },
-      ]);
+        ],
+        expect.anything(),
+      );
     });
 
     it('should not notify when the latest release tag is unchanged', async () => {
@@ -200,7 +206,7 @@ describe('ScanUseCase', () => {
 
       await scanUseCase.execute();
 
-      expect(eventBusMock.publish).not.toHaveBeenCalled();
+      expect(outboxMock.save).not.toHaveBeenCalled();
       expect(monitoredRepoRepositoryMock.save).not.toHaveBeenCalled();
     });
 
@@ -228,12 +234,15 @@ describe('ScanUseCase', () => {
 
       await scanUseCase.execute();
 
-      expect(eventBusMock.publish).toHaveBeenCalledTimes(1);
-      expect(eventBusMock.publish).toHaveBeenCalledWith([
-        expect.objectContaining({
-          aggregateId: '2',
-        }),
-      ]);
+      expect(outboxMock.save).toHaveBeenCalledTimes(1);
+      expect(outboxMock.save).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
+            aggregateId: '2',
+          }),
+        ],
+        expect.anything(),
+      );
     });
 
     it('should advance repo cursor without notifying when all watchers are already acked', async () => {
@@ -256,7 +265,7 @@ describe('ScanUseCase', () => {
 
       await scanUseCase.execute();
 
-      expect(eventBusMock.publish).not.toHaveBeenCalled();
+      expect(outboxMock.save).not.toHaveBeenCalled();
       expect(monitoredRepoRepositoryMock.save).toHaveBeenCalledWith(
         expect.objectContaining({
           lastSeenTag: ReleaseTag.fromString('v1.0.0'),
@@ -290,11 +299,14 @@ describe('ScanUseCase', () => {
       await scanUseCase.execute();
 
       expect(githubClientMock.getLatestRelease).toHaveBeenCalledTimes(1);
-      expect(eventBusMock.publish).toHaveBeenCalledTimes(1);
-      expect(eventBusMock.publish).toHaveBeenCalledWith([
-        expect.objectContaining({ aggregateId: '1' }),
-        expect.objectContaining({ aggregateId: '2' }),
-      ]);
+      expect(outboxMock.save).toHaveBeenCalledTimes(1);
+      expect(outboxMock.save).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({ aggregateId: '1' }),
+          expect.objectContaining({ aggregateId: '2' }),
+        ],
+        expect.anything(),
+      );
     });
 
     it('should stop scanning if rate limit is exceeded', async () => {

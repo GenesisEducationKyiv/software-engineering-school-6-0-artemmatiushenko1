@@ -10,7 +10,7 @@ import type {
   Logger,
 } from '../../../../shared-kernel/index.js';
 import type { TokenGenerator } from '../ports/token-generator.js';
-import type { EventBus } from '../../../../platform/event-bus/event-bus.interface.js';
+import type { Outbox } from '../../../../platform/outbox/outbox.js';
 import { SubscriptionEventType } from '../../api/events.js';
 import type { Clock } from '../../../../shared-kernel/clock.js';
 import { mock } from 'vitest-mock-extended';
@@ -37,7 +37,7 @@ describe('SubscribeUseCase', () => {
   const idGeneratorMock = mock<IdGenerator>();
   const tokenGeneratorMock = mock<TokenGenerator>();
   const clockMock = mock<Clock>();
-  const eventBusMock = mock<EventBus>();
+  const outboxMock = mock<Outbox>();
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -48,7 +48,7 @@ describe('SubscribeUseCase', () => {
       async (work) => await work({} as DomainTransaction),
     );
 
-    eventBusMock.publish.mockResolvedValue(undefined);
+    outboxMock.save.mockResolvedValue(undefined);
 
     subscribeUseCase = new SubscribeUseCase(
       repoMock,
@@ -58,7 +58,7 @@ describe('SubscribeUseCase', () => {
       idGeneratorMock,
       tokenGeneratorMock,
       clockMock,
-      eventBusMock,
+      outboxMock,
     );
   });
 
@@ -82,7 +82,7 @@ describe('SubscribeUseCase', () => {
     );
     expect(repoMock.save).toHaveBeenCalledTimes(1);
 
-    const [savedSubscription, tx] = repoMock.save.mock.calls[0]!;
+    const [savedSubscription] = repoMock.save.mock.calls[0]!;
 
     expect(savedSubscription.id).toBe(subscriptionId);
     expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
@@ -98,19 +98,21 @@ describe('SubscribeUseCase', () => {
       ),
     ).toBe(true);
     expect(savedSubscription.unsubscribeToken).toBeNull();
-    expect(tx).toEqual(expect.anything());
-    expect(eventBusMock.publish).toHaveBeenCalledWith([
-      {
-        type: SubscriptionEventType.Requested,
-        aggregateId: subscriptionId,
-        occurredAt: FIXED_NOW_ISO,
-        payload: {
-          email,
-          repo,
-          confirmationToken: confirmToken,
+    expect(outboxMock.save).toHaveBeenCalledWith(
+      [
+        {
+          type: SubscriptionEventType.Requested,
+          aggregateId: subscriptionId,
+          occurredAt: FIXED_NOW_ISO,
+          payload: {
+            email,
+            repo,
+            confirmationToken: confirmToken,
+          },
         },
-      },
-    ]);
+      ],
+      expect.anything(),
+    );
   });
 
   it('should throw RepoNotFoundError if repo does not exist', async () => {
@@ -149,7 +151,7 @@ describe('SubscribeUseCase', () => {
 
     expect(repoMock.save).toHaveBeenCalledTimes(1);
 
-    const [savedSubscription, tx] = repoMock.save.mock.calls[0]!;
+    const [savedSubscription] = repoMock.save.mock.calls[0]!;
 
     expect(savedSubscription.id).toBe(existingDomainSubscription.id);
     expect(savedSubscription.status).toBe(SubscriptionStatus.Pending);
@@ -161,19 +163,21 @@ describe('SubscribeUseCase', () => {
       existingDomainSubscription.repoPath.toString(),
     );
     expect(savedSubscription.unsubscribeToken).toBeNull();
-    expect(tx).toEqual(expect.anything());
-    expect(eventBusMock.publish).toHaveBeenCalledWith([
-      {
-        type: SubscriptionEventType.ConfirmationRenewed,
-        aggregateId: existingDomainSubscription.id,
-        occurredAt: FIXED_NOW_ISO,
-        payload: {
-          email,
-          repo,
-          confirmationToken: newConfirmToken,
+    expect(outboxMock.save).toHaveBeenCalledWith(
+      [
+        {
+          type: SubscriptionEventType.ConfirmationRenewed,
+          aggregateId: existingDomainSubscription.id,
+          occurredAt: FIXED_NOW_ISO,
+          payload: {
+            email,
+            repo,
+            confirmationToken: newConfirmToken,
+          },
         },
-      },
-    ]);
+      ],
+      expect.anything(),
+    );
   });
 
   it('should reactivate an unsubscribed subscription and resend confirmation', async () => {
@@ -205,36 +209,20 @@ describe('SubscribeUseCase', () => {
     expect(savedSubscription.repoPath).toEqual(
       existingDomainSubscription.repoPath,
     );
-    expect(eventBusMock.publish).toHaveBeenCalledWith([
-      {
-        type: SubscriptionEventType.Reactivated,
-        aggregateId: existingDomainSubscription.id,
-        occurredAt: FIXED_NOW_ISO,
-        payload: {
-          email,
-          repo,
-          confirmationToken: newConfirmToken,
+    expect(outboxMock.save).toHaveBeenCalledWith(
+      [
+        {
+          type: SubscriptionEventType.Reactivated,
+          aggregateId: existingDomainSubscription.id,
+          occurredAt: FIXED_NOW_ISO,
+          payload: {
+            email,
+            repo,
+            confirmationToken: newConfirmToken,
+          },
         },
-      },
-    ]);
-  });
-
-  it('should propagate event handler failures after the subscription is saved', async () => {
-    const email = 'test@example.com';
-    const repo = 'owner/repo';
-    const confirmToken = '550e8400-e29b-41d4-a716-446655440000';
-    const subscriptionId = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-
-    tokenGeneratorMock.generate.mockReturnValue(confirmToken);
-    idGeneratorMock.next.mockReturnValue(subscriptionId);
-    repoMock.findByEmailAndRepo.mockResolvedValue(null);
-    githubClientMock.repositoryExists.mockResolvedValue(true);
-    eventBusMock.publish.mockRejectedValue(new Error('SMTP error'));
-
-    await expect(subscribeUseCase.execute(email, repo)).rejects.toThrow(
-      'SMTP error',
+      ],
+      expect.anything(),
     );
-
-    expect(repoMock.save).toHaveBeenCalledTimes(1);
   });
 });

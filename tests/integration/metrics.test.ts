@@ -12,6 +12,7 @@ import * as schema from '../../src/platform/db/schema.js';
 import { runAllDatabaseMigrations } from '../../src/platform/db/migrate.js';
 import type { Database } from '../../src/platform/db/types.js';
 import { register } from 'prom-client';
+import { FakeScheduler } from '../../src/platform/scheduler/fake-scheduler.js';
 import { TEST_APP_CONFIG } from './constants.js';
 import { createFastifyServerOptions } from '../../src/platform/fastify/create-fastify-server-options.js';
 import type { GithubClient } from '../../src/modules/github/api/github-client.interface.js';
@@ -41,6 +42,7 @@ describe('Metrics Routes', () => {
       redis: redisMock,
       githubClient: githubMock,
       emailClient: emailMock,
+      scheduler: new FakeScheduler(),
     });
 
     const deps = container.build();

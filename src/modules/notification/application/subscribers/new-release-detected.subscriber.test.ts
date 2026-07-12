@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 import { Email } from '../../domain/index.js';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import type { EmailClient } from '../ports/email-client.js';
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 import type { RecipientRepository } from '../ports/recipient.repository.js';
@@ -13,10 +15,11 @@ import { Recipient } from '../../domain/recipient.js';
 import { NewReleaseDetectedSubscriber } from './new-release-detected.subscriber.js';
 
 describe('NewReleaseDetectedSubscriber', () => {
-  const event: NewReleaseDetectedEvent = {
+  const event: Delivered<NewReleaseDetectedEvent> = {
     type: ScannerEventType.NewReleaseDetected,
     aggregateId: 'sub-1',
     occurredAt: '2024-01-01T00:00:00.000Z',
+    id: 'msg-1',
     payload: {
       repo: 'owner/repo',
       tag: 'v1.1.0',
@@ -24,6 +27,7 @@ describe('NewReleaseDetectedSubscriber', () => {
     },
   };
 
+  const idempotencyGuard = mock<IdempotencyGuard>();
   const recipientRepository = mock<RecipientRepository>();
   const emailClient = mock<EmailClient>();
   const metrics = mock<NotificationMetrics>();
@@ -39,9 +43,11 @@ describe('NewReleaseDetectedSubscriber', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
     recipientRepository.findBySubscriptionId.mockResolvedValue(recipient);
 
     subscriber = new NewReleaseDetectedSubscriber(
+      idempotencyGuard,
       recipientRepository,
       emailClient,
       'http://localhost:3000',
@@ -65,6 +71,17 @@ describe('NewReleaseDetectedSubscriber', () => {
     expect(metrics.incrementNotificationsSent).toHaveBeenCalled();
   });
 
+  it('does not send email on duplicate delivery', async () => {
+    idempotencyGuard.isProcessed.mockResolvedValue(true);
+
+    await subscriber.handle(event);
+
+    expect(idempotencyGuard.isProcessed).toHaveBeenCalledWith(
+      'msg-1:notification:new-release-detected',
+    );
+    expect(emailClient.sendEmail).not.toHaveBeenCalled();
+  });
+
   it('throws RecipientNotFoundError when recipient does not exist', async () => {
     recipientRepository.findBySubscriptionId.mockResolvedValue(null);
 
@@ -72,6 +89,7 @@ describe('NewReleaseDetectedSubscriber', () => {
       subscriber.handle({
         ...event,
         aggregateId: 'sub-missing',
+        id: 'msg-2',
       }),
     ).rejects.toThrow(RecipientNotFoundError);
 

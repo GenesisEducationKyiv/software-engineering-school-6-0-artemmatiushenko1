@@ -2,12 +2,16 @@ import {
   SubscriptionEventType,
   type SubscriptionDeactivatedEvent,
 } from '../../../subscription/api/events.js';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
 import { EventSubscriber } from '../../../../platform/event-bus/event-subscriber.js';
 import type { MonitoredRepoRepository } from '../ports/monitored-repo.repository.js';
 import { RepoPath } from '../../domain/index.js';
 import type { TransactionManager } from '../../../../shared-kernel/transaction.js';
 
-export class SubscriptionDeactivatedSubscriber extends EventSubscriber<SubscriptionDeactivatedEvent> {
+export class SubscriptionDeactivatedSubscriber extends EventSubscriber<
+  Delivered<SubscriptionDeactivatedEvent>
+> {
+  protected readonly name = 'scanner:subscription-deactivated';
   readonly eventType = SubscriptionEventType.Deactivated;
 
   constructor(
@@ -17,7 +21,7 @@ export class SubscriptionDeactivatedSubscriber extends EventSubscriber<Subscript
     super();
   }
 
-  async handle(event: SubscriptionDeactivatedEvent): Promise<void> {
+  async handle(event: Delivered<SubscriptionDeactivatedEvent>): Promise<void> {
     const repo = RepoPath.fromString(event.payload.repo);
 
     await this.transactionManager.run(async (tx) => {

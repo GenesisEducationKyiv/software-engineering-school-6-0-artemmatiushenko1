@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mock } from 'vitest-mock-extended';
+import type { Delivered } from '../../../../platform/event-bus/domain-event-envelope.js';
+import type { IdempotencyGuard } from '../../../../platform/idempotency-guard/idempotency-guard.js';
 import type { EmailClient } from '../ports/email-client.js';
 import {
   SubscriptionEventType,
@@ -9,10 +11,11 @@ import { SubscriptionConfirmationRenewedSubscriber } from './subscription-confir
 import type { NotificationMetrics } from '../ports/notification-metrics.js';
 
 describe('SubscriptionConfirmationRenewedSubscriber', () => {
-  const event: SubscriptionConfirmationRenewedEvent = {
+  const event: Delivered<SubscriptionConfirmationRenewedEvent> = {
     type: SubscriptionEventType.ConfirmationRenewed,
     aggregateId: 'sub-1',
     occurredAt: '2024-01-01T00:00:00.000Z',
+    id: 'msg-1',
     payload: {
       email: 'test@example.com',
       repo: 'owner/repo',
@@ -20,6 +23,7 @@ describe('SubscriptionConfirmationRenewedSubscriber', () => {
     },
   };
 
+  const idempotencyGuard = mock<IdempotencyGuard>();
   const emailClient = mock<EmailClient>();
   const metrics = mock<NotificationMetrics>();
 
@@ -28,7 +32,10 @@ describe('SubscriptionConfirmationRenewedSubscriber', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
+    idempotencyGuard.isProcessed.mockResolvedValue(false);
+
     subscriber = new SubscriptionConfirmationRenewedSubscriber(
+      idempotencyGuard,
       emailClient,
       'http://localhost:3000',
       metrics,

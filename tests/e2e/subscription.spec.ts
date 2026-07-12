@@ -1,15 +1,21 @@
 import { EXISTING_REPO, NON_EXISTING_REPO } from './mocks/github/constants.js';
 import { test, expect } from '@playwright/test';
-import { db } from '../../src/platform/db/client.js';
-import * as schema from '../../src/platform/db/schema.js';
+import { resetTestData } from './utils/db.js';
+import { resetGithubMockRelease } from './utils/github-mock.js';
 import { clearEmails, getLinkFromEmail } from './utils/email.js';
+import {
+  confirmSubscription,
+  getConfirmLink,
+  subscribe,
+} from './utils/subscription.js';
 
 const TEST_EMAIL = 'test-e2e@example.com';
 
 const EXISTING_REPO_FULL_NAME = `${EXISTING_REPO.owner}/${EXISTING_REPO.name}`;
 
 test.afterEach(async ({ request }) => {
-  await db.delete(schema.subscriptions);
+  await resetTestData();
+  await resetGithubMockRelease(request);
   await clearEmails(request);
 });
 
@@ -17,39 +23,24 @@ test.describe('Subscription Flow', () => {
   test('should allow a user to subscribe to a repository and confirm it', async ({
     page,
   }) => {
-    await page.goto('/');
-
-    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
-    await page.fill('#email', TEST_EMAIL);
-
-    await page.click('button:has-text("Subscribe to Notifications")');
+    await subscribe(page, { repo: EXISTING_REPO_FULL_NAME, email: TEST_EMAIL });
     await expect(page).toHaveURL(/\/sent/);
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
       'Check your email',
     );
 
-    const confirmLink = await getLinkFromEmail(page, 'Confirm Subscription');
-    await page.goto(confirmLink);
-
-    await expect(page.locator('[data-slot="card-title"]')).toContainText(
-      'Subscription Confirmed!',
-    );
+    await confirmSubscription(page);
     await expect(
       page.locator('text=Your subscription has been successfully confirmed'),
     ).toBeVisible();
   });
 
   test('should allow a user to unsubscribe', async ({ page, request }) => {
-    await page.goto('/');
-    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
-    await page.fill('#email', TEST_EMAIL);
-    await page.click('button:has-text("Subscribe to Notifications")');
+    await subscribe(page, { repo: EXISTING_REPO_FULL_NAME, email: TEST_EMAIL });
     await expect(page).toHaveURL(/\/sent/);
 
-    const confirmLink = await getLinkFromEmail(page, 'Confirm Subscription');
-
+    const confirmLink = await getConfirmLink(page);
     await clearEmails(request);
-
     await page.goto(confirmLink);
     await expect(page.locator('text=Subscription Confirmed!')).toBeVisible();
 
@@ -66,28 +57,17 @@ test.describe('Subscription Flow', () => {
 
   test('should resend confirmation when re-subscribing before confirmation', async ({
     page,
+    request,
   }) => {
-    await page.goto('/');
-    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
-    await page.fill('#email', TEST_EMAIL);
-    await page.click('button:has-text("Subscribe to Notifications")');
+    await subscribe(page, { repo: EXISTING_REPO_FULL_NAME, email: TEST_EMAIL });
     await expect(page).toHaveURL(/\/sent/);
+    const firstConfirmLink = await getConfirmLink(page);
 
-    const firstConfirmLink = await getLinkFromEmail(
-      page,
-      'Confirm Subscription',
-    );
+    await clearEmails(request);
 
-    await page.goto('/');
-    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
-    await page.fill('#email', TEST_EMAIL);
-    await page.click('button:has-text("Subscribe to Notifications")');
+    await subscribe(page, { repo: EXISTING_REPO_FULL_NAME, email: TEST_EMAIL });
     await expect(page).toHaveURL(/\/sent/);
-
-    const secondConfirmLink = await getLinkFromEmail(
-      page,
-      'Confirm Subscription',
-    );
+    const secondConfirmLink = await getConfirmLink(page);
     expect(secondConfirmLink).not.toBe(firstConfirmLink);
 
     await page.goto(firstConfirmLink);
@@ -103,20 +83,16 @@ test.describe('Subscription Flow', () => {
   });
 
   test('should not allow duplicate subscriptions', async ({ page }) => {
-    await page.goto('/');
-    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
-    await page.fill('#email', TEST_EMAIL);
-    await page.click('button:has-text("Subscribe to Notifications")');
+    await subscribe(page, { repo: EXISTING_REPO_FULL_NAME, email: TEST_EMAIL });
     await expect(page).toHaveURL(/\/sent/);
-
-    const confirmLink = await getLinkFromEmail(page, 'Confirm Subscription');
+    const confirmLink = await getConfirmLink(page);
     await page.goto(confirmLink);
     await expect(page.locator('text=Subscription Confirmed!')).toBeVisible();
 
-    await page.goto('/');
-    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
-    await page.fill('#email', TEST_EMAIL);
-    await page.click('button:has-text("Subscribe to Notifications")');
+    await subscribe(page, {
+      repo: EXISTING_REPO_FULL_NAME,
+      email: TEST_EMAIL,
+    });
 
     await expect(page.locator('text=already subscribed')).toBeVisible();
   });
@@ -126,10 +102,10 @@ test.describe('Subscription Flow', () => {
   }) => {
     const invalidRepo = `${NON_EXISTING_REPO.owner}/${NON_EXISTING_REPO.name}`;
 
-    await page.goto('/');
-    await page.fill('#repo', invalidRepo);
-    await page.fill('#email', TEST_EMAIL);
-    await page.click('button:has-text("Subscribe to Notifications")');
+    await subscribe(page, {
+      repo: invalidRepo,
+      email: TEST_EMAIL,
+    });
 
     await expect(page.locator('text=not found')).toBeVisible();
   });
@@ -138,13 +114,10 @@ test.describe('Subscription Flow', () => {
     page,
     request,
   }) => {
-    await page.goto('/');
-    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
-    await page.fill('#email', TEST_EMAIL);
-    await page.click('button:has-text("Subscribe to Notifications")');
+    await subscribe(page, { repo: EXISTING_REPO_FULL_NAME, email: TEST_EMAIL });
     await expect(page).toHaveURL(/\/sent/);
 
-    const confirmLink = await getLinkFromEmail(page, 'Confirm Subscription');
+    const confirmLink = await getConfirmLink(page);
     await clearEmails(request);
     await page.goto(confirmLink);
     await expect(page.locator('text=Subscription Confirmed!')).toBeVisible();
@@ -155,18 +128,15 @@ test.describe('Subscription Flow', () => {
       'Unsubscribed Successfully',
     );
 
-    await page.goto('/');
-    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
-    await page.fill('#email', TEST_EMAIL);
-    await page.click('button:has-text("Subscribe to Notifications")');
+    await subscribe(page, { repo: EXISTING_REPO_FULL_NAME, email: TEST_EMAIL });
     await expect(page).toHaveURL(/\/sent/);
   });
 
   test('should show an error for invalid email format', async ({ page }) => {
-    await page.goto('/');
-    await page.fill('#repo', EXISTING_REPO_FULL_NAME);
-    await page.fill('#email', 'not-an-email');
-    await page.click('button:has-text("Subscribe to Notifications")');
+    await subscribe(page, {
+      repo: EXISTING_REPO_FULL_NAME,
+      email: 'not-an-email',
+    });
 
     await page.locator('text=Invalid email').isVisible();
   });
@@ -174,10 +144,10 @@ test.describe('Subscription Flow', () => {
   test('should show an error for invalid repository format', async ({
     page,
   }) => {
-    await page.goto('/');
-    await page.fill('#repo', 'just-repo-name');
-    await page.fill('#email', 'test@example.com');
-    await page.click('button:has-text("Subscribe to Notifications")');
+    await subscribe(page, {
+      repo: 'just-repo-name',
+      email: 'test@example.com',
+    });
 
     await expect(
       page.locator('text=Repository must be in owner/repo format'),

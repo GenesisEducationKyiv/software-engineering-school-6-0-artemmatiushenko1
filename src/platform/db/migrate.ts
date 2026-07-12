@@ -20,6 +20,11 @@ type ModuleMigrationConfig = {
 
 const MODULE_MIGRATION_FOLDERS: ModuleMigrationConfig[] = [
   {
+    name: 'platform',
+    folder: path.join(projectRoot, 'src/platform/db/migrations'),
+    migrationsTable: '__drizzle_migrations_platform',
+  },
+  {
     name: 'subscription',
     folder: path.join(
       projectRoot,

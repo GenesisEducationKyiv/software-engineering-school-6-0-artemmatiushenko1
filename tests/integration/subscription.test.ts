@@ -22,13 +22,14 @@ import {
 } from '../../src/platform/http/response.dto.js';
 import { parseResponse } from './utils/parse-response.js';
 import { SubscriptionsResponseDtoSchema } from '../../src/modules/subscription/infrastructure/http/subscriptions-response.dto.js';
-import { AppContainer } from '../../src/dependencies.js';
+import { AppContainer, type AppDependencies } from '../../src/dependencies.js';
 import type { GithubClient } from '../../src/modules/github/api/github-client.interface.js';
 import type { EmailClient } from '../../src/modules/notification/application/ports/email-client.js';
 import { FastifyLogger } from '../../src/platform/logger/fastify-logger.js';
 import { PrometheusMetrics } from '../../src/platform/metrics/prometheus-metrics.js';
 import { Redis } from 'ioredis';
 import { mock } from 'vitest-mock-extended';
+import { FakeScheduler } from '../../src/platform/scheduler/fake-scheduler.js';
 import { TEST_APP_CONFIG } from './constants.js';
 import { createFastifyServerOptions } from '../../src/platform/fastify/create-fastify-server-options.js';
 import { randomUUID } from 'node:crypto';
@@ -41,6 +42,7 @@ const FIXED_NOW = new Date('2026-01-01T12:00:00Z');
 describe('Subscription Routes Integration with PGlite', () => {
   let app: App;
   let db: Database;
+  let deps: AppDependencies;
 
   const findSubscriptionToken = async (
     targetSubscriptionId: string,
@@ -136,6 +138,7 @@ describe('Subscription Routes Integration with PGlite', () => {
   const emailMock = mock<EmailClient>();
   const redisMock = mock<Redis>();
   const clockMock = mock<Clock>();
+  const scheduler = new FakeScheduler();
 
   beforeAll(async () => {
     db = drizzle(new PGlite(), { schema });
@@ -153,6 +156,8 @@ describe('Subscription Routes Integration with PGlite', () => {
       publishedAt: null,
     });
     clockMock.now.mockReturnValue(FIXED_NOW);
+    scheduler.scheduledTasks.length = 0;
+    scheduler.stopCalls = 0;
 
     const fastify = Fastify(createFastifyServerOptions(TEST_APP_CONFIG));
 
@@ -164,13 +169,22 @@ describe('Subscription Routes Integration with PGlite', () => {
       githubClient: githubMock,
       emailClient: emailMock,
       clock: clockMock,
+      scheduler,
     });
 
-    const deps = container.build();
+    deps = container.build();
+    deps.outboxRelay.start();
     app = await App.create(TEST_APP_CONFIG, deps, fastify);
   });
 
+  const relayEvents = () => scheduler.invokeLatest();
+
   afterEach(async () => {
+    await deps.outboxRelay.stop();
+    await db.delete(schema.outboxMessages);
+    await db.delete(schema.repoWatchers);
+    await db.delete(schema.monitoredRepos);
+    await db.delete(schema.notificationRecipients);
     await db.delete(schema.subscriptions);
   });
 
@@ -200,6 +214,8 @@ describe('Subscription Routes Integration with PGlite', () => {
 
       expect(saved.email).toBe(email);
       expect(saved.status).toBe('pending');
+
+      await relayEvents();
 
       expect(emailMock.sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -319,6 +335,7 @@ describe('Subscription Routes Integration with PGlite', () => {
         });
 
         expect(subscribeResponse.statusCode).toBe(200);
+        await relayEvents();
 
         const updatedSubscription = await db.query.subscriptions.findFirst({
           where: (subs, { eq }) => eq(subs.id, subscription.id),
@@ -448,6 +465,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(response.statusCode).toBe(200);
+      await relayEvents();
       expect(
         parseResponse(response.body, CommonSuccessResponseDtoSchema),
       ).toEqual({
@@ -491,6 +509,7 @@ describe('Subscription Routes Integration with PGlite', () => {
       });
 
       expect(firstResponse.statusCode).toBe(200);
+      await relayEvents();
       expect(
         parseResponse(firstResponse.body, CommonSuccessResponseDtoSchema),
       ).toEqual({

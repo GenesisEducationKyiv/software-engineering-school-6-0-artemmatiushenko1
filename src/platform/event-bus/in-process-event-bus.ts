@@ -1,15 +1,17 @@
+import type { Delivered, IntegrationEvent } from './domain-event-envelope.js';
 import type { Logger } from '../../shared-kernel/logger.js';
-import type { DomainEventEnvelope } from './domain-event-envelope.js';
 import type { EventBus } from './event-bus.interface.js';
 
-type EventHandler = (event: DomainEventEnvelope) => void | Promise<void>;
+type EventHandler = (
+  event: Delivered<IntegrationEvent>,
+) => void | Promise<void>;
 
 export class InProcessEventBus implements EventBus {
   private readonly subscribers = new Map<string, EventHandler[]>();
 
   constructor(private readonly logger?: Logger) {}
 
-  async publish(events: DomainEventEnvelope[]): Promise<void> {
+  async publish(events: Delivered<IntegrationEvent>[]): Promise<void> {
     const failures: Error[] = [];
 
     for (const event of events) {
@@ -35,7 +37,7 @@ export class InProcessEventBus implements EventBus {
     }
   }
 
-  subscribe<T extends DomainEventEnvelope>(
+  subscribe<T extends Delivered<IntegrationEvent>>(
     eventType: T['type'],
     callback: (event: T) => void | Promise<void>,
   ): void {
