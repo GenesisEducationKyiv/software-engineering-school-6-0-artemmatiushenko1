@@ -6,12 +6,12 @@ import {
 import { SubscriptionNotFoundError } from '../errors.js';
 import type { TokenGenerator } from '../ports/token-generator.js';
 import type {
-  Clock,
   Logger,
   TransactionManager,
 } from '../../../../shared-kernel/index.js';
 import type { Outbox } from '../../../../platform/outbox/outbox.js';
 import { toPublicApiEvents } from '../subscription-event.mapper.js';
+import type { Clock } from '../../../../shared-kernel/clock.js';
 
 export class ConfirmUseCase {
   constructor(
