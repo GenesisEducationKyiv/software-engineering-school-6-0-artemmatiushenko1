@@ -40,6 +40,22 @@ describe('InProcessEventBus', () => {
     expect(order).toEqual([1, 2]);
   });
 
+  it('continues calling other handlers when one handler throws', async () => {
+    const bus = new InProcessEventBus();
+    const failing = vi.fn().mockRejectedValue(new Error('boom'));
+    const succeeding = vi.fn();
+
+    bus.subscribe('TestEvent', failing);
+    bus.subscribe('TestEvent', succeeding);
+
+    await expect(bus.publish([testEvent])).rejects.toThrow(
+      'One or more event handlers failed',
+    );
+
+    expect(failing).toHaveBeenCalledWith(testEvent);
+    expect(succeeding).toHaveBeenCalledWith(testEvent);
+  });
+
   it('dispose clears subscribers so later publishes are no-ops', async () => {
     const bus = new InProcessEventBus();
     const handler = vi.fn();

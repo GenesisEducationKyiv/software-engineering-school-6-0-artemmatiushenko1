@@ -55,7 +55,7 @@ export class AppContainer {
     config: AppConfig,
     private readonly deps: AppContainerDeps,
   ) {
-    this.eventBus = deps.eventBus ?? new InProcessEventBus();
+    this.eventBus = deps.eventBus ?? new InProcessEventBus(deps.logger);
     const clock = deps.clock ?? new SystemClock();
     const idGenerator = deps.idGenerator ?? new CryptoIdGenerator();
     const tokenGenerator = deps.tokenGenerator ?? new CryptoTokenGenerator();
