@@ -22,7 +22,7 @@
     "db:generate:notification": "drizzle-kit generate --config=drizzle.notification.config.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "proto:generate": "protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./src/modules/subscription/infrastructure/grpc/generated --ts_proto_opt=outputServices=grpc-js,esModuleInterop=true,importSuffix=.js,useOptionals=messages --proto_path=./src/modules/subscription/api ./src/modules/subscription/api/subscription.proto",
+    "proto:generate": "mkdir -p ./src/modules/subscription/infrastructure/grpc/generated && protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./src/modules/subscription/infrastructure/grpc/generated --ts_proto_opt=outputServices=grpc-js,esModuleInterop=true,importSuffix=.js,useOptionals=messages --proto_path=./src/modules/subscription/api ./src/modules/subscription/api/subscription.proto",
     "prepare": "husky"
   },
   "keywords": [],
